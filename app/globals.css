@@ -1,23 +1,90 @@
 @import "tailwindcss";
 
+/* =============================================================================
+   CSS Custom Properties (Variables)
+   =============================================================================
+   
+   CSS custom properties (also called CSS variables) let us define reusable values.
+   They start with -- and are accessed using var(--name).
+   
+   :root means these variables are available everywhere in the document.
+*/
+
 :root {
+  /* Base colors for light mode */
   --background: #ffffff;
   --foreground: #171717;
+  
+  /* HealthVerity Brand Colors
+     -------------------------
+     These are the official HealthVerity brand colors.
+     Primary: Used for main buttons, links, and key UI elements
+     Secondary: Used for hover states and accents
+  */
+  --hv-primary: #00D084;    /* Bright green - main brand color */
+  --hv-secondary: #00A66C;  /* Darker green - for hover/accents */
+  
+  /* Additional UI Colors
+     --------------------
+     These help create a cohesive medical/professional look
+  */
+  --hv-light: #E6FBF3;      /* Very light green - for backgrounds */
+  --hv-dark: #007A4D;       /* Dark green - for text on light backgrounds */
 }
 
+/* =============================================================================
+   Tailwind Theme Extension
+   =============================================================================
+   
+   @theme inline tells Tailwind CSS to make these CSS variables available
+   as utility classes. After this, you can use classes like:
+   - bg-hv-primary     → background-color: #00D084
+   - text-hv-secondary → color: #00A66C
+   - border-hv-dark    → border-color: #007A4D
+*/
+
 @theme inline {
+  /* Map CSS variables to Tailwind color utilities */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  
+  /* HealthVerity colors as Tailwind utilities */
+  --color-hv-primary: var(--hv-primary);
+  --color-hv-secondary: var(--hv-secondary);
+  --color-hv-light: var(--hv-light);
+  --color-hv-dark: var(--hv-dark);
+  
+  /* Font families */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
+
+/* =============================================================================
+   Dark Mode Support
+   =============================================================================
+   
+   @media (prefers-color-scheme: dark) applies styles when the user's
+   operating system is set to dark mode.
+*/
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    
+    /* Slightly adjust HealthVerity colors for dark mode
+       Making them a bit brighter for better visibility on dark backgrounds */
+    --hv-primary: #00E590;    /* Brighter green for dark mode */
+    --hv-secondary: #00D084;  /* Original primary becomes secondary */
+    --hv-light: #0D2E23;      /* Dark green background for cards */
+    --hv-dark: #00E590;       /* Bright for text on dark backgrounds */
   }
 }
+
+/* =============================================================================
+   Base Body Styles
+   =============================================================================
+*/
 
 body {
   background: var(--background);
