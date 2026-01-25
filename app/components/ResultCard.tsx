@@ -2,28 +2,22 @@
  * ResultCard Component
  * ====================
  * 
- * Displays a single ICD-10 code result as a styled card.
- * This is the smallest "building block" of our search results.
+ * A professional, polished card component for displaying ICD-10 results.
  * 
- * Think of it like a business card for each medical condition:
- * - Shows the ICD-10 code prominently (like a name)
- * - Shows the condition description below (like a job title)
- * 
- * REACT CONCEPTS USED:
- * - Props: Data passed from parent component
- * - TypeScript interface: Defines what props this component expects
+ * DESIGN FEATURES:
+ * - Soft shadows with hover elevation
+ * - Smooth micro-interactions (scale, translate)
+ * - ICD code badge with branded colors
+ * - Chevron icon that appears on hover
+ * - Clean typography and spacing
  */
+
+import { ChevronRight } from 'lucide-react';
 
 // =============================================================================
 // Props Interface
 // =============================================================================
 
-/**
- * Defines the props (properties) that ResultCard expects to receive.
- * 
- * When you use <ResultCard code="E11.9" name="Type 2 diabetes" />,
- * these values become available inside the component.
- */
 interface ResultCardProps {
   /** The ICD-10 code (e.g., "E11.9") */
   code: string;
@@ -36,74 +30,130 @@ interface ResultCardProps {
 // Component
 // =============================================================================
 
-/**
- * ResultCard - Displays a single ICD-10 result
- * 
- * @param props - The component props (code and name)
- * @returns A styled card showing the ICD-10 code and condition name
- * 
- * @example
- * <ResultCard 
- *   code="E11.9" 
- *   name="Type 2 diabetes mellitus without complications" 
- * />
- */
 export default function ResultCard({ code, name }: ResultCardProps) {
-  // The { code, name } syntax is called "destructuring"
-  // It extracts code and name from the props object
-  
   return (
     <div 
       className="
-        /* Layout & Spacing */
-        p-4                    /* padding: 1rem (16px) on all sides */
-        
-        /* Border & Shape */
-        border                 /* adds a border */
-        border-gray-200        /* light gray border color */
-        rounded-lg             /* rounded corners (large) */
-        
-        /* Background */
-        bg-white               /* white background */
-        dark:bg-gray-800       /* dark gray in dark mode */
-        dark:border-gray-700   /* darker border in dark mode */
-        
-        /* Hover Effects */
-        hover:border-hv-primary    /* green border on hover */
-        hover:shadow-md            /* subtle shadow on hover */
-        
-        /* Animation */
-        transition-all             /* smooth transition for all changes */
-        duration-200               /* transition takes 200ms */
-        
-        /* Cursor */
-        cursor-pointer             /* shows pointer cursor on hover */
+        group
+        relative
+        p-5
+        bg-white
+        dark:bg-gray-800
+        rounded-2xl
+        border
+        border-gray-100
+        dark:border-gray-700
+        shadow-sm
+        hover:shadow-xl
+        hover:shadow-gray-200/50
+        dark:hover:shadow-none
+        hover:border-[#00D084]/30
+        dark:hover:border-[#00D084]/40
+        hover:-translate-y-1
+        active:scale-[0.98]
+        transition-all
+        duration-300
+        ease-out
+        cursor-pointer
       "
     >
-      {/* ICD-10 Code - displayed prominently */}
-      <div 
-        className="
-          text-hv-primary        /* HealthVerity green color */
-          font-bold              /* bold text */
-          text-lg                /* large text size */
-          font-mono              /* monospace font (good for codes) */
-        "
-      >
-        {code}
+      {/* Card Content */}
+      <div className="flex items-start justify-between gap-4">
+        {/* Left Side: Code Badge + Name */}
+        <div className="flex-1 min-w-0">
+          {/* ICD-10 Code Badge */}
+          <div 
+            className="
+              inline-flex
+              items-center
+              px-3
+              py-1.5
+              rounded-lg
+              bg-[#00D084]/10
+              dark:bg-[#00D084]/20
+              mb-3
+            "
+          >
+            <span 
+              className="
+                text-[#00A66C]
+                dark:text-[#00D084]
+                font-bold
+                text-sm
+                font-mono
+                tracking-wide
+              "
+            >
+              {code}
+            </span>
+          </div>
+          
+          {/* Condition Name */}
+          <h3 
+            className="
+              text-gray-800
+              dark:text-gray-200
+              font-medium
+              text-base
+              leading-snug
+              group-hover:text-[#00A66C]
+              dark:group-hover:text-[#00D084]
+              transition-colors
+              duration-200
+            "
+          >
+            {name}
+          </h3>
+        </div>
+        
+        {/* Right Side: Chevron Icon (appears on hover) */}
+        <div 
+          className="
+            flex-shrink-0
+            w-8
+            h-8
+            rounded-full
+            bg-gray-100
+            dark:bg-gray-700
+            flex
+            items-center
+            justify-center
+            opacity-0
+            group-hover:opacity-100
+            translate-x-2
+            group-hover:translate-x-0
+            transition-all
+            duration-300
+          "
+        >
+          <ChevronRight 
+            className="
+              w-4
+              h-4
+              text-[#00D084]
+            " 
+          />
+        </div>
       </div>
       
-      {/* Condition Name - displayed below the code */}
+      {/* Subtle Bottom Accent Line (appears on hover) */}
       <div 
         className="
-          text-gray-700          /* dark gray text */
-          dark:text-gray-300     /* lighter in dark mode */
-          mt-1                   /* margin-top: 0.25rem (4px) */
-          text-sm                /* small text size */
-          leading-relaxed        /* comfortable line height */
+          absolute
+          bottom-0
+          left-4
+          right-4
+          h-0.5
+          bg-gradient-to-r
+          from-[#00D084]
+          to-[#00A66C]
+          rounded-full
+          opacity-0
+          group-hover:opacity-100
+          transition-opacity
+          duration-300
         "
-      >
-        {name}
-      </div>
+      />
     </div>
   );
 }

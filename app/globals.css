@@ -91,3 +91,56 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* =============================================================================
+   Custom Animations
+   =============================================================================
+   
+   These keyframes define custom animations for the UI.
+   Used for smooth fade-in and slide effects on search results.
+*/
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-from-bottom {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Animation utility classes */
+.animate-in {
+  animation-duration: 300ms;
+  animation-timing-function: ease-out;
+}
+
+.fade-in {
+  animation-name: fade-in;
+}
+
+.slide-in-from-bottom-2 {
+  animation-name: slide-in-from-bottom;
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Better focus visible styles */
+*:focus-visible {
+  outline: 2px solid var(--hv-primary);
+  outline-offset: 2px;
+}
