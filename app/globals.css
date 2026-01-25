@@ -1,6 +1,16 @@
 @import "tailwindcss";
 
 /* =============================================================================
+   React Flow Styles (Phase 2: Mind Map)
+   =============================================================================
+   
+   React Flow styles are imported directly in the MindMapView component.
+   This ensures the styles are loaded when the component is used.
+   
+   See: app/components/MindMapView.tsx
+*/
+
+/* =============================================================================
    CSS Custom Properties (Variables)
    =============================================================================
    
@@ -120,10 +130,31 @@ body {
   }
 }
 
+@keyframes zoom-in-50 {
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(0, 208, 132, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(0, 208, 132, 0.6);
+  }
+}
+
 /* Animation utility classes */
 .animate-in {
   animation-duration: 300ms;
   animation-timing-function: ease-out;
+  animation-fill-mode: both;
 }
 
 .fade-in {
@@ -132,6 +163,18 @@ body {
 
 .slide-in-from-bottom-2 {
   animation-name: slide-in-from-bottom;
+}
+
+.zoom-in-50 {
+  animation-name: zoom-in-50;
+}
+
+.duration-500 {
+  animation-duration: 500ms;
+}
+
+.glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
 }
 
 /* Smooth scroll behavior */

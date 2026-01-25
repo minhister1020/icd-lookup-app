@@ -175,3 +175,243 @@ https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?sf=code,name&terms=diab
 - Responsive design using Tailwind CSS
 - Error handling for network failures
 - No external state management (React hooks only)
+
+---
+---
+
+# Phase 2: Mind Map Visualization
+
+## Overall Progress: 100% (12/12 steps completed) ✅
+
+---
+
+## Goal
+
+Transform the search results from a card grid into an interactive mind map visualization using React Flow. Users can toggle between "List View" (current cards) and "Mind Map View" (interactive nodes).
+
+---
+
+## Phase 2A: Install and Setup 🟩
+
+### Step 1: Install React Flow 🟩
+**Purpose:** Add the React Flow library for node-based graph visualization.
+
+- 🟩 1.1 Run `npm install @xyflow/react` (installed v12.10.0)
+- 🟩 1.2 Verify installation in `package.json`
+- 🟩 1.3 Import React Flow CSS in `globals.css`
+
+---
+
+### Step 2: Add View Mode Types 🟩
+**Purpose:** Define TypeScript types for the view toggle feature.
+
+- 🟩 2.1 Update `app/types/icd.ts` with:
+  - `ViewMode` type: `'list' | 'mindmap'`
+  - `IcdNodeData` interface for React Flow node data
+  - `NodePosition` interface for node positioning
+
+---
+
+## Phase 2B: Create Components 🟩
+
+### Step 3: Create ViewToggle Component 🟩
+**Purpose:** Toggle button to switch between List and Mind Map views.
+
+- 🟩 3.1 Create `app/components/ViewToggle.tsx`
+- 🟩 3.2 Props: `currentView`, `onViewChange`, `disabled`
+- 🟩 3.3 Two buttons with icons (LayoutGrid, Network from lucide-react)
+- 🟩 3.4 Active state styling with HealthVerity green
+- 🟩 3.5 Smooth transition animation between states
+- 🟩 3.6 ARIA attributes for accessibility
+
+---
+
+### Step 4: Create Custom IcdNode Component 🟩
+**Purpose:** Custom-styled node for displaying ICD codes in the mind map.
+
+- 🟩 4.1 Create `app/components/IcdNode.tsx`
+- 🟩 4.2 Design matches ResultCard styling:
+  - Code badge (green background)
+  - Condition name below
+  - Rounded corners, shadows
+- 🟩 4.3 Handle props from React Flow (`data` object with IcdNodeData)
+- 🟩 4.4 Add hover effects and selected state styling
+- 🟩 4.5 Support dark mode styling
+- 🟩 4.6 Add Handle components for future edge connections
+- 🟩 4.7 Memoized with memo() for performance
+
+---
+
+### Step 5: Create MindMapView Component 🟩
+**Purpose:** Main React Flow canvas that displays ICD codes as nodes.
+
+- 🟩 5.1 Create `app/components/MindMapView.tsx`
+- 🟩 5.2 Accept `results: ICD10Result[]` as prop
+- 🟩 5.3 Convert results to React Flow nodes:
+  - Each result → one node
+  - Calculate positions (3-column grid layout)
+  - Apply custom `icdNode` type
+  - Extract category from code
+- 🟩 5.4 Configure React Flow:
+  - Enable zoom and pan
+  - Add dot background pattern
+  - Add MiniMap for navigation
+  - Add Controls (zoom buttons)
+  - FitView on load
+- 🟩 5.5 Handle empty state (no results message)
+- 🟩 5.6 Wrap in 600px height container with styling
+
+---
+
+## Phase 2C: Wire Everything Together 🟩
+
+### Step 6: Add View Mode State to Page 🟩
+**Purpose:** Manage which view is currently active.
+
+- 🟩 6.1 Update `app/page.tsx`:
+  - Add `viewMode` state: `useState<ViewMode>('list')`
+  - Add `handleViewModeChange` handler
+- 🟩 6.2 Load view preference from localStorage on mount
+- 🟩 6.3 Save view preference to localStorage on change
+- 🟩 6.4 Updated status badge to "Phase 2 - Mind Map"
+
+---
+
+### Step 7: Update SearchResults Component 🟩
+**Purpose:** Conditionally render List or Mind Map view.
+
+- 🟩 7.1 Update `app/components/SearchResults.tsx`:
+  - Accept new prop: `viewMode`
+  - Accept new prop: `onViewModeChange`
+- 🟩 7.2 Add ViewToggle to results header (next to count badge)
+- 🟩 7.3 Conditional rendering:
+  - `viewMode === 'list'` → Show card grid
+  - `viewMode === 'mindmap'` → Show MindMapView
+- 🟩 7.4 Responsive header layout (stacks on mobile)
+
+---
+
+### Step 8: Connect Components in Page 🟩
+**Purpose:** Pass all props and wire up the view toggle.
+
+- 🟩 8.1 Import ViewMode type from types/icd.ts
+- 🟩 8.2 Pass `viewMode` to SearchResults
+- 🟩 8.3 Pass `onViewModeChange` to SearchResults
+- 🟩 8.4 View toggle now functional!
+
+---
+
+## Phase 2D: Polish and Test 🟩
+
+### Step 9: Improve Node Styling 🟩
+**Purpose:** Make nodes more compact and mind-map-like.
+
+- 🟩 9.1 Reduced node size (180px width, p-3 padding)
+- 🟩 9.2 Inline code badge with gradient background
+- 🟩 9.3 2-line text truncation with title tooltip
+- 🟩 9.4 Subtle glow effect on hover
+- 🟩 9.5 Hidden handles that appear on hover
+- 🟩 9.6 Added left/right handles for horizontal connections
+
+---
+
+### Step 10: Add Better Layout Algorithm 🟩
+**Purpose:** Position nodes in organized clusters.
+
+- 🟩 10.1 Radial/clustered layout algorithm
+- 🟩 10.2 Group nodes by ICD category (E codes, F codes, etc.)
+- 🟩 10.3 Categories positioned in circle around center
+- 🟩 10.4 Nodes within category form smaller clusters
+- 🟩 10.5 Automatic repositioning on new search
+
+---
+
+### Step 11: Add Edges Between Related Nodes 🟩
+**Purpose:** Show relationships between ICD codes.
+
+- 🟩 11.1 Edges connecting nodes in same category
+- 🟩 11.2 Smooth step (curved) edge type
+- 🟩 11.3 HealthVerity green color with low opacity
+- 🟩 11.4 Arrow markers on edges
+- 🟩 11.5 Circular connections for category loops
+
+---
+
+### Step 12: Visual Polish 🟩
+**Purpose:** Professional, polished appearance.
+
+- 🟩 12.1 Zoom level indicator (top-right panel)
+- 🟩 12.2 Category legend with color coding
+- 🟩 12.3 MiniMap with category-based coloring
+- 🟩 12.4 Help text at bottom ("Drag to rearrange...")
+- 🟩 12.5 Gradient background on canvas
+- 🟩 12.6 Improved empty state design
+- 🟩 12.7 Backdrop blur on all panels
+
+---
+
+## Files to Create (Phase 2)
+
+| File | Purpose | Status |
+|------|---------|--------|
+| `app/components/ViewToggle.tsx` | Toggle between List/Mind Map | 🟩 |
+| `app/components/IcdNode.tsx` | Custom node for React Flow | 🟩 |
+| `app/components/MindMapView.tsx` | React Flow canvas component | 🟩 |
+| `app/lib/layout.ts` | Node positioning helper | ⏭️ Integrated into MindMapView |
+
+## Files to Modify (Phase 2)
+
+| File | Changes | Status |
+|------|---------|--------|
+| `package.json` | Add @xyflow/react dependency | 🟩 |
+| `app/globals.css` | Import React Flow styles | 🟩 |
+| `app/types/icd.ts` | Add ViewMode and node types | 🟩 |
+| `app/page.tsx` | Add viewMode state | 🟩 |
+| `app/components/SearchResults.tsx` | Add view toggle + conditional render | 🟩 |
+
+---
+
+## New Dependency
+
+| Package | Version | Purpose | Status |
+|---------|---------|---------|--------|
+| `@xyflow/react` | 12.10.0 | Node-based graph visualization | 🟩 Installed |
+
+---
+
+## React Flow Concepts Reference
+
+### Node Structure
+```typescript
+{
+  id: 'E11.9',                    // Unique identifier
+  type: 'icdNode',                // Custom node type
+  position: { x: 100, y: 200 },   // Canvas position
+  data: {                         // Custom data
+    code: 'E11.9',
+    name: 'Type 2 diabetes...'
+  }
+}
+```
+
+### Edge Structure (for future)
+```typescript
+{
+  id: 'e1-2',        // Unique identifier
+  source: 'E11',     // Start node ID
+  target: 'E11.9',   // End node ID
+  animated: true     // Optional animation
+}
+```
+
+---
+
+## Success Criteria
+
+- [ ] User can toggle between List and Mind Map views
+- [ ] Mind Map displays all search results as draggable nodes
+- [ ] Zoom and pan work smoothly
+- [ ] View preference persists across page refreshes
+- [ ] Dark mode works correctly
+- [ ] Mobile-responsive design
+- [ ] No console errors or warnings

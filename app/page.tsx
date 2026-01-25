@@ -29,14 +29,15 @@ import SearchResults from './components/SearchResults';
 import { searchICD10 } from './lib/api';
 
 // Import TypeScript types for type safety
-import { ICD10Result } from './types/icd';
+import { ICD10Result, ViewMode } from './types/icd';
 
 // =============================================================================
 // Main Component
 // =============================================================================
 
-// Key for localStorage
+// Keys for localStorage
 const RECENT_SEARCHES_KEY = 'icd-recent-searches';
+const VIEW_MODE_KEY = 'icd-view-mode';
 
 export default function Home() {
   // ---------------------------------------------------------------------------
@@ -48,6 +49,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   
   // ---------------------------------------------------------------------------
   // Load Recent Searches from localStorage on Mount
@@ -57,16 +59,23 @@ export default function Home() {
     // This only runs in the browser (after component mounts)
     // localStorage doesn't exist on the server, so we use useEffect
     try {
-      const saved = localStorage.getItem(RECENT_SEARCHES_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
+      // Load recent searches
+      const savedSearches = localStorage.getItem(RECENT_SEARCHES_KEY);
+      if (savedSearches) {
+        const parsed = JSON.parse(savedSearches);
         if (Array.isArray(parsed)) {
           setRecentSearches(parsed);
         }
       }
+      
+      // Load view mode preference
+      const savedViewMode = localStorage.getItem(VIEW_MODE_KEY);
+      if (savedViewMode === 'list' || savedViewMode === 'mindmap') {
+        setViewMode(savedViewMode);
+      }
     } catch (err) {
       // If parsing fails, just start fresh
-      console.warn('Failed to load recent searches:', err);
+      console.warn('Failed to load preferences:', err);
     }
   }, []); // Empty array = only run once on mount
   
@@ -96,6 +105,20 @@ export default function Home() {
       
       return trimmed;
     });
+  };
+  
+  // ---------------------------------------------------------------------------
+  // Helper: Handle View Mode Change
+  // ---------------------------------------------------------------------------
+  
+  const handleViewModeChange = (newMode: ViewMode) => {
+    setViewMode(newMode);
+    // Save preference to localStorage
+    try {
+      localStorage.setItem(VIEW_MODE_KEY, newMode);
+    } catch (err) {
+      console.warn('Failed to save view mode:', err);
+    }
   };
   
   // ---------------------------------------------------------------------------
@@ -157,7 +180,7 @@ export default function Home() {
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00D084]/10 border border-[#00D084]/20">
               <span className="w-2 h-2 rounded-full bg-[#00D084] animate-pulse" />
               <span className="text-xs font-medium text-[#00A66C] dark:text-[#00D084]">
-                Phase 1 - Search
+                Phase 2 - Mind Map
               </span>
             </div>
           </div>
@@ -213,6 +236,8 @@ export default function Home() {
           isLoading={isLoading}
           error={error}
           hasSearched={hasSearched}
+          viewMode={viewMode}
+          onViewModeChange={handleViewModeChange}
         />
       </main>
 

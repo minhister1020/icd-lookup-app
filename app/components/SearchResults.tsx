@@ -12,8 +12,10 @@
  */
 
 import { AlertCircle, SearchX, Sparkles } from 'lucide-react';
-import { ICD10Result } from '../types/icd';
+import { ICD10Result, ViewMode } from '../types/icd';
 import ResultCard from './ResultCard';
+import ViewToggle from './ViewToggle';
+import MindMapView from './MindMapView';
 
 // =============================================================================
 // Skeleton Card Component
@@ -63,6 +65,8 @@ interface SearchResultsProps {
   isLoading: boolean;
   error: string | null;
   hasSearched: boolean;
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
 }
 
 // =============================================================================
@@ -73,7 +77,9 @@ export default function SearchResults({
   results, 
   isLoading, 
   error,
-  hasSearched 
+  hasSearched,
+  viewMode,
+  onViewModeChange
 }: SearchResultsProps) {
   
   // =========================================================================
@@ -207,7 +213,7 @@ export default function SearchResults({
   return (
     <div>
       {/* Results Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
             Search Results
@@ -217,29 +223,41 @@ export default function SearchResults({
           </p>
         </div>
         
-        {/* Results Count Badge */}
-        <div className="px-3 py-1.5 rounded-full bg-[#00D084]/10 border border-[#00D084]/20">
-          <span className="text-sm font-semibold text-[#00A66C] dark:text-[#00D084]">
-            {results.length}
-          </span>
+        {/* View Toggle + Count Badge */}
+        <div className="flex items-center gap-3">
+          <ViewToggle 
+            currentView={viewMode}
+            onViewChange={onViewModeChange}
+          />
+          <div className="px-3 py-1.5 rounded-full bg-[#00D084]/10 border border-[#00D084]/20">
+            <span className="text-sm font-semibold text-[#00A66C] dark:text-[#00D084]">
+              {results.length}
+            </span>
+          </div>
         </div>
       </div>
       
-      {/* Results Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {results.map((result, index) => (
-          <div 
-            key={result.code}
-            className="animate-in fade-in slide-in-from-bottom-2"
-            style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'backwards' }}
-          >
-            <ResultCard
-              code={result.code}
-              name={result.name}
-            />
-          </div>
-        ))}
-      </div>
+      {/* Conditional View Rendering */}
+      {viewMode === 'list' ? (
+        /* List View - Card Grid */
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {results.map((result, index) => (
+            <div 
+              key={result.code}
+              className="animate-in fade-in slide-in-from-bottom-2"
+              style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'backwards' }}
+            >
+              <ResultCard
+                code={result.code}
+                name={result.name}
+              />
+            </div>
+          ))}
+        </div>
+      ) : (
+        /* Mind Map View - React Flow Canvas */
+        <MindMapView results={results} />
+      )}
     </div>
   );
 }

@@ -97,3 +97,49 @@ export interface SearchState {
   /** Array of ICD-10 results from the search */
   results: ICD10Result[];
 }
+
+// =============================================================================
+// View Mode Type (Phase 2: Mind Map)
+// =============================================================================
+
+/**
+ * ViewMode - Controls how search results are displayed.
+ * 
+ * - 'list': Traditional card grid layout (default)
+ * - 'mindmap': Interactive React Flow node visualization
+ * 
+ * Used by the ViewToggle component to switch between views.
+ */
+export type ViewMode = 'list' | 'mindmap';
+
+// =============================================================================
+// React Flow Node Types (Phase 2: Mind Map)
+// =============================================================================
+
+/**
+ * Data structure passed to each ICD node in the mind map.
+ * 
+ * React Flow nodes have a `data` property that can contain
+ * any custom data. We use it to pass ICD information.
+ */
+export interface IcdNodeData {
+  /** The ICD-10 code (e.g., "E11.9") */
+  code: string;
+  
+  /** The condition name */
+  name: string;
+  
+  /** Optional: Category for grouping (e.g., "E11" for diabetes codes) */
+  category?: string;
+}
+
+/**
+ * Position type for React Flow nodes.
+ * 
+ * x: horizontal position on canvas
+ * y: vertical position on canvas
+ */
+export interface NodePosition {
+  x: number;
+  y: number;
+}
