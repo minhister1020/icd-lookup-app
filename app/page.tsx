@@ -18,7 +18,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Activity } from 'lucide-react';
 
 // Import our custom components
@@ -35,6 +35,9 @@ import { ICD10Result } from './types/icd';
 // Main Component
 // =============================================================================
 
+// Key for localStorage
+const RECENT_SEARCHES_KEY = 'icd-recent-searches';
+
 export default function Home() {
   // ---------------------------------------------------------------------------
   // State Management
@@ -44,6 +47,56 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  
+  // ---------------------------------------------------------------------------
+  // Load Recent Searches from localStorage on Mount
+  // ---------------------------------------------------------------------------
+  
+  useEffect(() => {
+    // This only runs in the browser (after component mounts)
+    // localStorage doesn't exist on the server, so we use useEffect
+    try {
+      const saved = localStorage.getItem(RECENT_SEARCHES_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setRecentSearches(parsed);
+        }
+      }
+    } catch (err) {
+      // If parsing fails, just start fresh
+      console.warn('Failed to load recent searches:', err);
+    }
+  }, []); // Empty array = only run once on mount
+  
+  // ---------------------------------------------------------------------------
+  // Helper: Save Search to Recent Searches
+  // ---------------------------------------------------------------------------
+  
+  const addToRecentSearches = (query: string) => {
+    setRecentSearches((prev) => {
+      // Remove the query if it already exists (to avoid duplicates)
+      const filtered = prev.filter(
+        (item) => item.toLowerCase() !== query.toLowerCase()
+      );
+      
+      // Add the new query at the beginning
+      const updated = [query, ...filtered];
+      
+      // Keep only the last 5 searches
+      const trimmed = updated.slice(0, 5);
+      
+      // Save to localStorage
+      try {
+        localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(trimmed));
+      } catch (err) {
+        console.warn('Failed to save recent searches:', err);
+      }
+      
+      return trimmed;
+    });
+  };
   
   // ---------------------------------------------------------------------------
   // Event Handlers
@@ -53,6 +106,9 @@ export default function Home() {
     setIsLoading(true);
     setError(null);
     setHasSearched(true);
+    
+    // Save to recent searches
+    addToRecentSearches(query);
     
     try {
       const searchResults = await searchICD10(query);
@@ -141,6 +197,7 @@ export default function Home() {
               <SearchBar 
                 onSearch={handleSearch}
                 isLoading={isLoading}
+                recentSearches={recentSearches}
               />
             </div>
           </div>

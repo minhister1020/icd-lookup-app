@@ -18,7 +18,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, Clock, X } from 'lucide-react';
 
 // =============================================================================
 // Props Interface
@@ -27,13 +27,18 @@ import { Search, Loader2 } from 'lucide-react';
 interface SearchBarProps {
   onSearch: (query: string) => void;
   isLoading?: boolean;
+  recentSearches?: string[];  // Array of recent search terms
 }
 
 // =============================================================================
 // Component
 // =============================================================================
 
-export default function SearchBar({ onSearch, isLoading = false }: SearchBarProps) {
+export default function SearchBar({ 
+  onSearch, 
+  isLoading = false,
+  recentSearches = []
+}: SearchBarProps) {
   const [query, setQuery] = useState('');
   
   const handleSubmit = (e: React.FormEvent) => {
@@ -146,37 +151,78 @@ export default function SearchBar({ onSearch, isLoading = false }: SearchBarProp
         </button>
       </div>
       
-      {/* Helper Text */}
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-        <span>Try:</span>
-        <button 
-          type="button"
-          onClick={() => { setQuery('diabetes'); }}
-          className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-[#00D084]/10 hover:text-[#00A66C] dark:hover:text-[#00D084] transition-colors"
-        >
-          diabetes
-        </button>
-        <button 
-          type="button"
-          onClick={() => { setQuery('hypertension'); }}
-          className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-[#00D084]/10 hover:text-[#00A66C] dark:hover:text-[#00D084] transition-colors"
-        >
-          hypertension
-        </button>
-        <button 
-          type="button"
-          onClick={() => { setQuery('E11.9'); }}
-          className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-[#00D084]/10 hover:text-[#00A66C] dark:hover:text-[#00D084] transition-colors font-mono"
-        >
-          E11.9
-        </button>
-        <button 
-          type="button"
-          onClick={() => { setQuery('anxiety'); }}
-          className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-[#00D084]/10 hover:text-[#00A66C] dark:hover:text-[#00D084] transition-colors"
-        >
-          anxiety
-        </button>
+      {/* Suggestions Section */}
+      <div className="mt-4 space-y-3">
+        {/* Recent Searches - Only show if there are recent searches */}
+        {recentSearches.length > 0 && (
+          <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
+            <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+              <Clock className="w-3.5 h-3.5" />
+              Recent:
+            </span>
+            {recentSearches.map((term) => (
+              <button 
+                key={term}
+                type="button"
+                onClick={() => { 
+                  setQuery(term);
+                  onSearch(term);  // Immediately search when clicking recent
+                }}
+                className="
+                  px-3 
+                  py-1 
+                  rounded-full 
+                  bg-[#00D084]/10 
+                  text-[#00A66C] 
+                  dark:text-[#00D084]
+                  hover:bg-[#00D084]/20 
+                  border
+                  border-[#00D084]/20
+                  transition-all
+                  duration-200
+                  hover:scale-105
+                  text-sm
+                  font-medium
+                "
+              >
+                {term}
+              </button>
+            ))}
+          </div>
+        )}
+        
+        {/* Quick Try Suggestions */}
+        <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+          <span>Try:</span>
+          <button 
+            type="button"
+            onClick={() => { setQuery('diabetes'); }}
+            className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-[#00D084]/10 hover:text-[#00A66C] dark:hover:text-[#00D084] transition-colors"
+          >
+            diabetes
+          </button>
+          <button 
+            type="button"
+            onClick={() => { setQuery('hypertension'); }}
+            className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-[#00D084]/10 hover:text-[#00A66C] dark:hover:text-[#00D084] transition-colors"
+          >
+            hypertension
+          </button>
+          <button 
+            type="button"
+            onClick={() => { setQuery('E11.9'); }}
+            className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-[#00D084]/10 hover:text-[#00A66C] dark:hover:text-[#00D084] transition-colors font-mono"
+          >
+            E11.9
+          </button>
+          <button 
+            type="button"
+            onClick={() => { setQuery('anxiety'); }}
+            className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-[#00D084]/10 hover:text-[#00A66C] dark:hover:text-[#00D084] transition-colors"
+          >
+            anxiety
+          </button>
+        </div>
       </div>
     </form>
   );

@@ -11,9 +11,48 @@
  * - Smooth fade-in animations
  */
 
-import { AlertCircle, SearchX, Sparkles, Loader2 } from 'lucide-react';
+import { AlertCircle, SearchX, Sparkles } from 'lucide-react';
 import { ICD10Result } from '../types/icd';
 import ResultCard from './ResultCard';
+
+// =============================================================================
+// Skeleton Card Component
+// =============================================================================
+
+/**
+ * SkeletonCard - Placeholder card shown while loading
+ * 
+ * Mimics the structure of ResultCard with animated gray boxes.
+ * Uses Tailwind's animate-pulse for the shimmer effect.
+ */
+function SkeletonCard({ delay = 0 }: { delay?: number }) {
+  return (
+    <div 
+      className="
+        p-5
+        bg-white
+        dark:bg-gray-800
+        rounded-2xl
+        border
+        border-gray-100
+        dark:border-gray-700
+        animate-pulse
+      "
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      {/* Skeleton Code Badge */}
+      <div className="inline-flex items-center px-3 py-1.5 rounded-lg bg-gray-200 dark:bg-gray-700 mb-3">
+        <div className="h-4 w-16 bg-gray-300 dark:bg-gray-600 rounded" />
+      </div>
+      
+      {/* Skeleton Name Lines */}
+      <div className="space-y-2">
+        <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded" />
+        <div className="h-4 w-3/4 bg-gray-100 dark:bg-gray-800 rounded" />
+      </div>
+    </div>
+  );
+}
 
 // =============================================================================
 // Props Interface
@@ -38,23 +77,32 @@ export default function SearchResults({
 }: SearchResultsProps) {
   
   // =========================================================================
-  // State 1: Loading
+  // State 1: Loading - Show Skeleton Cards
   // =========================================================================
   
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20">
-        {/* Animated Loader */}
-        <div className="relative">
-          <div className="w-16 h-16 rounded-full border-4 border-[#00D084]/20" />
-          <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-transparent border-t-[#00D084] animate-spin" />
-          <Loader2 className="absolute inset-0 m-auto w-6 h-6 text-[#00D084] animate-pulse" />
+      <div>
+        {/* Loading Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <div className="h-6 w-32 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+            <div className="h-4 w-48 bg-gray-100 dark:bg-gray-800 rounded mt-2 animate-pulse" />
+          </div>
+          <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
         </div>
-        <p className="mt-6 text-gray-600 dark:text-gray-400 font-medium">
+        
+        {/* Skeleton Cards Grid */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Generate 6 skeleton cards */}
+          {[...Array(6)].map((_, index) => (
+            <SkeletonCard key={index} delay={index * 100} />
+          ))}
+        </div>
+        
+        {/* Loading Text */}
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8 animate-pulse">
           Searching ICD-10 database...
-        </p>
-        <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">
-          This may take a moment
         </p>
       </div>
     );
