@@ -336,25 +336,41 @@ export default function Home() {
               </div>
             </div>
             
-            {/* Phase 6: Favorites Button */}
+            {/* Phase 6: Favorites Button - Enhanced styling */}
             <button
               onClick={() => setShowFavoritesPanel(!showFavoritesPanel)}
               className={`
-                flex items-center gap-2 px-3 py-1.5 rounded-full
-                transition-all duration-200
+                group
+                flex items-center gap-2 px-4 py-2 rounded-xl
+                transition-all duration-300 ease-out
+                transform hover:scale-105 active:scale-95
                 ${showFavoritesPanel 
-                  ? 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700' 
-                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-yellow-300 dark:hover:border-yellow-700'
+                  ? 'bg-gradient-to-r from-yellow-100 to-amber-100 dark:from-yellow-900/40 dark:to-amber-900/40 border-yellow-300 dark:border-yellow-600 shadow-lg shadow-yellow-200/50 dark:shadow-yellow-900/30' 
+                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-yellow-400 dark:hover:border-yellow-600 hover:shadow-lg hover:shadow-yellow-100/50 dark:hover:shadow-yellow-900/20'
                 }
-                border shadow-sm hover:shadow-md
+                border-2 shadow-md
               `}
+              aria-label={`View favorites (${favorites.length})`}
             >
-              <Star className={`w-4 h-4 ${favorites.length > 0 ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400'}`} />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Star 
+                className={`
+                  w-5 h-5 transition-all duration-300
+                  ${favorites.length > 0 
+                    ? 'text-yellow-500 fill-yellow-500 group-hover:scale-110' 
+                    : 'text-gray-400 group-hover:text-yellow-400'
+                  }
+                `} 
+              />
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 hidden sm:inline">
                 Favorites
               </span>
               {favorites.length > 0 && (
-                <span className="px-1.5 py-0.5 text-xs font-semibold rounded-full bg-yellow-500 text-white">
+                <span className="
+                  px-2 py-0.5 text-xs font-bold rounded-full 
+                  bg-gradient-to-r from-yellow-500 to-amber-500 
+                  text-white shadow-sm
+                  animate-pulse
+                ">
                   {favorites.length}
                 </span>
               )}
@@ -364,7 +380,7 @@ export default function Home() {
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00D084]/10 border border-[#00D084]/20">
               <span className="w-2 h-2 rounded-full bg-[#00D084] animate-pulse" />
               <span className="text-xs font-medium text-[#00A66C] dark:text-[#00D084]">
-                Phase 5 - Common Terms
+                Phase 6 - Favorites
               </span>
             </div>
           </div>

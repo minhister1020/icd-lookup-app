@@ -76,9 +76,10 @@ export default function FavoritesPanel({
       <div 
         className="
           fixed right-0 top-0 bottom-0 z-50
-          w-full max-w-md
+          w-full sm:w-96 sm:max-w-md
           bg-white dark:bg-gray-900
           shadow-2xl
+          border-l border-gray-200 dark:border-gray-700
           animate-in slide-in-from-right duration-300
           flex flex-col
         "
@@ -197,11 +198,11 @@ export default function FavoritesPanel({
                         </div>
                       </div>
                       
-                      {/* Actions */}
+                      {/* Actions - Always visible on mobile, hover on desktop */}
                       <div className="
-                        flex items-center gap-1
-                        opacity-0 group-hover:opacity-100
-                        transition-opacity
+                        flex items-center gap-1.5
+                        sm:opacity-0 sm:group-hover:opacity-100
+                        transition-all duration-200
                       ">
                         {/* Search Button */}
                         <button
@@ -210,13 +211,16 @@ export default function FavoritesPanel({
                             onClose();
                           }}
                           className="
-                            w-8 h-8 rounded-full
+                            w-9 h-9 sm:w-8 sm:h-8 rounded-xl sm:rounded-full
                             bg-[#00D084]/10 hover:bg-[#00D084]/20
+                            active:bg-[#00D084]/30
                             text-[#00A66C] dark:text-[#00D084]
                             flex items-center justify-center
-                            transition-colors
+                            transition-all duration-200
+                            hover:scale-110 active:scale-95
                           "
                           title="Search this code"
+                          aria-label={`Search for ${favorite.code}`}
                         >
                           <Search className="w-4 h-4" />
                         </button>
@@ -225,14 +229,16 @@ export default function FavoritesPanel({
                         <button
                           onClick={() => onRemove(favorite.code)}
                           className="
-                            w-8 h-8 rounded-full
-                            bg-red-50 hover:bg-red-100
-                            dark:bg-red-900/20 dark:hover:bg-red-900/40
+                            w-9 h-9 sm:w-8 sm:h-8 rounded-xl sm:rounded-full
+                            bg-red-50 hover:bg-red-100 active:bg-red-200
+                            dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:active:bg-red-900/60
                             text-red-500
                             flex items-center justify-center
-                            transition-colors
+                            transition-all duration-200
+                            hover:scale-110 active:scale-95
                           "
                           title="Remove from favorites"
+                          aria-label={`Remove ${favorite.code} from favorites`}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
