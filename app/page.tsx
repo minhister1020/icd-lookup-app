@@ -19,18 +19,27 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Activity } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Activity, Star } from 'lucide-react';
 
 // Import our custom components
 import SearchBar from './components/SearchBar';
 import SearchResults from './components/SearchResults';
+import FavoritesPanel from './components/FavoritesPanel';
 
 // Import our API helper function
 import { searchICD10, searchICD10More } from './lib/api';
 
+// Import favorites storage utilities
+import { 
+  getFavorites, 
+  saveFavorites, 
+  createFavoritesMap,
+  getCodeCategory 
+} from './lib/favoritesStorage';
+
 // Import TypeScript types for type safety
-import { ViewMode, DrugResult, ClinicalTrialResult, ScoredICD10Result, TranslationResult } from './types/icd';
+import { ViewMode, DrugResult, ClinicalTrialResult, ScoredICD10Result, TranslationResult, FavoriteICD } from './types/icd';
 
 // =============================================================================
 // Main Component
@@ -67,6 +76,13 @@ export default function Home() {
   const [drugsMap, setDrugsMap] = useState<Map<string, DrugResult[]>>(new Map());
   const [trialsMap, setTrialsMap] = useState<Map<string, ClinicalTrialResult[]>>(new Map());
   
+  // Phase 6: Favorites state
+  const [favorites, setFavorites] = useState<FavoriteICD[]>([]);
+  const [showFavoritesPanel, setShowFavoritesPanel] = useState(false);
+  
+  // Create a Map for O(1) favorite lookup
+  const favoritesMap = useMemo(() => createFavoritesMap(favorites), [favorites]);
+  
   // ---------------------------------------------------------------------------
   // Load Preferences from localStorage on Mount
   // ---------------------------------------------------------------------------
@@ -85,6 +101,10 @@ export default function Home() {
       if (savedViewMode === 'list' || savedViewMode === 'mindmap') {
         setViewMode(savedViewMode);
       }
+      
+      // Phase 6: Load favorites from localStorage
+      const savedFavorites = getFavorites();
+      setFavorites(savedFavorites);
     } catch {
       // Silently fail if localStorage is not available
     }
@@ -124,6 +144,70 @@ export default function Home() {
       // Silently fail if localStorage is not available
     }
   };
+  
+  // ---------------------------------------------------------------------------
+  // Phase 6: Favorites Functions
+  // ---------------------------------------------------------------------------
+  
+  /**
+   * Toggles a result's favorite status.
+   * If already favorited, removes it. Otherwise, adds it.
+   * 
+   * @param result - The ICD result to toggle
+   */
+  const toggleFavorite = useCallback((result: ScoredICD10Result) => {
+    setFavorites(prev => {
+      const exists = prev.some(f => f.code === result.code);
+      
+      let updated: FavoriteICD[];
+      
+      if (exists) {
+        // Remove from favorites
+        updated = prev.filter(f => f.code !== result.code);
+      } else {
+        // Add to favorites
+        const newFavorite: FavoriteICD = {
+          code: result.code,
+          name: result.name,
+          favoritedAt: new Date().toISOString(),
+          searchQuery: currentQuery || undefined,
+          score: result.score,
+          category: getCodeCategory(result.code)
+        };
+        updated = [newFavorite, ...prev];
+      }
+      
+      // Persist to localStorage
+      saveFavorites(updated);
+      return updated;
+    });
+  }, [currentQuery]);
+  
+  /**
+   * Removes a specific favorite by code.
+   */
+  const removeFavorite = useCallback((code: string) => {
+    setFavorites(prev => {
+      const updated = prev.filter(f => f.code !== code);
+      saveFavorites(updated);
+      return updated;
+    });
+  }, []);
+  
+  /**
+   * Clears all favorites.
+   */
+  const clearAllFavorites = useCallback(() => {
+    setFavorites([]);
+    saveFavorites([]);
+  }, []);
+  
+  /**
+   * Checks if a code is favorited (O(1) lookup).
+   */
+  const isFavorited = useCallback((code: string): boolean => {
+    return favoritesMap.has(code);
+  }, [favoritesMap]);
   
   // ---------------------------------------------------------------------------
   // Phase 3C: Callbacks for Drug/Trial Data
@@ -252,11 +336,35 @@ export default function Home() {
               </div>
             </div>
             
+            {/* Phase 6: Favorites Button */}
+            <button
+              onClick={() => setShowFavoritesPanel(!showFavoritesPanel)}
+              className={`
+                flex items-center gap-2 px-3 py-1.5 rounded-full
+                transition-all duration-200
+                ${showFavoritesPanel 
+                  ? 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700' 
+                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-yellow-300 dark:hover:border-yellow-700'
+                }
+                border shadow-sm hover:shadow-md
+              `}
+            >
+              <Star className={`w-4 h-4 ${favorites.length > 0 ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400'}`} />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Favorites
+              </span>
+              {favorites.length > 0 && (
+                <span className="px-1.5 py-0.5 text-xs font-semibold rounded-full bg-yellow-500 text-white">
+                  {favorites.length}
+                </span>
+              )}
+            </button>
+            
             {/* Status Badge */}
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00D084]/10 border border-[#00D084]/20">
               <span className="w-2 h-2 rounded-full bg-[#00D084] animate-pulse" />
               <span className="text-xs font-medium text-[#00A66C] dark:text-[#00D084]">
-                Phase 4 - Smart Ranking
+                Phase 5 - Common Terms
               </span>
             </div>
           </div>
@@ -320,7 +428,17 @@ export default function Home() {
           hasMore={hasMore}
           onLoadMore={handleLoadMore}
           isLoadingMore={isLoadingMore}
-          translation={translation}  // Phase 5: Pass translation for UI display
+          translation={translation}
+          // Phase 6: Favorites props
+          favorites={favorites}
+          favoritesMap={favoritesMap}
+          onToggleFavorite={toggleFavorite}
+          onRemoveFavorite={removeFavorite}
+          onClearAllFavorites={clearAllFavorites}
+          isFavorited={isFavorited}
+          showFavoritesPanel={showFavoritesPanel}
+          onToggleFavoritesPanel={() => setShowFavoritesPanel(!showFavoritesPanel)}
+          onSearchFromFavorite={handleSearch}
         />
       </main>
 
@@ -365,6 +483,18 @@ export default function Home() {
           </div>
         </div>
       </footer>
+      
+      {/* ================================================================= */}
+      {/* Phase 6: Favorites Panel */}
+      {/* ================================================================= */}
+      <FavoritesPanel
+        isOpen={showFavoritesPanel}
+        onClose={() => setShowFavoritesPanel(false)}
+        favorites={favorites}
+        onRemove={removeFavorite}
+        onSearch={handleSearch}
+        onClearAll={clearAllFavorites}
+      />
     </div>
   );
 }

@@ -16,7 +16,7 @@
  */
 
 import { AlertCircle, SearchX, Sparkles, Loader2, ChevronDown, Lightbulb } from 'lucide-react';
-import { ScoredICD10Result, ViewMode, DrugResult, ClinicalTrialResult, TranslationResult } from '../types/icd';
+import { ScoredICD10Result, ViewMode, DrugResult, ClinicalTrialResult, TranslationResult, FavoriteICD } from '../types/icd';
 import ResultCard from './ResultCard';
 import ViewToggle from './ViewToggle';
 import MindMapView from './MindMapView';
@@ -139,6 +139,17 @@ interface SearchResultsProps {
   
   // Phase 5: Translation metadata for displaying translation notice
   translation?: TranslationResult;
+  
+  // Phase 6: Favorites functionality
+  favorites?: FavoriteICD[];
+  favoritesMap?: Map<string, FavoriteICD>;
+  onToggleFavorite?: (result: ScoredICD10Result) => void;
+  onRemoveFavorite?: (code: string) => void;
+  onClearAllFavorites?: () => void;
+  isFavorited?: (code: string) => boolean;
+  showFavoritesPanel?: boolean;
+  onToggleFavoritesPanel?: () => void;
+  onSearchFromFavorite?: (code: string) => void;
 }
 
 // =============================================================================
@@ -160,7 +171,17 @@ export default function SearchResults({
   hasMore = false,
   onLoadMore,
   isLoadingMore = false,
-  translation,  // Phase 5: Translation metadata
+  translation,
+  // Phase 6: Favorites props
+  favorites = [],
+  favoritesMap = new Map(),
+  onToggleFavorite,
+  onRemoveFavorite,
+  onClearAllFavorites,
+  isFavorited,
+  showFavoritesPanel = false,
+  onToggleFavoritesPanel,
+  onSearchFromFavorite,
 }: SearchResultsProps) {
   
   // Count total nodes for display
@@ -364,6 +385,9 @@ export default function SearchResults({
                   // Phase 4C: Pass relevance data for badges
                   score={result.score}
                   rank={index + 1}
+                  // Phase 6: Favorites props
+                  isFavorite={isFavorited ? isFavorited(result.code) : favoritesMap.has(result.code)}
+                  onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(result) : undefined}
                 />
               </div>
             ))}

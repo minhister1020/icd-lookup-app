@@ -25,7 +25,8 @@ import {
   Loader2, 
   ChevronDown, 
   ChevronUp, 
-  AlertCircle 
+  AlertCircle,
+  Star
 } from 'lucide-react';
 import { DrugResult, ClinicalTrialResult } from '../types/icd';
 import { searchDrugsByCondition } from '../lib/openFdaApi';
@@ -55,13 +56,28 @@ interface ResultCardProps {
   
   /** Phase 4C: Position in search results (1-based) */
   rank?: number;
+  
+  /** Phase 6: Whether this code is favorited */
+  isFavorite?: boolean;
+  
+  /** Phase 6: Callback to toggle favorite status */
+  onToggleFavorite?: () => void;
 }
 
 // =============================================================================
 // Component
 // =============================================================================
 
-export default function ResultCard({ code, name, onDrugsLoaded, onTrialsLoaded, score, rank }: ResultCardProps) {
+export default function ResultCard({ 
+  code, 
+  name, 
+  onDrugsLoaded, 
+  onTrialsLoaded, 
+  score, 
+  rank,
+  isFavorite = false,
+  onToggleFavorite
+}: ResultCardProps) {
   // =========================================================================
   // Drug State (Phase 3A)
   // =========================================================================
@@ -301,33 +317,64 @@ export default function ResultCard({ code, name, onDrugsLoaded, onTrialsLoaded, 
             </h3>
           </div>
           
-          {/* Right Side: Chevron Icon (appears on hover) */}
-          <div 
-            className="
-              flex-shrink-0
-              w-8
-              h-8
-              rounded-full
-              bg-gray-100
-              dark:bg-gray-700
-              flex
-              items-center
-              justify-center
-              opacity-0
-              group-hover:opacity-100
-              translate-x-2
-              group-hover:translate-x-0
-              transition-all
-              duration-300
-            "
-          >
-            <ChevronRight 
+          {/* Right Side: Star Button + Chevron */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Phase 6: Star/Favorite Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent card click
+                onToggleFavorite?.();
+              }}
+              className={`
+                w-8
+                h-8
+                rounded-full
+                flex
+                items-center
+                justify-center
+                transition-all
+                duration-200
+                ${isFavorite 
+                  ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-500 scale-110' 
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-400 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 opacity-0 group-hover:opacity-100'
+                }
+              `}
+              aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+              title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            >
+              <Star 
+                className={`w-4 h-4 transition-all duration-200 ${isFavorite ? 'fill-current' : ''}`} 
+              />
+            </button>
+            
+            {/* Chevron Icon (appears on hover) */}
+            <div 
               className="
-                w-4
-                h-4
-                text-[#00D084]
-              " 
-            />
+                w-8
+                h-8
+                rounded-full
+                bg-gray-100
+                dark:bg-gray-700
+                flex
+                items-center
+                justify-center
+                opacity-0
+                group-hover:opacity-100
+                translate-x-2
+                group-hover:translate-x-0
+                transition-all
+                duration-300
+              "
+            >
+              <ChevronRight 
+                className="
+                  w-4
+                  h-4
+                  text-[#00D084]
+                " 
+              />
+            </div>
           </div>
         </div>
       </div>

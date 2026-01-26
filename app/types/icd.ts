@@ -614,3 +614,160 @@ export interface SearchResultsWithTranslation extends SearchResultsWithMeta {
    */
   translation?: TranslationResult;
 }
+
+// =============================================================================
+// Phase 6: Favorites & History Types
+// =============================================================================
+
+/**
+ * Represents a favorited ICD-10 code with metadata.
+ * 
+ * Stores enough information to display the favorite and
+ * allow quick searching without re-fetching from API.
+ * 
+ * @example
+ * {
+ *   code: "E11.9",
+ *   name: "Type 2 diabetes mellitus without complications",
+ *   favoritedAt: "2026-01-26T10:30:00.000Z",
+ *   searchQuery: "diabetes",
+ *   score: 85,
+ *   category: "E"
+ * }
+ */
+export interface FavoriteICD {
+  /** The ICD-10 code (e.g., "E11.9") */
+  code: string;
+  
+  /** The condition name */
+  name: string;
+  
+  /** When this was favorited (ISO timestamp) */
+  favoritedAt: string;
+  
+  /** Optional: The search query that led to this result */
+  searchQuery?: string;
+  
+  /** Optional: Relevance score when favorited */
+  score?: number;
+  
+  /** 
+   * Code category (first letter of the code).
+   * Used for color coding and grouping.
+   * 
+   * Common categories:
+   * - E: Endocrine/Metabolic (diabetes)
+   * - I: Circulatory (heart conditions)
+   * - J: Respiratory (lung conditions)
+   * - F: Mental/Behavioral
+   * - M: Musculoskeletal
+   * - S: Injuries
+   */
+  category?: string;
+}
+
+/**
+ * Enhanced search history entry with timestamps and result context.
+ * 
+ * Unlike the simple string[] for recent searches, this provides
+ * rich context about when and what was searched.
+ * 
+ * @example
+ * {
+ *   query: "diabetes",
+ *   searchedAt: "2026-01-26T10:30:00.000Z",
+ *   resultCount: 847,
+ *   topResultCode: "E11.9",
+ *   topResultName: "Type 2 diabetes mellitus without complications"
+ * }
+ */
+export interface SearchHistoryEntry {
+  /** The search query */
+  query: string;
+  
+  /** When the search was performed (ISO timestamp) */
+  searchedAt: string;
+  
+  /** Number of results returned */
+  resultCount: number;
+  
+  /** Optional: Top result code (for quick reference) */
+  topResultCode?: string;
+  
+  /** Optional: Top result name */
+  topResultName?: string;
+}
+
+/**
+ * Returns the category color for an ICD code.
+ * Used for visual grouping in favorites and mind map.
+ * 
+ * @param code - The ICD-10 code (e.g., "E11.9")
+ * @returns Object with text and background color classes
+ */
+export function getCategoryColor(code: string): { text: string; bg: string; border: string } {
+  const category = code.charAt(0).toUpperCase();
+  
+  switch (category) {
+    case 'E': // Endocrine, nutritional, metabolic (diabetes, etc.)
+      return { 
+        text: 'text-emerald-700 dark:text-emerald-400', 
+        bg: 'bg-emerald-100 dark:bg-emerald-900/30',
+        border: 'border-emerald-200 dark:border-emerald-800'
+      };
+    case 'I': // Circulatory (heart, blood pressure)
+      return { 
+        text: 'text-red-700 dark:text-red-400', 
+        bg: 'bg-red-100 dark:bg-red-900/30',
+        border: 'border-red-200 dark:border-red-800'
+      };
+    case 'J': // Respiratory (lung, breathing)
+      return { 
+        text: 'text-sky-700 dark:text-sky-400', 
+        bg: 'bg-sky-100 dark:bg-sky-900/30',
+        border: 'border-sky-200 dark:border-sky-800'
+      };
+    case 'F': // Mental and behavioral
+      return { 
+        text: 'text-purple-700 dark:text-purple-400', 
+        bg: 'bg-purple-100 dark:bg-purple-900/30',
+        border: 'border-purple-200 dark:border-purple-800'
+      };
+    case 'M': // Musculoskeletal (bones, muscles)
+      return { 
+        text: 'text-amber-700 dark:text-amber-400', 
+        bg: 'bg-amber-100 dark:bg-amber-900/30',
+        border: 'border-amber-200 dark:border-amber-800'
+      };
+    case 'S': // Injuries
+      return { 
+        text: 'text-orange-700 dark:text-orange-400', 
+        bg: 'bg-orange-100 dark:bg-orange-900/30',
+        border: 'border-orange-200 dark:border-orange-800'
+      };
+    case 'K': // Digestive
+      return { 
+        text: 'text-yellow-700 dark:text-yellow-400', 
+        bg: 'bg-yellow-100 dark:bg-yellow-900/30',
+        border: 'border-yellow-200 dark:border-yellow-800'
+      };
+    case 'N': // Genitourinary
+      return { 
+        text: 'text-pink-700 dark:text-pink-400', 
+        bg: 'bg-pink-100 dark:bg-pink-900/30',
+        border: 'border-pink-200 dark:border-pink-800'
+      };
+    case 'Z': // Factors influencing health
+      return { 
+        text: 'text-teal-700 dark:text-teal-400', 
+        bg: 'bg-teal-100 dark:bg-teal-900/30',
+        border: 'border-teal-200 dark:border-teal-800'
+      };
+    default:
+      return { 
+        text: 'text-gray-700 dark:text-gray-400', 
+        bg: 'bg-gray-100 dark:bg-gray-700',
+        border: 'border-gray-200 dark:border-gray-700'
+      };
+  }
+}
