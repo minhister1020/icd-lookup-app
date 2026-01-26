@@ -381,3 +381,118 @@ export function getTrialStatusColor(status: TrialStatus): { text: string; bg: st
       return { text: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-700' };
   }
 }
+
+// =============================================================================
+// Phase 4: Relevance Scoring Types (Intelligent Search Ranking)
+// =============================================================================
+
+/**
+ * Breakdown of how a result's relevance score was calculated.
+ * 
+ * This provides transparency into why certain results rank higher.
+ * Useful for debugging and potentially displaying to users.
+ * 
+ * Total possible score: 100 points
+ * - Keyword: 35 points max
+ * - Popularity: 40 points max
+ * - Specificity: 15 points max
+ * - Exactness: 10 points max
+ * 
+ * @example
+ * {
+ *   keyword: 30,      // "diabetes" found in name
+ *   popularity: 40,   // E11.9 is a very common code
+ *   specificity: 15,  // Has .9 suffix (commonly used)
+ *   exactness: 0      // User didn't search by code
+ * }
+ */
+export interface ScoreBreakdown {
+  /** 
+   * Keyword match quality (0-35 points)
+   * - 35: Search term at start of name
+   * - 30: Exact phrase anywhere in name
+   * - 25: All search words present
+   * - 15: Primary word present
+   * - 5: Partial match
+   */
+  keyword: number;
+  
+  /** 
+   * Code popularity based on real usage data (0-40 points)
+   * - 40: Top 10 most common codes (I10, E11.9, etc.)
+   * - 30: Top 50 common codes
+   * - 20: Common code family (E11.*, I10.*, etc.)
+   * - 5: Unknown/rare code
+   */
+  popularity: number;
+  
+  /** 
+   * Code specificity balance (0-15 points)
+   * - 15: One decimal digit (E11.9) - "sweet spot"
+   * - 12: Two decimal digits (E11.65) - specific
+   * - 8: Three+ decimal digits - very specific
+   * - 5: No decimal (category code)
+   */
+  specificity: number;
+  
+  /** 
+   * Bonus for exact code match (0-10 points)
+   * - 10: Code starts with search term (user searched "E11")
+   * - 5: Code contains search term
+   * - 0: No code match
+   */
+  exactness: number;
+}
+
+/**
+ * ICD-10 result enhanced with relevance scoring metadata.
+ * 
+ * Extends the base ICD10Result with scoring information
+ * that helps rank results by clinical relevance.
+ * 
+ * @example
+ * {
+ *   code: "E11.9",
+ *   name: "Type 2 diabetes mellitus without complications",
+ *   score: 85,
+ *   scoreBreakdown: { keyword: 30, popularity: 40, specificity: 15, exactness: 0 }
+ * }
+ */
+export interface ScoredICD10Result extends ICD10Result {
+  /** 
+   * Total relevance score (0-100)
+   * Higher = more relevant to the search query
+   */
+  score: number;
+  
+  /** Detailed breakdown of how the score was calculated */
+  scoreBreakdown: ScoreBreakdown;
+}
+
+/**
+ * Enhanced search response with pagination metadata.
+ * 
+ * Includes both the scored results and information about
+ * the total available results for "Load More" functionality.
+ * 
+ * @example
+ * {
+ *   results: [{ code: "E11.9", name: "...", score: 85, ... }],
+ *   totalCount: 847,
+ *   displayedCount: 25,
+ *   hasMore: true
+ * }
+ */
+export interface SearchResultsWithMeta {
+  /** Scored and sorted results (highest score first) */
+  results: ScoredICD10Result[];
+  
+  /** Total number of matching results in the API */
+  totalCount: number;
+  
+  /** Number of results currently displayed */
+  displayedCount: number;
+  
+  /** Whether more results can be loaded */
+  hasMore: boolean;
+}

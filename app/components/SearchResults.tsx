@@ -8,11 +8,16 @@
  * - Passing drugsMap and trialsMap to MindMapView
  * - Callbacks to notify parent when drugs/trials are loaded
  * - Multi-node mind map visualization
+ * 
+ * Phase 4: Added support for:
+ * - Scored results with relevance ranking
+ * - Total count display ("847 results, showing top 25")
+ * - hasMore flag for future "Load More" functionality
  */
 
-import { AlertCircle, SearchX, Sparkles } from 'lucide-react';
-import { ICD10Result, ViewMode, DrugResult, ClinicalTrialResult } from '../types/icd';
-import ResultCard from './ResultCard'; // Phase 3C: Now accepts onDrugsLoaded, onTrialsLoaded
+import { AlertCircle, SearchX, Sparkles, Loader2, ChevronDown } from 'lucide-react';
+import { ScoredICD10Result, ViewMode, DrugResult, ClinicalTrialResult } from '../types/icd';
+import ResultCard from './ResultCard';
 import ViewToggle from './ViewToggle';
 import MindMapView from './MindMapView';
 
@@ -52,7 +57,7 @@ function SkeletonCard({ delay = 0 }: { delay?: number }) {
 // =============================================================================
 
 interface SearchResultsProps {
-  results: ICD10Result[];
+  results: ScoredICD10Result[];
   isLoading: boolean;
   error: string | null;
   hasSearched: boolean;
@@ -66,6 +71,14 @@ interface SearchResultsProps {
   // Callbacks when drugs/trials are loaded in ResultCards
   onDrugsLoaded?: (icdCode: string, drugs: DrugResult[]) => void;
   onTrialsLoaded?: (icdCode: string, trials: ClinicalTrialResult[]) => void;
+  
+  // Phase 4: Search metadata for pagination/display
+  totalCount?: number;
+  hasMore?: boolean;
+  
+  // Phase 4C: Load More functionality
+  onLoadMore?: () => void;
+  isLoadingMore?: boolean;
 }
 
 // =============================================================================
@@ -83,12 +96,19 @@ export default function SearchResults({
   trialsMap = new Map(),
   onDrugsLoaded,
   onTrialsLoaded,
+  totalCount = 0,
+  hasMore = false,
+  onLoadMore,
+  isLoadingMore = false,
 }: SearchResultsProps) {
   
   // Count total nodes for display
   const drugCount = Array.from(drugsMap.values()).reduce((sum, arr) => sum + arr.length, 0);
   const trialCount = Array.from(trialsMap.values()).reduce((sum, arr) => sum + arr.length, 0);
   const totalNodes = results.length + drugCount + trialCount;
+  
+  // Phase 4: Calculate if showing subset of results
+  const showingSubset = totalCount > results.length;
   
   // =========================================================================
   // State 1: Loading
@@ -220,9 +240,24 @@ export default function SearchResults({
         <div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
             Search Results
+            {/* Phase 4: Show "ranked by relevance" indicator */}
+            <span className="ml-2 text-xs font-normal text-[#00D084] bg-[#00D084]/10 px-2 py-0.5 rounded-full">
+              Ranked by relevance
+            </span>
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {results.length} ICD codes
+            {/* Phase 4: Show total count with "showing top X" */}
+            {showingSubset ? (
+              <>
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {totalCount.toLocaleString()}
+                </span>
+                {' results found, showing top '}
+                <span className="font-medium text-[#00D084]">{results.length}</span>
+              </>
+            ) : (
+              <>{results.length} ICD codes</>
+            )}
             {drugCount > 0 && <span className="text-blue-500"> • {drugCount} drugs</span>}
             {trialCount > 0 && <span className="text-purple-500"> • {trialCount} trials</span>}
           </p>
@@ -247,22 +282,68 @@ export default function SearchResults({
       {/* Conditional View Rendering */}
       {viewMode === 'list' ? (
         /* List View - Card Grid */
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {results.map((result, index) => (
-            <div 
-              key={result.code}
-              className="animate-in fade-in slide-in-from-bottom-2"
-              style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'backwards' }}
-            >
-              <ResultCard
-                code={result.code}
-                name={result.name}
-                onDrugsLoaded={onDrugsLoaded}
-                onTrialsLoaded={onTrialsLoaded}
-              />
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {results.map((result, index) => (
+              <div 
+                key={result.code}
+                className="animate-in fade-in slide-in-from-bottom-2"
+                style={{ animationDelay: `${Math.min(index, 10) * 50}ms`, animationFillMode: 'backwards' }}
+              >
+                <ResultCard
+                  code={result.code}
+                  name={result.name}
+                  onDrugsLoaded={onDrugsLoaded}
+                  onTrialsLoaded={onTrialsLoaded}
+                  // Phase 4C: Pass relevance data for badges
+                  score={result.score}
+                  rank={index + 1}
+                />
+              </div>
+            ))}
+          </div>
+          
+          {/* Phase 4C: Load More Button */}
+          {hasMore && onLoadMore && (
+            <div className="mt-8 text-center">
+              <button
+                onClick={onLoadMore}
+                disabled={isLoadingMore}
+                className="
+                  inline-flex items-center gap-2
+                  px-6 py-3
+                  bg-white dark:bg-gray-800
+                  border border-gray-200 dark:border-gray-700
+                  rounded-xl
+                  text-gray-700 dark:text-gray-300
+                  font-medium
+                  shadow-sm
+                  hover:shadow-md
+                  hover:border-[#00D084]/50
+                  hover:text-[#00A66C] dark:hover:text-[#00D084]
+                  disabled:opacity-50
+                  disabled:cursor-not-allowed
+                  transition-all duration-200
+                "
+              >
+                {isLoadingMore ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading more...
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4" />
+                    Load More Results
+                  </>
+                )}
+              </button>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                Showing {results.length} of {totalCount.toLocaleString()} results
+              </p>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       ) : (
         /* Mind Map View - React Flow Canvas with All Data */
         <div>

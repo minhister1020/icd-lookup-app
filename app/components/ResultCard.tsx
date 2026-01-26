@@ -49,13 +49,19 @@ interface ResultCardProps {
   
   /** Phase 3C: Callback when trials are loaded (for Mind Map sync) */
   onTrialsLoaded?: (icdCode: string, trials: ClinicalTrialResult[]) => void;
+  
+  /** Phase 4C: Relevance score (0-100) for badge display */
+  score?: number;
+  
+  /** Phase 4C: Position in search results (1-based) */
+  rank?: number;
 }
 
 // =============================================================================
 // Component
 // =============================================================================
 
-export default function ResultCard({ code, name, onDrugsLoaded, onTrialsLoaded }: ResultCardProps) {
+export default function ResultCard({ code, name, onDrugsLoaded, onTrialsLoaded, score, rank }: ResultCardProps) {
   // =========================================================================
   // Drug State (Phase 3A)
   // =========================================================================
@@ -198,31 +204,83 @@ export default function ResultCard({ code, name, onDrugsLoaded, onTrialsLoaded }
         <div className="flex items-start justify-between gap-4">
           {/* Left Side: Code Badge + Name */}
           <div className="flex-1 min-w-0">
-            {/* ICD-10 Code Badge */}
-            <div 
-              className="
-                inline-flex
-                items-center
-                px-3
-                py-1.5
-                rounded-lg
-                bg-[#00D084]/10
-                dark:bg-[#00D084]/20
-                mb-3
-              "
-            >
-              <span 
+            {/* ICD-10 Code Badge + Relevance Badge */}
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              {/* ICD-10 Code Badge */}
+              <div 
                 className="
-                  text-[#00A66C]
-                  dark:text-[#00D084]
-                  font-bold
-                  text-sm
-                  font-mono
-                  tracking-wide
+                  inline-flex
+                  items-center
+                  px-3
+                  py-1.5
+                  rounded-lg
+                  bg-[#00D084]/10
+                  dark:bg-[#00D084]/20
                 "
               >
-                {code}
-              </span>
+                <span 
+                  className="
+                    text-[#00A66C]
+                    dark:text-[#00D084]
+                    font-bold
+                    text-sm
+                    font-mono
+                    tracking-wide
+                  "
+                >
+                  {code}
+                </span>
+              </div>
+              
+              {/* Phase 4C: Relevance Badge - Show for top 3 or high scores */}
+              {rank && rank <= 3 && (
+                <div 
+                  className="
+                    inline-flex
+                    items-center
+                    gap-1
+                    px-2
+                    py-1
+                    rounded-full
+                    bg-amber-50
+                    dark:bg-amber-900/20
+                    border
+                    border-amber-200
+                    dark:border-amber-700/50
+                  "
+                  title={score ? `Relevance score: ${score}/100` : undefined}
+                >
+                  <span className="text-amber-500 text-xs">🔥</span>
+                  <span className="text-amber-700 dark:text-amber-400 text-xs font-medium">
+                    Top Match
+                  </span>
+                </div>
+              )}
+              
+              {/* Show score badge for positions 4-10 with high scores */}
+              {rank && rank > 3 && rank <= 10 && score && score >= 70 && (
+                <div 
+                  className="
+                    inline-flex
+                    items-center
+                    gap-1
+                    px-2
+                    py-1
+                    rounded-full
+                    bg-blue-50
+                    dark:bg-blue-900/20
+                    border
+                    border-blue-200
+                    dark:border-blue-700/50
+                  "
+                  title={`Relevance score: ${score}/100`}
+                >
+                  <span className="text-blue-500 text-xs">✓</span>
+                  <span className="text-blue-700 dark:text-blue-400 text-xs font-medium">
+                    Relevant
+                  </span>
+                </div>
+              )}
             </div>
             
             {/* Condition Name */}

@@ -27,10 +27,10 @@ import SearchBar from './components/SearchBar';
 import SearchResults from './components/SearchResults';
 
 // Import our API helper function
-import { searchICD10 } from './lib/api';
+import { searchICD10, searchICD10More } from './lib/api';
 
 // Import TypeScript types for type safety
-import { ICD10Result, ViewMode, DrugResult, ClinicalTrialResult } from './types/icd';
+import { ViewMode, DrugResult, ClinicalTrialResult, ScoredICD10Result } from './types/icd';
 
 // =============================================================================
 // Main Component
@@ -46,12 +46,18 @@ export default function Home() {
   // ---------------------------------------------------------------------------
   
   // Core search state
-  const [results, setResults] = useState<ICD10Result[]>([]);
+  const [results, setResults] = useState<ScoredICD10Result[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  
+  // Phase 4: Search metadata for pagination and total count display
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [hasMore, setHasMore] = useState<boolean>(false);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+  const [currentQuery, setCurrentQuery] = useState<string>('');
   
   // Phase 3C: Centralized drug/trial state for Mind Map
   // Maps ICD code -> array of related data
@@ -152,6 +158,7 @@ export default function Home() {
     setIsLoading(true);
     setError(null);
     setHasSearched(true);
+    setCurrentQuery(query);  // Save for Load More
     
     // Clear previous drugs/trials when new search starts
     setDrugsMap(new Map());
@@ -160,10 +167,15 @@ export default function Home() {
     addToRecentSearches(query);
     
     try {
-      const searchResults = await searchICD10(query);
-      setResults(searchResults);
+      // Phase 4: searchICD10 now returns scored results with metadata
+      const { results: scoredResults, totalCount: total, hasMore: more } = await searchICD10(query);
+      setResults(scoredResults);
+      setTotalCount(total);
+      setHasMore(more);
     } catch (err) {
       setResults([]);
+      setTotalCount(0);
+      setHasMore(false);
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -171,6 +183,34 @@ export default function Home() {
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  /**
+   * Phase 4C: Handles loading more results when "Load More" is clicked.
+   * Appends new results to existing ones (doesn't replace).
+   */
+  const handleLoadMore = async () => {
+    if (!currentQuery || isLoadingMore || !hasMore) return;
+    
+    setIsLoadingMore(true);
+    
+    try {
+      const { results: moreResults, hasMore: more } = await searchICD10More(
+        currentQuery, 
+        results.length
+      );
+      
+      // Append new results (moreResults contains ALL results up to new limit)
+      setResults(moreResults);
+      setHasMore(more);
+    } catch (err) {
+      // Don't clear existing results on error, just log
+      if (err instanceof Error) {
+        setError(err.message);
+      }
+    } finally {
+      setIsLoadingMore(false);
     }
   };
   
@@ -205,7 +245,7 @@ export default function Home() {
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00D084]/10 border border-[#00D084]/20">
               <span className="w-2 h-2 rounded-full bg-[#00D084] animate-pulse" />
               <span className="text-xs font-medium text-[#00A66C] dark:text-[#00D084]">
-                Phase 3 - Multi-API
+                Phase 4 - Smart Ranking
               </span>
             </div>
           </div>
@@ -265,6 +305,10 @@ export default function Home() {
           trialsMap={trialsMap}
           onDrugsLoaded={handleDrugsLoaded}
           onTrialsLoaded={handleTrialsLoaded}
+          totalCount={totalCount}
+          hasMore={hasMore}
+          onLoadMore={handleLoadMore}
+          isLoadingMore={isLoadingMore}
         />
       </main>
 
