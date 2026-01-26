@@ -258,3 +258,126 @@ export function extractSearchTerms(conditionName: string): string {
   
   return searchTerms;
 }
+
+// =============================================================================
+// Phase 3B: Clinical Trial Types (ClinicalTrials.gov Integration)
+// =============================================================================
+
+/**
+ * Possible status values for a clinical trial.
+ * 
+ * - RECRUITING: Actively seeking participants (most relevant for users)
+ * - ACTIVE_NOT_RECRUITING: Running but not taking new participants
+ * - COMPLETED: Trial has finished
+ * - TERMINATED: Trial was stopped early
+ * - OTHER: Any other status (withdrawn, suspended, etc.)
+ */
+export type TrialStatus = 
+  | 'RECRUITING' 
+  | 'ACTIVE_NOT_RECRUITING' 
+  | 'COMPLETED' 
+  | 'TERMINATED' 
+  | 'OTHER';
+
+/**
+ * Represents a location where a clinical trial is conducted.
+ * 
+ * ClinicalTrials.gov provides facility and geographic information
+ * for each trial site.
+ */
+export interface TrialLocation {
+  /** Name of the hospital, clinic, or research center */
+  facility: string;
+  
+  /** City where the facility is located */
+  city: string;
+  
+  /** State or region (may be empty for international sites) */
+  state: string;
+  
+  /** Country name */
+  country: string;
+}
+
+/**
+ * Represents a clinical trial result from ClinicalTrials.gov API.
+ * 
+ * ClinicalTrials.gov is a database of clinical studies conducted
+ * around the world. Each study has a unique NCT ID.
+ * 
+ * Example ClinicalTrialResult:
+ * {
+ *   nctId: "NCT05642013",
+ *   title: "Study of New Diabetes Treatment",
+ *   status: "RECRUITING",
+ *   summary: "This study evaluates a new medication...",
+ *   sponsor: "Pfizer",
+ *   eligibility: "Adults aged 18-65 with Type 2 Diabetes",
+ *   locations: [{ facility: "Johns Hopkins", city: "Baltimore", state: "MD", country: "United States" }],
+ *   startDate: "2024-01-15"
+ * }
+ */
+export interface ClinicalTrialResult {
+  /** Unique trial identifier (e.g., "NCT05642013") */
+  nctId: string;
+  
+  /** Brief title of the study */
+  title: string;
+  
+  /** Current recruitment status */
+  status: TrialStatus;
+  
+  /** Brief summary of what the trial is studying */
+  summary: string;
+  
+  /** Organization sponsoring the trial */
+  sponsor: string;
+  
+  /** Who can participate (age, conditions, etc.) */
+  eligibility?: string;
+  
+  /** List of locations where the trial is conducted */
+  locations?: TrialLocation[];
+  
+  /** When the trial started */
+  startDate?: string;
+}
+
+/**
+ * State for tracking trial loading per ICD code.
+ */
+export interface TrialLoadingState {
+  /** True while fetching trials from ClinicalTrials.gov */
+  isLoading: boolean;
+  
+  /** Error message if the API call failed */
+  error: string | null;
+  
+  /** Array of trials related to the condition */
+  trials: ClinicalTrialResult[];
+  
+  /** Whether we've already fetched (for caching) */
+  hasFetched: boolean;
+}
+
+/**
+ * Returns the appropriate color for a trial status.
+ * Used for status badges in the UI.
+ * 
+ * @param status - The trial status
+ * @returns Object with text and background color classes
+ */
+export function getTrialStatusColor(status: TrialStatus): { text: string; bg: string } {
+  switch (status) {
+    case 'RECRUITING':
+      return { text: 'text-green-700 dark:text-green-400', bg: 'bg-green-100 dark:bg-green-900/30' };
+    case 'ACTIVE_NOT_RECRUITING':
+      return { text: 'text-blue-700 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/30' };
+    case 'COMPLETED':
+      return { text: 'text-gray-700 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-700' };
+    case 'TERMINATED':
+      return { text: 'text-red-700 dark:text-red-400', bg: 'bg-red-100 dark:bg-red-900/30' };
+    default:
+      return { text: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-700' };
+  }
+}

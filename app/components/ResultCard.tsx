@@ -3,23 +3,35 @@
  * ====================
  * 
  * A professional, polished card component for displaying ICD-10 results.
- * NOW WITH: Drug expansion feature (Phase 3A)
+ * NOW WITH: Drug expansion (Phase 3A) + Clinical Trial expansion (Phase 3B)
  * 
  * DESIGN FEATURES:
  * - Soft shadows with hover elevation
  * - Smooth micro-interactions (scale, translate)
  * - ICD code badge with branded colors
  * - Expandable drug section (blue theme)
+ * - Expandable trial section (purple theme)
  * - Loading states and error handling
+ * - Cached API responses (won't re-fetch)
  */
 
 'use client';
 
 import { useState } from 'react';
-import { ChevronRight, Pill, Loader2, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
-import { DrugResult } from '../types/icd';
+import { 
+  ChevronRight, 
+  Pill, 
+  FlaskConical,
+  Loader2, 
+  ChevronDown, 
+  ChevronUp, 
+  AlertCircle 
+} from 'lucide-react';
+import { DrugResult, ClinicalTrialResult } from '../types/icd';
 import { searchDrugsByCondition } from '../lib/openFdaApi';
+import { searchTrialsByCondition } from '../lib/clinicalTrialsApi';
 import DrugCard from './DrugCard';
+import TrialCard from './TrialCard';
 
 // =============================================================================
 // Props Interface
@@ -38,12 +50,27 @@ interface ResultCardProps {
 // =============================================================================
 
 export default function ResultCard({ code, name }: ResultCardProps) {
-  // Drug expansion state - managed locally with caching
+  // =========================================================================
+  // Drug State (Phase 3A)
+  // =========================================================================
   const [drugs, setDrugs] = useState<DrugResult[]>([]);
   const [drugsLoading, setDrugsLoading] = useState(false);
   const [drugsError, setDrugsError] = useState<string | null>(null);
   const [drugsExpanded, setDrugsExpanded] = useState(false);
   const [hasFetchedDrugs, setHasFetchedDrugs] = useState(false);
+  
+  // =========================================================================
+  // Trial State (Phase 3B)
+  // =========================================================================
+  const [trials, setTrials] = useState<ClinicalTrialResult[]>([]);
+  const [trialsLoading, setTrialsLoading] = useState(false);
+  const [trialsError, setTrialsError] = useState<string | null>(null);
+  const [trialsExpanded, setTrialsExpanded] = useState(false);
+  const [hasFetchedTrials, setHasFetchedTrials] = useState(false);
+  
+  // =========================================================================
+  // Drug Handlers
+  // =========================================================================
   
   /**
    * Handles loading drugs for this condition.
@@ -76,6 +103,46 @@ export default function ResultCard({ code, name }: ResultCardProps) {
       setDrugsLoading(false);
     }
   };
+  
+  // =========================================================================
+  // Trial Handlers
+  // =========================================================================
+  
+  /**
+   * Handles loading clinical trials for this condition.
+   * - First click: Fetches from API and expands
+   * - Subsequent clicks: Just toggles expand/collapse (uses cache)
+   */
+  const handleToggleTrials = async () => {
+    // Prevent multiple simultaneous requests
+    if (trialsLoading) return;
+    
+    // If already fetched, just toggle visibility
+    if (hasFetchedTrials) {
+      setTrialsExpanded(!trialsExpanded);
+      return;
+    }
+    
+    // First time: fetch from API
+    setTrialsLoading(true);
+    setTrialsError(null);
+    setTrialsExpanded(true);
+    
+    try {
+      const results = await searchTrialsByCondition(name);
+      setTrials(results);
+      setHasFetchedTrials(true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load trials';
+      setTrialsError(message);
+    } finally {
+      setTrialsLoading(false);
+    }
+  };
+  
+  // =========================================================================
+  // Render
+  // =========================================================================
   
   return (
     <div 
@@ -198,6 +265,7 @@ export default function ResultCard({ code, name }: ResultCardProps) {
           pb-4
           pt-0
           flex
+          flex-wrap
           items-center
           gap-2
           border-t
@@ -205,7 +273,7 @@ export default function ResultCard({ code, name }: ResultCardProps) {
           dark:border-gray-700/50
         "
       >
-        {/* View Drugs Button */}
+        {/* View Drugs Button (Blue) */}
         <button
           type="button"
           onClick={handleToggleDrugs}
@@ -266,9 +334,71 @@ export default function ResultCard({ code, name }: ResultCardProps) {
               : <ChevronDown className="w-3 h-3 ml-0.5" />
           )}
         </button>
+        
+        {/* View Trials Button (Purple) */}
+        <button
+          type="button"
+          onClick={handleToggleTrials}
+          disabled={trialsLoading}
+          className={`
+            flex
+            items-center
+            gap-1.5
+            px-3
+            py-1.5
+            rounded-lg
+            text-xs
+            font-medium
+            transition-all
+            duration-200
+            ${trialsExpanded 
+              ? 'bg-purple-500 text-white hover:bg-purple-600' 
+              : 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50'
+            }
+            disabled:opacity-50
+            disabled:cursor-not-allowed
+          `}
+        >
+          {trialsLoading ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <FlaskConical className="w-3.5 h-3.5" />
+          )}
+          <span>
+            {trialsLoading 
+              ? 'Loading...' 
+              : trialsExpanded 
+                ? 'Hide Trials' 
+                : 'View Trials'
+            }
+          </span>
+          {!trialsLoading && hasFetchedTrials && trials.length > 0 && (
+            <span 
+              className={`
+                ml-1
+                px-1.5
+                py-0.5
+                rounded-full
+                text-[10px]
+                font-bold
+                ${trialsExpanded 
+                  ? 'bg-white/20 text-white' 
+                  : 'bg-purple-500/20 text-purple-600 dark:text-purple-400'
+                }
+              `}
+            >
+              {trials.length}
+            </span>
+          )}
+          {!trialsLoading && (
+            trialsExpanded 
+              ? <ChevronUp className="w-3 h-3 ml-0.5" />
+              : <ChevronDown className="w-3 h-3 ml-0.5" />
+          )}
+        </button>
       </div>
       
-      {/* Expandable Drugs Section */}
+      {/* Expandable Drugs Section (Blue Theme) */}
       {drugsExpanded && (
         <div 
           className="
@@ -333,6 +463,79 @@ export default function ResultCard({ code, name }: ResultCardProps) {
                 <div className="grid gap-3 sm:grid-cols-1">
                   {drugs.map((drug, index) => (
                     <DrugCard key={`${drug.brandName}-${index}`} drug={drug} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Expandable Trials Section (Purple Theme) */}
+      {trialsExpanded && (
+        <div 
+          className="
+            border-t
+            border-purple-100
+            dark:border-purple-900/30
+            bg-purple-50/50
+            dark:bg-purple-900/10
+            animate-in
+            slide-in-from-top-2
+            duration-200
+          "
+        >
+          <div className="p-4">
+            {/* Loading State */}
+            {trialsLoading && (
+              <div className="flex items-center justify-center py-6">
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="w-6 h-6 text-purple-500 animate-spin" />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Searching clinical trials...
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {/* Error State */}
+            {trialsError && !trialsLoading && (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50">
+                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-red-700 dark:text-red-400">
+                    Failed to load trials
+                  </p>
+                  <p className="text-xs text-red-600 dark:text-red-300">
+                    {trialsError}
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {/* No Results State */}
+            {!trialsLoading && !trialsError && hasFetchedTrials && trials.length === 0 && (
+              <div className="text-center py-4">
+                <FlaskConical className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  No recruiting trials found
+                </p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  There may be no currently recruiting trials for this condition
+                </p>
+              </div>
+            )}
+            
+            {/* Trials List */}
+            {!trialsLoading && !trialsError && trials.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
+                  <FlaskConical className="w-3 h-3" />
+                  Recruiting Clinical Trials ({trials.length})
+                </p>
+                <div className="grid gap-3 sm:grid-cols-1">
+                  {trials.map((trial) => (
+                    <TrialCard key={trial.nctId} trial={trial} />
                   ))}
                 </div>
               </div>

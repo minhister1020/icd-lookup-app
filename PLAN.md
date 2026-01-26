@@ -421,7 +421,7 @@ Transform the search results from a card grid into an interactive mind map visua
 
 # Phase 3: Multi-API Integration
 
-## Overall Progress: 33% (4/12 steps completed) 🟨
+## Overall Progress: 67% (8/12 steps completed) 🟨
 
 ---
 
@@ -553,96 +553,81 @@ Expand the ICD Mind Map tool into a comprehensive medical reference by integrati
 
 ---
 
-## Phase 3B: ClinicalTrials.gov Integration 🟥
+## Phase 3B: ClinicalTrials.gov Integration 🟩 COMPLETE
 
-### Step 5: Add Trial Types 🟥
+### Step 5: Add Trial Types 🟩
 **Purpose:** Define TypeScript interfaces for clinical trial data.
 
-- 🟥 5.1 Update `app/types/icd.ts` with:
-  - `TrialLocation` interface:
-    - `facility: string`
-    - `city: string`
-    - `state: string`
-    - `country: string`
-  - `ClinicalTrialResult` interface:
-    - `nctId: string` (unique trial ID like "NCT05642013")
-    - `title: string`
-    - `status: 'RECRUITING' | 'ACTIVE' | 'COMPLETED' | 'TERMINATED' | 'OTHER'`
-    - `summary: string`
-    - `sponsor: string`
-    - `eligibility?: string`
-    - `locations?: TrialLocation[]`
-    - `startDate?: string`
-  - `TrialSearchState` interface
+- 🟩 5.1 Update `app/types/icd.ts` with:
+  - `TrialStatus` type: 'RECRUITING' | 'ACTIVE_NOT_RECRUITING' | 'COMPLETED' | 'TERMINATED' | 'OTHER'
+  - `TrialLocation` interface (facility, city, state, country)
+  - `ClinicalTrialResult` interface (nctId, title, status, summary, sponsor, eligibility, locations, startDate)
+  - `TrialLoadingState` interface for component state
+  - `getTrialStatusColor()` helper function
 
 ---
 
-### Step 6: Create ClinicalTrials API Helper 🟥
+### Step 6: Create ClinicalTrials API Helper 🟩
 **Purpose:** Function to search trials by condition name.
 
-- 🟥 6.1 Create `app/lib/clinicalTrialsApi.ts`
-- 🟥 6.2 Implement `searchTrialsByCondition()` function:
-  - Accept condition name and options (status filter, limit)
-  - Build URL: `https://clinicaltrials.gov/api/v2/studies?query.cond=[term]&filter.overallStatus=RECRUITING&pageSize=[n]`
-  - Parse nested response structure:
-    - `protocolSection.identificationModule.nctId`
-    - `protocolSection.identificationModule.briefTitle`
-    - `protocolSection.statusModule.overallStatus`
-    - `protocolSection.descriptionModule.briefSummary`
-    - `protocolSection.contactsLocationsModule.locations`
-  - Handle empty results
-  - Add retry logic for transient failures
-- 🟥 6.3 Implement `getTrialStatusColor()` helper:
+- 🟩 6.1 Create `app/lib/clinicalTrialsApi.ts`
+- 🟩 6.2 Implement `searchTrialsByCondition()` function:
+  - Accept condition name and options (pageSize, recruitingOnly)
+  - Build URL with query.cond and filter.overallStatus parameters
+  - Parse deeply nested response structure with null safety
+  - Handle 400 errors (invalid query) gracefully
+- 🟩 6.3 `getTrialStatusColor()` in types/icd.ts:
   - RECRUITING → green
-  - ACTIVE → blue
+  - ACTIVE_NOT_RECRUITING → blue
   - COMPLETED → gray
   - TERMINATED → red
-- 🟥 6.4 Export types and functions
+- 🟩 6.4 Helper functions: `normalizeStatus()`, `parseLocations()`, `getTrialUrl()`
 
 ---
 
-### Step 7: Create TrialCard Component 🟥
+### Step 7: Create TrialCard Component 🟩
 **Purpose:** Display a single clinical trial result.
 
-- 🟥 7.1 Create `app/components/TrialCard.tsx`
-- 🟥 7.2 Props: `trial: ClinicalTrialResult`
-- 🟥 7.3 Design:
-  - Purple color scheme (distinct from ICD green and drug blue)
-  - 🔬 Icon indicator
-  - NCT ID badge (clickable link to ClinicalTrials.gov)
-  - Trial title
-  - Status badge with color coding
-  - Sponsor name
-  - Location count ("3 locations")
-- 🟥 7.4 Expandable details:
-  - Full summary
-  - Eligibility criteria
-  - Location list
-- 🟥 7.5 Link to full trial: `https://clinicaltrials.gov/study/[nctId]`
-- 🟥 7.6 Dark mode support
+- 🟩 7.1 Create `app/components/TrialCard.tsx`
+- 🟩 7.2 Props: `trial: ClinicalTrialResult`
+- 🟩 7.3 Design:
+  - Purple color scheme (#9333EA - distinct from green/blue)
+  - FlaskConical icon indicator
+  - NCT ID badge (clickable link to ClinicalTrials.gov with external icon)
+  - Trial title with hover effect
+  - Status badge with dynamic color coding
+  - Sponsor name with building icon
+  - Start date with calendar icon
+  - Location count with map pin icon
+- 🟩 7.4 Expandable details:
+  - Full summary (line-clamp with Show more/less)
+  - Eligibility criteria section
+  - Location list (max 3)
+  - "View Full Trial" button
+- 🟩 7.5 Link to full trial: `https://clinicaltrials.gov/study/[nctId]`
+- 🟩 7.6 Full dark mode support
 
 ---
 
-### Step 8: Add Trial Expansion to ResultCard 🟥
+### Step 8: Add Trial Expansion to ResultCard 🟩
 **Purpose:** Allow users to load trials for any ICD code.
 
-- 🟥 8.1 Update `app/components/ResultCard.tsx`:
-  - Add `onLoadTrials?: () => void` prop
-  - Add `trials?: ClinicalTrialResult[]` prop
-  - Add `trialsLoading?: boolean` prop
-  - Add `trialsError?: string` prop
-- 🟥 8.2 Add [🔬 View Trials] button:
-  - Purple styling
-  - Next to drugs button
-  - Loading state
-- 🟥 8.3 Create expandable section:
-  - Below drugs section (or tabbed interface)
+- 🟩 8.1 Update `app/components/ResultCard.tsx`:
+  - Added trial state: trials, trialsLoading, trialsError, trialsExpanded, hasFetchedTrials
+  - `handleToggleTrials()` with caching and race condition prevention
+- 🟩 8.2 Add [View Trials] button:
+  - Purple styling matching purple theme
+  - Next to drugs button (flex-wrap for mobile)
+  - Loading spinner, count badge, chevron icons
+- 🟩 8.3 Create expandable section:
+  - Purple-themed background (bg-purple-50/50)
   - Grid of TrialCards
-  - Filter by status (show RECRUITING first)
-- 🟥 8.4 Combine with drugs in unified expansion UI:
-  - Tabs: [Drugs] [Clinical Trials]
-  - OR: Stacked sections with headers
-- 🟥 8.5 Empty state: "No active trials found for this condition"
+  - Loading, error, and no results states
+- 🟩 8.4 Stacked sections approach:
+  - Drugs section expands with blue theme
+  - Trials section expands with purple theme
+  - Both can be open simultaneously
+- 🟩 8.5 Empty state: "No recruiting trials found" with helpful message
 
 ---
 
@@ -728,9 +713,9 @@ Expand the ICD Mind Map tool into a comprehensive medical reference by integrati
 | File | Purpose | Phase | Status |
 |------|---------|-------|--------|
 | `app/lib/openFdaApi.ts` | OpenFDA API functions | 3A | 🟩 |
-| `app/lib/clinicalTrialsApi.ts` | ClinicalTrials API functions | 3B | 🟥 |
+| `app/lib/clinicalTrialsApi.ts` | ClinicalTrials API functions | 3B | 🟩 |
 | `app/components/DrugCard.tsx` | Drug result card | 3A | 🟩 |
-| `app/components/TrialCard.tsx` | Clinical trial card | 3B | 🟥 |
+| `app/components/TrialCard.tsx` | Clinical trial card | 3B | 🟩 |
 | `app/components/DrugNode.tsx` | Drug node for mind map | 3C | 🟥 |
 | `app/components/TrialNode.tsx` | Trial node for mind map | 3C | 🟥 |
 
@@ -738,8 +723,8 @@ Expand the ICD Mind Map tool into a comprehensive medical reference by integrati
 
 | File | Changes | Phase | Status |
 |------|---------|-------|--------|
-| `app/types/icd.ts` | Added DrugResult, DrugLoadingState, extractSearchTerms() | 3A | 🟩 |
-| `app/components/ResultCard.tsx` | Added drug expansion with View Drugs button | 3A | 🟩 |
+| `app/types/icd.ts` | Added DrugResult, ClinicalTrialResult, TrialLocation, helpers | 3A/3B | 🟩 |
+| `app/components/ResultCard.tsx` | Added drug + trial expansion with both buttons | 3A/3B | 🟩 |
 | `app/types/icd.ts` | Add Drug/Trial types | 3A/3B | 🟥 |
 | `app/components/ResultCard.tsx` | Add expansion buttons | 3A/3B | 🟥 |
 | `app/components/SearchResults.tsx` | Pass drug/trial data | 3A/3B | 🟥 |
