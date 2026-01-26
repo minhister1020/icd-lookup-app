@@ -69,12 +69,7 @@ export async function searchDrugsByCondition(
   // that don't help find drugs. extractSearchTerms removes these.
   const searchTerms = extractSearchTerms(conditionName);
   
-  console.log('=== OpenFDA Search ===');
-  console.log('Original condition:', conditionName);
-  console.log('Cleaned search terms:', searchTerms);
-  
   if (!searchTerms) {
-    console.log('No search terms, returning empty array');
     return [];
   }
   
@@ -85,8 +80,6 @@ export async function searchDrugsByCondition(
   const encodedTerms = encodeURIComponent(searchTerms);
   const url = `${OPENFDA_BASE_URL}?search=indications_and_usage:${encodedTerms}&limit=${limit}`;
   
-  console.log('API URL:', url);
-  
   // Step 3: Make the API request
   // ----------------------------
   try {
@@ -95,7 +88,6 @@ export async function searchDrugsByCondition(
     // Handle specific error cases
     if (response.status === 404) {
       // 404 means no results found - this is not an error
-      console.log('No drugs found for this condition');
       return [];
     }
     
@@ -112,15 +104,11 @@ export async function searchDrugsByCondition(
     // --------------------------
     const data = await response.json();
     
-    console.log('OpenFDA results count:', data.results?.length || 0);
-    
     // Step 5: Transform to our DrugResult format
     // ------------------------------------------
     return parseOpenFdaResponse(data);
     
   } catch (error) {
-    console.error('OpenFDA API error:', error);
-    
     // Re-throw with user-friendly message
     if (error instanceof Error) {
       // Check for network errors

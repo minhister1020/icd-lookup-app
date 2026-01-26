@@ -66,12 +66,7 @@ export async function searchTrialsByCondition(
   // Step 1: Clean the condition name for better search results
   const searchTerms = extractSearchTerms(conditionName);
   
-  console.log('=== ClinicalTrials.gov Search ===');
-  console.log('Original condition:', conditionName);
-  console.log('Cleaned search terms:', searchTerms);
-  
   if (!searchTerms) {
-    console.log('No search terms, returning empty array');
     return [];
   }
   
@@ -92,8 +87,6 @@ export async function searchTrialsByCondition(
   
   const url = `${CLINICALTRIALS_BASE_URL}?${params.toString()}`;
   
-  console.log('API URL:', url);
-  
   // Step 3: Make the API request
   try {
     const response = await fetch(url);
@@ -101,7 +94,6 @@ export async function searchTrialsByCondition(
     if (!response.ok) {
       // ClinicalTrials.gov returns 400 for invalid queries
       if (response.status === 400) {
-        console.log('Invalid query or no results');
         return [];
       }
       throw new Error(`ClinicalTrials.gov API error: ${response.status} ${response.statusText}`);
@@ -110,14 +102,10 @@ export async function searchTrialsByCondition(
     // Step 4: Parse the response
     const data = await response.json();
     
-    console.log('ClinicalTrials.gov results count:', data.studies?.length || 0);
-    
     // Step 5: Transform to our ClinicalTrialResult format
     return parseClinicalTrialsResponse(data);
     
   } catch (error) {
-    console.error('ClinicalTrials.gov API error:', error);
-    
     if (error instanceof Error) {
       if (error.message.includes('Failed to fetch')) {
         throw new Error('Unable to connect to clinical trials database. Check your internet connection.');

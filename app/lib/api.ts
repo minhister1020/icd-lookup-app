@@ -97,9 +97,6 @@ export async function searchICD10(query: string): Promise<ICD10Result[]> {
     // --------------------------------
     // This catches both network errors and parsing errors
     
-    // Log the error for debugging (visible in browser console)
-    console.error('Error searching ICD-10 codes:', error);
-    
     // Re-throw with a user-friendly message
     // "instanceof Error" checks if error is an Error object
     if (error instanceof Error) {
@@ -134,13 +131,6 @@ function parseSearchResponse(response: SearchResponse): ICD10Result[] {
   const [totalCount, codes, , names] = response;
   //                       ^ Note: we skip index 2 (null) with empty slot
   
-  // Debug: Log the raw response structure
-  console.log('=== DEBUG: parseSearchResponse ===');
-  console.log('Raw response:', response);
-  console.log('Total count:', totalCount);
-  console.log('Codes array:', codes);
-  console.log('Names array:', names);
-  
   // If no results, return empty array
   if (totalCount === 0 || !codes || !names) {
     return [];
@@ -156,21 +146,11 @@ function parseSearchResponse(response: SearchResponse): ICD10Result[] {
       ? nameArray[1]  // Get the SECOND element (the actual name)
       : 'Unknown condition';  // Fallback if name is missing
     
-    // Debug: Log each extraction (only first 3 to avoid spam)
-    if (index < 3) {
-      console.log(`--- Result ${index} ---`);
-      console.log(`  code: "${code}"`);
-      console.log(`  names[${index}]:`, nameArray);
-      console.log(`  extracted name: "${name}"`);
-    }
-    
     return {
       code,  // Shorthand for code: code
       name   // Shorthand for name: name
     };
   });
-  
-  console.log('=== Final results (first 3) ===', results.slice(0, 3));
   
   return results;
 }

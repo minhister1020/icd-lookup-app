@@ -76,8 +76,8 @@ export default function Home() {
       if (savedViewMode === 'list' || savedViewMode === 'mindmap') {
         setViewMode(savedViewMode);
       }
-    } catch (err) {
-      console.warn('Failed to load preferences:', err);
+    } catch {
+      // Silently fail if localStorage is not available
     }
   }, []);
   
@@ -95,8 +95,8 @@ export default function Home() {
       
       try {
         localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(trimmed));
-      } catch (err) {
-        console.warn('Failed to save recent searches:', err);
+      } catch {
+        // Silently fail if localStorage is unavailable
       }
       
       return trimmed;
@@ -111,8 +111,8 @@ export default function Home() {
     setViewMode(newMode);
     try {
       localStorage.setItem(VIEW_MODE_KEY, newMode);
-    } catch (err) {
-      console.warn('Failed to save view mode:', err);
+    } catch {
+      // Silently fail if localStorage is not available
     }
   };
   
@@ -161,7 +161,6 @@ export default function Home() {
     
     try {
       const searchResults = await searchICD10(query);
-      console.log('API returned:', searchResults);
       setResults(searchResults);
     } catch (err) {
       setResults([]);
