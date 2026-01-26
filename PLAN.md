@@ -408,10 +408,408 @@ Transform the search results from a card grid into an interactive mind map visua
 
 ## Success Criteria
 
-- [ ] User can toggle between List and Mind Map views
-- [ ] Mind Map displays all search results as draggable nodes
-- [ ] Zoom and pan work smoothly
-- [ ] View preference persists across page refreshes
-- [ ] Dark mode works correctly
-- [ ] Mobile-responsive design
-- [ ] No console errors or warnings
+- [x] User can toggle between List and Mind Map views
+- [x] Mind Map displays all search results as draggable nodes
+- [x] Zoom and pan work smoothly
+- [x] View preference persists across page refreshes
+- [x] Dark mode works correctly
+- [x] Mobile-responsive design
+- [x] No console errors or warnings
+
+---
+---
+
+# Phase 3: Multi-API Integration
+
+## Overall Progress: 33% (4/12 steps completed) 🟨
+
+---
+
+## Goal
+
+Expand the ICD Mind Map tool into a comprehensive medical reference by integrating OpenFDA (drug information) and ClinicalTrials.gov (clinical studies) APIs. Users can click on any ICD code to discover related drugs and active clinical trials.
+
+---
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        User Flow                                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  1. Search "diabetes"                                           │
+│           ↓                                                      │
+│  2. ICD-10 Results displayed (existing)                         │
+│           ↓                                                      │
+│  3. User clicks [💊 Drugs] or [🔬 Trials] button                │
+│           ↓                                                      │
+│  4. On-demand API call with condition name                      │
+│           ↓                                                      │
+│  5. Expanded section shows drugs/trials                         │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## API Reference
+
+### OpenFDA Drug Labels API
+- **Endpoint:** `https://api.fda.gov/drug/label.json`
+- **Search field:** `indications_and_usage:[condition]`
+- **Rate limit:** 240/min, 1,000/day (without key)
+- **Auth:** None required (API key optional for higher limits)
+
+### ClinicalTrials.gov API v2
+- **Endpoint:** `https://clinicaltrials.gov/api/v2/studies`
+- **Search param:** `query.cond=[condition]`
+- **Filter:** `filter.overallStatus=RECRUITING`
+- **Rate limit:** ~3 requests/second
+- **Auth:** None required
+
+---
+
+## Phase 3A: OpenFDA Drug Integration 🟩 COMPLETE
+
+### Step 1: Add Drug Types 🟩
+**Purpose:** Define TypeScript interfaces for drug data.
+
+- 🟩 1.1 Update `app/types/icd.ts` with:
+  - `DrugResult` interface:
+    - `brandName: string`
+    - `genericName: string`
+    - `manufacturer: string`
+    - `indication: string` (truncated usage description)
+    - `warnings?: string` (optional safety info)
+  - `DrugLoadingState` interface for loading/error states
+  - `extractSearchTerms()` helper function
+
+---
+
+### Step 2: Create OpenFDA API Helper 🟩
+**Purpose:** Function to search drugs by condition name.
+
+- 🟩 2.1 Create `app/lib/openFdaApi.ts`
+- 🟩 2.2 Implement `searchDrugsByCondition()` function:
+  - Accept condition name and optional limit (default 5)
+  - Build URL: `https://api.fda.gov/drug/label.json?search=indications_and_usage:[term]&limit=[n]`
+  - Parse response and extract:
+    - `openfda.brand_name[0]`
+    - `openfda.generic_name[0]`
+    - `openfda.manufacturer_name[0]`
+    - `indications_and_usage[0]` (first 200 chars)
+  - Handle 404 (no results) gracefully
+  - Handle rate limit errors (429) with user-friendly message
+- 🟩 2.3 `extractSearchTerms()` helper in types/icd.ts:
+  - Remove stop words from condition name
+  - Extract 2-4 key medical terms
+  - Example: "Type 2 diabetes mellitus without complications" → "diabetes"
+- 🟩 2.4 Helper functions: `formatDrugName()`, `formatManufacturer()`, `truncateText()`
+
+---
+
+### Step 3: Create DrugCard Component 🟩
+**Purpose:** Display a single drug result with key information.
+
+- 🟩 3.1 Create `app/components/DrugCard.tsx`
+- 🟩 3.2 Props: `drug: DrugResult`
+- 🟩 3.3 Design:
+  - Blue color scheme (#3B82F6 - distinct from ICD green)
+  - 💊 Pill icon indicator
+  - Brand name (bold, hover effect)
+  - Generic name (smaller, gray)
+  - Manufacturer with building icon
+  - Expandable indication with "Read more" button
+- 🟩 3.4 Hover effects matching ResultCard style
+- 🟩 3.5 Dark mode support
+- 🟩 3.6 Optional warnings section (shows when expanded)
+
+---
+
+### Step 4: Add Drug Expansion to ResultCard 🟩
+**Purpose:** Allow users to load drugs for any ICD code.
+
+- 🟩 4.1 Update `app/components/ResultCard.tsx`:
+  - Local state management: `drugs`, `drugsLoading`, `drugsError`
+  - `hasFetchedDrugs` for caching
+  - `drugsExpanded` for toggle
+- 🟩 4.2 Add [💊 View Drugs] button:
+  - Blue styling to differentiate from ICD
+  - Loading spinner while fetching
+  - Count badge showing number of drugs found
+  - Toggle between "View Drugs" / "Hide Drugs"
+- 🟩 4.3 Create expandable section below card:
+  - Slides open with animation
+  - Grid of DrugCards
+  - Error message if API fails (red theme)
+  - "No drugs found" with helpful message
+- 🟩 4.4 State management:
+  - Track expanded/collapsed per card
+  - Cache loaded drugs locally (don't re-fetch)
+- 🟩 4.5 Rate limit handling:
+  - Button disabled during loading
+  - Show warning if rate limited
+
+---
+
+## Phase 3B: ClinicalTrials.gov Integration 🟥
+
+### Step 5: Add Trial Types 🟥
+**Purpose:** Define TypeScript interfaces for clinical trial data.
+
+- 🟥 5.1 Update `app/types/icd.ts` with:
+  - `TrialLocation` interface:
+    - `facility: string`
+    - `city: string`
+    - `state: string`
+    - `country: string`
+  - `ClinicalTrialResult` interface:
+    - `nctId: string` (unique trial ID like "NCT05642013")
+    - `title: string`
+    - `status: 'RECRUITING' | 'ACTIVE' | 'COMPLETED' | 'TERMINATED' | 'OTHER'`
+    - `summary: string`
+    - `sponsor: string`
+    - `eligibility?: string`
+    - `locations?: TrialLocation[]`
+    - `startDate?: string`
+  - `TrialSearchState` interface
+
+---
+
+### Step 6: Create ClinicalTrials API Helper 🟥
+**Purpose:** Function to search trials by condition name.
+
+- 🟥 6.1 Create `app/lib/clinicalTrialsApi.ts`
+- 🟥 6.2 Implement `searchTrialsByCondition()` function:
+  - Accept condition name and options (status filter, limit)
+  - Build URL: `https://clinicaltrials.gov/api/v2/studies?query.cond=[term]&filter.overallStatus=RECRUITING&pageSize=[n]`
+  - Parse nested response structure:
+    - `protocolSection.identificationModule.nctId`
+    - `protocolSection.identificationModule.briefTitle`
+    - `protocolSection.statusModule.overallStatus`
+    - `protocolSection.descriptionModule.briefSummary`
+    - `protocolSection.contactsLocationsModule.locations`
+  - Handle empty results
+  - Add retry logic for transient failures
+- 🟥 6.3 Implement `getTrialStatusColor()` helper:
+  - RECRUITING → green
+  - ACTIVE → blue
+  - COMPLETED → gray
+  - TERMINATED → red
+- 🟥 6.4 Export types and functions
+
+---
+
+### Step 7: Create TrialCard Component 🟥
+**Purpose:** Display a single clinical trial result.
+
+- 🟥 7.1 Create `app/components/TrialCard.tsx`
+- 🟥 7.2 Props: `trial: ClinicalTrialResult`
+- 🟥 7.3 Design:
+  - Purple color scheme (distinct from ICD green and drug blue)
+  - 🔬 Icon indicator
+  - NCT ID badge (clickable link to ClinicalTrials.gov)
+  - Trial title
+  - Status badge with color coding
+  - Sponsor name
+  - Location count ("3 locations")
+- 🟥 7.4 Expandable details:
+  - Full summary
+  - Eligibility criteria
+  - Location list
+- 🟥 7.5 Link to full trial: `https://clinicaltrials.gov/study/[nctId]`
+- 🟥 7.6 Dark mode support
+
+---
+
+### Step 8: Add Trial Expansion to ResultCard 🟥
+**Purpose:** Allow users to load trials for any ICD code.
+
+- 🟥 8.1 Update `app/components/ResultCard.tsx`:
+  - Add `onLoadTrials?: () => void` prop
+  - Add `trials?: ClinicalTrialResult[]` prop
+  - Add `trialsLoading?: boolean` prop
+  - Add `trialsError?: string` prop
+- 🟥 8.2 Add [🔬 View Trials] button:
+  - Purple styling
+  - Next to drugs button
+  - Loading state
+- 🟥 8.3 Create expandable section:
+  - Below drugs section (or tabbed interface)
+  - Grid of TrialCards
+  - Filter by status (show RECRUITING first)
+- 🟥 8.4 Combine with drugs in unified expansion UI:
+  - Tabs: [Drugs] [Clinical Trials]
+  - OR: Stacked sections with headers
+- 🟥 8.5 Empty state: "No active trials found for this condition"
+
+---
+
+## Phase 3C: Mind Map Multi-Node Visualization 🟥
+
+### Step 9: Create DrugNode Component 🟥
+**Purpose:** Custom React Flow node for drugs.
+
+- 🟥 9.1 Create `app/components/DrugNode.tsx`
+- 🟥 9.2 Design: Blue bubble style (matches DrugCard theme)
+  - 💊 Icon in node
+  - Brand name displayed
+  - Generic name on hover
+- 🟥 9.3 Smaller than ICD nodes (secondary information)
+- 🟥 9.4 Connection handles for edges
+- 🟥 9.5 Memoized with memo()
+
+---
+
+### Step 10: Create TrialNode Component 🟥
+**Purpose:** Custom React Flow node for clinical trials.
+
+- 🟥 10.1 Create `app/components/TrialNode.tsx`
+- 🟥 10.2 Design: Purple bubble style
+  - 🔬 Icon in node
+  - NCT ID displayed
+  - Trial title on hover
+- 🟥 10.3 Status indicator (colored dot)
+- 🟥 10.4 Clickable to open trial page
+- 🟥 10.5 Memoized with memo()
+
+---
+
+### Step 11: Update MindMapView for Multi-Node Types 🟥
+**Purpose:** Support ICD, Drug, and Trial nodes in the same canvas.
+
+- 🟥 11.1 Update `app/components/MindMapView.tsx`:
+  - Register new node types: `drugNode`, `trialNode`
+  - Accept optional `drugs` and `trials` props
+- 🟥 11.2 Layout algorithm for multiple node types:
+  - ICD nodes in center (green, largest)
+  - Drug nodes in ring around relevant ICD (blue)
+  - Trial nodes in outer ring (purple)
+- 🟥 11.3 Edges:
+  - ICD → Drug edges (blue, dashed)
+  - ICD → Trial edges (purple, dashed)
+  - Same-category ICD edges (green, solid) - existing
+- 🟥 11.4 Legend update:
+  - 🟢 ICD Codes
+  - 🔵 Drugs
+  - 🟣 Clinical Trials
+- 🟥 11.5 Load drugs/trials on-demand:
+  - Click ICD node → show "Load related data" option
+  - Fetch APIs → add new nodes dynamically
+  - Animate node additions
+
+---
+
+### Step 12: State Management for Multi-API Data 🟥
+**Purpose:** Track drugs and trials data per ICD code.
+
+- 🟥 12.1 Update `app/page.tsx`:
+  - Add `drugsMap: Map<string, DrugResult[]>` state
+  - Add `trialsMap: Map<string, ClinicalTrialResult[]>` state
+  - Add `loadingMap: Map<string, { drugs: boolean; trials: boolean }>` state
+- 🟥 12.2 Implement `handleLoadDrugs(icdCode, conditionName)`:
+  - Check cache first
+  - Call OpenFDA API
+  - Update drugsMap
+  - Handle errors per-code
+- 🟥 12.3 Implement `handleLoadTrials(icdCode, conditionName)`:
+  - Check cache first
+  - Call ClinicalTrials API
+  - Update trialsMap
+  - Handle errors per-code
+- 🟥 12.4 Pass handlers and data to SearchResults
+- 🟥 12.5 Performance: Debounce rapid clicks
+
+---
+
+## Files to Create (Phase 3)
+
+| File | Purpose | Phase | Status |
+|------|---------|-------|--------|
+| `app/lib/openFdaApi.ts` | OpenFDA API functions | 3A | 🟩 |
+| `app/lib/clinicalTrialsApi.ts` | ClinicalTrials API functions | 3B | 🟥 |
+| `app/components/DrugCard.tsx` | Drug result card | 3A | 🟩 |
+| `app/components/TrialCard.tsx` | Clinical trial card | 3B | 🟥 |
+| `app/components/DrugNode.tsx` | Drug node for mind map | 3C | 🟥 |
+| `app/components/TrialNode.tsx` | Trial node for mind map | 3C | 🟥 |
+
+## Files to Modify (Phase 3)
+
+| File | Changes | Phase | Status |
+|------|---------|-------|--------|
+| `app/types/icd.ts` | Added DrugResult, DrugLoadingState, extractSearchTerms() | 3A | 🟩 |
+| `app/components/ResultCard.tsx` | Added drug expansion with View Drugs button | 3A | 🟩 |
+| `app/types/icd.ts` | Add Drug/Trial types | 3A/3B | 🟥 |
+| `app/components/ResultCard.tsx` | Add expansion buttons | 3A/3B | 🟥 |
+| `app/components/SearchResults.tsx` | Pass drug/trial data | 3A/3B | 🟥 |
+| `app/components/MindMapView.tsx` | Multi-node support | 3C | 🟥 |
+| `app/page.tsx` | State management | 3C | 🟥 |
+
+---
+
+## Dependencies Required
+
+| Package | Version | Purpose | Status |
+|---------|---------|---------|--------|
+| (none) | - | All features use built-in fetch API | ✅ |
+
+---
+
+## API Integration Notes
+
+### Data Connection Strategy
+
+```javascript
+// ICD Result example:
+{ code: "E11.9", name: "Type 2 diabetes mellitus without complications" }
+
+// Extract search term:
+"Type 2 diabetes mellitus without complications"
+  → remove: "without", "complications", "mellitus"
+  → result: "type 2 diabetes"
+
+// Use for OpenFDA:
+`search=indications_and_usage:type+2+diabetes`
+
+// Use for ClinicalTrials:
+`query.cond=type+2+diabetes`
+```
+
+### Error Handling Strategy
+
+```javascript
+// Each API call is independent - failures don't block others
+try {
+  const drugs = await searchDrugsByCondition(term);
+  setDrugsMap(prev => new Map(prev).set(icdCode, drugs));
+} catch (error) {
+  // Show error ONLY for drugs section, trials still work
+  setErrorsMap(prev => new Map(prev).set(`${icdCode}-drugs`, error.message));
+}
+```
+
+### Rate Limit Prevention
+
+1. **On-demand loading** - Only fetch when user clicks
+2. **Caching** - Store results in Map, don't re-fetch
+3. **Debouncing** - 500ms delay between requests
+4. **Graceful degradation** - Show cached data if rate limited
+
+---
+
+## Success Criteria
+
+- [ ] User can click any ICD result to load related drugs
+- [ ] User can click any ICD result to load clinical trials
+- [ ] Drug results show brand name, generic name, indication
+- [ ] Trial results show NCT ID, status, sponsor
+- [ ] Clicking NCT ID opens trial on ClinicalTrials.gov
+- [ ] Mind map shows drugs as blue nodes
+- [ ] Mind map shows trials as purple nodes
+- [ ] Edges connect ICD codes to their drugs/trials
+- [ ] Loading states for each expansion
+- [ ] Error states don't break other functionality
+- [ ] Cached results don't re-fetch
+- [ ] Works in both light and dark mode
+- [ ] Mobile-responsive expansion UI
