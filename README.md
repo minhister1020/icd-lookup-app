@@ -64,6 +64,12 @@ The **ICD Mind Map Lookup Tool** is a modern web application that transforms med
 - Animated edges showing data connections
 - Real-time node counter and zoom indicator
 
+### ⭐ Favorites & History (NEW!)
+- **Star favorites** — Save frequently used ICD codes
+- **Favorites panel** — Quick access with category colors
+- **Search history** — Track searches with timestamps
+- **Export/Import** — Backup and share favorites as JSON
+
 ### 🎨 UI/UX Features
 - Toggle between List View and Mind Map View
 - Dark mode support
@@ -129,6 +135,73 @@ Click the ℹ️ icon in the search bar to see tips:
 - Use common terms like "heart attack" or "broken bone"
 - Use medical terms like "myocardial infarction"
 - Use ICD codes like "E11.9" or "I21"
+
+---
+
+## ⭐ Favorites & History (Phase 6)
+
+Save frequently used ICD codes and track your search history with timestamps!
+
+### Favorites System
+
+Click the **star icon** on any search result to save it:
+
+```
+┌──────────────────────────────────────────────────────┐
+│  [E11.9] Type 2 diabetes mellitus...            [⭐] │  ← Click star to favorite
+└──────────────────────────────────────────────────────┘
+```
+
+#### Features
+- **Star/Unstar** — One-click toggle on any result card
+- **Favorites Panel** — Slide-in panel with all saved codes
+- **Category Colors** — Visual coding by ICD category (E=green, I=red, etc.)
+- **Relative Timestamps** — "Just now", "2 hours ago", "Yesterday"
+- **Quick Search** — Click to search any saved favorite
+- **Persistence** — Saved to localStorage (survives refresh)
+
+### Export/Import
+
+Back up your favorites or share with colleagues!
+
+| Action | Description |
+|--------|-------------|
+| **Export** | Download as JSON file (`icd-favorites-2026-01-26.json`) |
+| **Import** | Load from JSON file, merges with existing (no duplicates) |
+
+#### Export Format
+```json
+{
+  "version": "1.0",
+  "exportDate": "2026-01-26T10:30:00.000Z",
+  "appName": "ICD Mind Map Lookup Tool",
+  "count": 5,
+  "favorites": [
+    { "code": "E11.9", "name": "Type 2 diabetes...", ... }
+  ]
+}
+```
+
+### Search History
+
+Track what you've searched with rich metadata:
+
+```
+┌────────────────────────────────────────────────────┐
+│ 🕐 Search History (5)                         [✕] │
+├────────────────────────────────────────────────────┤
+│ [🔍] diabetes                          [🔍] [🗑️] │
+│      ⏱️ 2 minutes ago • # 847 results             │
+│      Top: E11.9 - Type 2 diabetes...              │
+└────────────────────────────────────────────────────┘
+```
+
+#### Features
+- **Timestamps** — When each search was performed
+- **Result Counts** — How many results returned
+- **Top Result Preview** — Quick reference to best match
+- **Re-Search** — Click to run the search again
+- **Clear History** — Remove individual or all entries
 
 ---
 
@@ -303,14 +376,16 @@ icd-lookup-app/
 │   ├── components/
 │   │   ├── SearchBar.tsx       # Search input with recent searches
 │   │   ├── SearchResults.tsx   # Results container with view toggle
-│   │   ├── ResultCard.tsx      # ICD result card with drug/trial expansion
+│   │   ├── ResultCard.tsx      # ICD result card with star & drug/trial expansion
 │   │   ├── DrugCard.tsx        # Individual drug display (blue theme)
 │   │   ├── TrialCard.tsx       # Individual trial display (purple theme)
 │   │   ├── ViewToggle.tsx      # List/Mind Map view switcher
 │   │   ├── MindMapView.tsx     # React Flow canvas with multi-node support
 │   │   ├── IcdNode.tsx         # Custom React Flow node (green)
 │   │   ├── DrugNode.tsx        # Custom React Flow node (blue)
-│   │   └── TrialNode.tsx       # Custom React Flow node (purple)
+│   │   ├── TrialNode.tsx       # Custom React Flow node (purple)
+│   │   ├── FavoritesPanel.tsx  # Favorites slide-in panel (Phase 6)
+│   │   └── HistoryPanel.tsx    # History slide-in panel (Phase 6)
 │   ├── lib/
 │   │   ├── api.ts              # ClinicalTables API helper (with translation)
 │   │   ├── openFdaApi.ts       # OpenFDA API helper
@@ -318,7 +393,8 @@ icd-lookup-app/
 │   │   ├── scoring.ts          # Relevance scoring algorithm (Phase 4)
 │   │   ├── commonCodes.ts      # ICD-10 frequency data (100+ codes)
 │   │   ├── termMappings.ts     # Common → Medical term mappings (Phase 5)
-│   │   └── termMapper.ts       # Translation logic (Phase 5)
+│   │   ├── termMapper.ts       # Translation logic (Phase 5)
+│   │   └── favoritesStorage.ts # Favorites & History localStorage utils (Phase 6)
 │   ├── types/
 │   │   └── icd.ts              # TypeScript interfaces & helpers
 │   ├── globals.css             # Global styles & animations
@@ -382,6 +458,7 @@ GET https://clinicaltrials.gov/api/v2/studies
 
 ### Completed Features
 
+- [x] **Favorites & History** — Save codes, track searches, export/import JSON (Phase 6)
 - [x] **Common Terms Translation** — Search with everyday language (Phase 5)
 - [x] **Intelligent Ranking** — Multi-factor relevance scoring (Phase 4)
 - [x] **Pagination** — Load more results with "Load More" button
@@ -389,9 +466,8 @@ GET https://clinicaltrials.gov/api/v2/studies
 
 ### Planned Features
 
-- [ ] **Export** — Save mind map as PNG/SVG image
+- [ ] **Mind Map Export** — Save mind map as PNG/SVG image
 - [ ] **Sharing** — Generate shareable links to searches
-- [ ] **Favorites** — Save frequently used codes
 - [ ] **Offline Mode** — Cache data for offline access
 - [ ] **Advanced Filters** — Filter by code range, date, status
 - [ ] **Comparison View** — Compare multiple conditions side-by-side

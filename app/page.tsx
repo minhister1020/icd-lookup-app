@@ -260,6 +260,27 @@ export default function Home() {
   }, []);
   
   /**
+   * Imports favorites from external file, merging with existing.
+   * Prevents duplicates by code.
+   */
+  const importFavorites = useCallback((imported: FavoriteICD[]) => {
+    setFavorites(prev => {
+      // Create set of existing codes for O(1) lookup
+      const existingCodes = new Set(prev.map(f => f.code));
+      
+      // Filter out duplicates
+      const newFavorites = imported.filter(f => !existingCodes.has(f.code));
+      
+      // Merge: new favorites first, then existing
+      const merged = [...newFavorites, ...prev];
+      
+      // Save to localStorage
+      saveFavorites(merged);
+      return merged;
+    });
+  }, []);
+  
+  /**
    * Checks if a code is favorited (O(1) lookup).
    */
   const isFavorited = useCallback((code: string): boolean => {
@@ -609,6 +630,7 @@ export default function Home() {
         onRemove={removeFavorite}
         onSearch={handleSearch}
         onClearAll={clearAllFavorites}
+        onImport={importFavorites}
       />
       
       {/* Phase 6C: History Panel */}

@@ -12,11 +12,17 @@
  * - Color-coded by category
  * - Relative timestamps
  * - Empty state when no favorites
+ * 
+ * Phase 6D: Export/Import Features:
+ * - Export favorites as JSON file
+ * - Import favorites from JSON file
+ * - Merge imported with existing (no duplicates)
  */
 
 'use client';
 
-import { X, Star, Search, Trash2, Clock } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { X, Star, Search, Trash2, Clock, Download, Upload, CheckCircle, AlertCircle } from 'lucide-react';
 import { FavoriteICD, getCategoryColor } from '../types/icd';
 import { formatRelativeTime } from '../lib/favoritesStorage';
 
@@ -42,6 +48,18 @@ interface FavoritesPanelProps {
   
   /** Callback to clear all favorites */
   onClearAll: () => void;
+  
+  /** Callback to import favorites (merge with existing) */
+  onImport?: (imported: FavoriteICD[]) => void;
+}
+
+// Export format interface
+interface FavoritesExport {
+  version: string;
+  exportDate: string;
+  appName: string;
+  count: number;
+  favorites: FavoriteICD[];
 }
 
 // =============================================================================
@@ -55,7 +73,110 @@ export default function FavoritesPanel({
   onRemove,
   onSearch,
   onClearAll,
+  onImport,
 }: FavoritesPanelProps) {
+  // State for import/export status messages
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Clear status message after 3 seconds
+  const showStatus = (type: 'success' | 'error', text: string) => {
+    setStatusMessage({ type, text });
+    setTimeout(() => setStatusMessage(null), 3000);
+  };
+  
+  // Export favorites as JSON file
+  const handleExport = () => {
+    try {
+      const exportData: FavoritesExport = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        appName: 'ICD Mind Map Lookup Tool',
+        count: favorites.length,
+        favorites: favorites
+      };
+      
+      const jsonString = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      // Generate filename with date
+      const date = new Date().toISOString().split('T')[0];
+      const filename = `icd-favorites-${date}.json`;
+      
+      // Create download link and click it
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      showStatus('success', `Exported ${favorites.length} favorites`);
+    } catch (error) {
+      console.error('Export failed:', error);
+      showStatus('error', 'Export failed');
+    }
+  };
+  
+  // Import favorites from JSON file
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const data = JSON.parse(content);
+        
+        // Validate structure
+        if (!data.favorites || !Array.isArray(data.favorites)) {
+          throw new Error('Invalid format: missing favorites array');
+        }
+        
+        // Validate each favorite has required fields
+        const validFavorites: FavoriteICD[] = data.favorites.filter(
+          (f: unknown): f is FavoriteICD =>
+            typeof f === 'object' &&
+            f !== null &&
+            'code' in f &&
+            'name' in f &&
+            typeof (f as FavoriteICD).code === 'string' &&
+            typeof (f as FavoriteICD).name === 'string'
+        ).map((f: FavoriteICD) => ({
+          ...f,
+          // Ensure favoritedAt exists
+          favoritedAt: f.favoritedAt || new Date().toISOString()
+        }));
+        
+        if (validFavorites.length === 0) {
+          throw new Error('No valid favorites found in file');
+        }
+        
+        // Call import handler
+        if (onImport) {
+          onImport(validFavorites);
+          showStatus('success', `Imported ${validFavorites.length} favorites`);
+        }
+      } catch (error) {
+        console.error('Import failed:', error);
+        const message = error instanceof Error ? error.message : 'Invalid file format';
+        showStatus('error', message);
+      }
+    };
+    
+    reader.onerror = () => {
+      showStatus('error', 'Failed to read file');
+    };
+    
+    reader.readAsText(file);
+    
+    // Reset file input so same file can be re-imported
+    event.target.value = '';
+  };
+  
   // Don't render if not open
   if (!isOpen) return null;
   
@@ -252,12 +373,80 @@ export default function FavoritesPanel({
         </div>
         
         {/* Footer */}
-        {favorites.length > 0 && (
-          <div className="
-            px-6 py-4
-            border-t border-gray-200 dark:border-gray-700
-            bg-gray-50 dark:bg-gray-800/50
-          ">
+        <div className="
+          px-6 py-4
+          border-t border-gray-200 dark:border-gray-700
+          bg-gray-50 dark:bg-gray-800/50
+          space-y-3
+        ">
+          {/* Status Message */}
+          {statusMessage && (
+            <div className={`
+              flex items-center gap-2 p-2 rounded-lg text-sm
+              animate-in fade-in slide-in-from-bottom-2 duration-200
+              ${statusMessage.type === 'success' 
+                ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' 
+                : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+              }
+            `}>
+              {statusMessage.type === 'success' 
+                ? <CheckCircle className="w-4 h-4" /> 
+                : <AlertCircle className="w-4 h-4" />
+              }
+              {statusMessage.text}
+            </div>
+          )}
+          
+          {/* Export/Import Buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={handleExport}
+              disabled={favorites.length === 0}
+              className="
+                flex-1 py-2 px-3
+                rounded-lg
+                bg-blue-50 hover:bg-blue-100
+                dark:bg-blue-900/20 dark:hover:bg-blue-900/40
+                text-blue-600 dark:text-blue-400
+                text-sm font-medium
+                flex items-center justify-center gap-2
+                transition-colors
+                disabled:opacity-50 disabled:cursor-not-allowed
+              "
+            >
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+            
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="
+                flex-1 py-2 px-3
+                rounded-lg
+                bg-purple-50 hover:bg-purple-100
+                dark:bg-purple-900/20 dark:hover:bg-purple-900/40
+                text-purple-600 dark:text-purple-400
+                text-sm font-medium
+                flex items-center justify-center gap-2
+                transition-colors
+              "
+            >
+              <Upload className="w-4 h-4" />
+              Import
+            </button>
+            
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImport}
+              className="hidden"
+            />
+          </div>
+          
+          {/* Clear All Button */}
+          {favorites.length > 0 && (
             <button
               onClick={() => {
                 if (confirm('Are you sure you want to remove all favorites?')) {
@@ -276,10 +465,10 @@ export default function FavoritesPanel({
               "
             >
               <Trash2 className="w-4 h-4" />
-              Clear All Favorites
+              Clear All
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </>
   );
