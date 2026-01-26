@@ -117,12 +117,23 @@ export type ViewMode = 'list' | 'mindmap';
 // =============================================================================
 
 /**
+ * Phase 7B/7C: Highlight state for hover and focus interactions.
+ * - 'normal': No interactions active, full opacity
+ * - 'highlighted': Hover active, connected to hovered node (100%, scale)
+ * - 'dimmed': Hover active, NOT connected (30% opacity)
+ * - 'focused': Focus active, connected to focused node (100%, ring glow)
+ * - 'focus-dimmed': Focus active, NOT connected (15% opacity)
+ */
+export type HighlightState = 'normal' | 'highlighted' | 'dimmed' | 'focused' | 'focus-dimmed';
+
+/**
  * Data structure passed to each ICD node in the mind map.
  * 
  * React Flow nodes have a `data` property that can contain
  * any custom data. We use it to pass ICD information.
  * 
  * Phase 7A: Added expansion state for progressive disclosure.
+ * Phase 7B: Added highlight state for hover interactions.
  */
 export interface IcdNodeData {
   /** The ICD-10 code (e.g., "E11.9") */
@@ -146,6 +157,9 @@ export interface IcdNodeData {
   
   /** Phase 7A: Callback to toggle expansion state */
   onToggleExpand?: (code: string) => void;
+  
+  /** Phase 7B: Highlight state for hover interactions */
+  highlightState?: HighlightState;
 }
 
 /**

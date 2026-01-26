@@ -70,6 +70,16 @@ interface MindMapViewProps {
 
 type AllNodeData = IcdNodeData | DrugNodeData | TrialNodeData;
 
+/** Phase 7D: Available layout types */
+type LayoutType = 'hierarchical' | 'radial' | 'circular';
+
+/** Phase 7D: Layout configuration */
+const LAYOUT_CENTER_X = 500;
+const LAYOUT_CENTER_Y = 400;
+const RADIAL_ICD_RADIUS = 200;
+const RADIAL_CHILD_RADIUS = 380;
+const CIRCULAR_RADIUS = 300;
+
 // =============================================================================
 // Helper Functions
 // =============================================================================
@@ -247,6 +257,214 @@ function convertToNodesAndEdges(
 }
 
 // =============================================================================
+// Phase 7D: Radial Layout
+// =============================================================================
+
+/**
+ * Radial/Sunburst layout: ICD codes in inner circle, children in outer circle
+ */
+function radialLayout(
+  results: ICD10Result[],
+  drugsMap: Map<string, DrugResult[]>,
+  trialsMap: Map<string, ClinicalTrialResult[]>,
+  expandedNodes: Set<string>,
+  toggleExpand: (code: string) => void
+): {
+  nodes: Node<AllNodeData>[];
+  edges: Edge[];
+  stats: { icdCount: number; drugCount: number; trialCount: number; visibleDrugCount: number; visibleTrialCount: number; expandedCount: number };
+} {
+  const nodes: Node<AllNodeData>[] = [];
+  const edges: Edge[] = [];
+  let drugCount = 0, trialCount = 0, visibleDrugCount = 0, visibleTrialCount = 0;
+  
+  // Position ICD codes in inner circle
+  const icdAngleStep = (2 * Math.PI) / Math.max(results.length, 1);
+  
+  results.forEach((result, index) => {
+    const angle = icdAngleStep * index - Math.PI / 2; // Start from top
+    const x = LAYOUT_CENTER_X + RADIAL_ICD_RADIUS * Math.cos(angle);
+    const y = LAYOUT_CENTER_Y + RADIAL_ICD_RADIUS * Math.sin(angle);
+    
+    const category = result.code.split('.')[0];
+    const drugs = drugsMap.get(result.code) || [];
+    const trials = trialsMap.get(result.code) || [];
+    const isExpanded = expandedNodes.has(result.code);
+    const hasLoaded = drugsMap.has(result.code) || trialsMap.has(result.code);
+    
+    drugCount += drugs.length;
+    trialCount += trials.length;
+    
+    nodes.push({
+      id: result.code,
+      type: 'icdNode',
+      position: { x, y },
+      data: { code: result.code, name: result.name, category, isExpanded, childrenCount: { drugs: drugs.length, trials: trials.length, loaded: hasLoaded }, onToggleExpand: toggleExpand },
+    });
+    
+    // Add edge to previous ICD
+    if (index > 0) {
+      edges.push({
+        id: `e-icd-${results[index - 1].code}-${result.code}`,
+        source: results[index - 1].code,
+        target: result.code,
+        type: 'default',
+        animated: true,
+        style: { stroke: '#00D084', strokeWidth: 2, opacity: 0.4 },
+      });
+    }
+    
+    // Position children radially outward from parent ICD
+    if (isExpanded) {
+      const children = [...drugs.map((d, i) => ({ type: 'drug' as const, data: d, idx: i })), ...trials.map((t, i) => ({ type: 'trial' as const, data: t, idx: i }))];
+      const childAngleSpread = Math.PI / 6; // 30 degrees spread
+      const childAngleStart = angle - (childAngleSpread * (children.length - 1)) / 2;
+      
+      children.forEach((child, childIdx) => {
+        const childAngle = childAngleStart + childAngleSpread * childIdx;
+        const childX = LAYOUT_CENTER_X + RADIAL_CHILD_RADIUS * Math.cos(childAngle);
+        const childY = LAYOUT_CENTER_Y + RADIAL_CHILD_RADIUS * Math.sin(childAngle);
+        
+        if (child.type === 'drug') {
+          const drugId = `drug-${result.code}-${child.idx}`;
+          nodes.push({ id: drugId, type: 'drugNode', position: { x: childX, y: childY }, data: { brandName: child.data.brandName, genericName: child.data.genericName, sourceIcdCode: result.code } });
+          edges.push({ id: `e-drug-${result.code}-${child.idx}`, source: result.code, target: drugId, type: 'default', animated: true, style: { stroke: '#3B82F6', strokeWidth: 1.5, opacity: 0.5, strokeDasharray: '5,5' } });
+          visibleDrugCount++;
+        } else {
+          const trialId = `trial-${result.code}-${child.idx}`;
+          nodes.push({ id: trialId, type: 'trialNode', position: { x: childX, y: childY }, data: { nctId: child.data.nctId, title: child.data.title, status: child.data.status, sourceIcdCode: result.code } });
+          edges.push({ id: `e-trial-${result.code}-${child.idx}`, source: result.code, target: trialId, type: 'default', animated: true, style: { stroke: '#9333EA', strokeWidth: 1.5, opacity: 0.5, strokeDasharray: '5,5' } });
+          visibleTrialCount++;
+        }
+      });
+    }
+  });
+  
+  return { nodes, edges, stats: { icdCount: results.length, drugCount, trialCount, visibleDrugCount, visibleTrialCount, expandedCount: expandedNodes.size } };
+}
+
+// =============================================================================
+// Phase 7D: Circular Layout
+// =============================================================================
+
+/**
+ * Circular layout: All nodes in a single circle with equal spacing
+ */
+function circularLayout(
+  results: ICD10Result[],
+  drugsMap: Map<string, DrugResult[]>,
+  trialsMap: Map<string, ClinicalTrialResult[]>,
+  expandedNodes: Set<string>,
+  toggleExpand: (code: string) => void
+): {
+  nodes: Node<AllNodeData>[];
+  edges: Edge[];
+  stats: { icdCount: number; drugCount: number; trialCount: number; visibleDrugCount: number; visibleTrialCount: number; expandedCount: number };
+} {
+  const nodes: Node<AllNodeData>[] = [];
+  const edges: Edge[] = [];
+  let drugCount = 0, trialCount = 0, visibleDrugCount = 0, visibleTrialCount = 0;
+  
+  // First, collect all visible nodes
+  const allNodeData: { id: string; type: 'icd' | 'drug' | 'trial'; data: ICD10Result | DrugResult | ClinicalTrialResult; parentCode?: string; idx?: number }[] = [];
+  
+  results.forEach((result) => {
+    allNodeData.push({ id: result.code, type: 'icd', data: result });
+    
+    const drugs = drugsMap.get(result.code) || [];
+    const trials = trialsMap.get(result.code) || [];
+    drugCount += drugs.length;
+    trialCount += trials.length;
+    
+    if (expandedNodes.has(result.code)) {
+      drugs.forEach((drug, i) => {
+        allNodeData.push({ id: `drug-${result.code}-${i}`, type: 'drug', data: drug, parentCode: result.code, idx: i });
+        visibleDrugCount++;
+      });
+      trials.forEach((trial, i) => {
+        allNodeData.push({ id: `trial-${result.code}-${i}`, type: 'trial', data: trial, parentCode: result.code, idx: i });
+        visibleTrialCount++;
+      });
+    }
+  });
+  
+  // Position all nodes in a circle
+  const angleStep = (2 * Math.PI) / Math.max(allNodeData.length, 1);
+  const radius = Math.max(CIRCULAR_RADIUS, allNodeData.length * 15); // Scale radius with node count
+  
+  allNodeData.forEach((nodeData, index) => {
+    const angle = angleStep * index - Math.PI / 2;
+    const x = LAYOUT_CENTER_X + radius * Math.cos(angle);
+    const y = LAYOUT_CENTER_Y + radius * Math.sin(angle);
+    
+    if (nodeData.type === 'icd') {
+      const result = nodeData.data as ICD10Result;
+      const category = result.code.split('.')[0];
+      const drugs = drugsMap.get(result.code) || [];
+      const trials = trialsMap.get(result.code) || [];
+      const isExpanded = expandedNodes.has(result.code);
+      const hasLoaded = drugsMap.has(result.code) || trialsMap.has(result.code);
+      
+      nodes.push({
+        id: result.code,
+        type: 'icdNode',
+        position: { x, y },
+        data: { code: result.code, name: result.name, category, isExpanded, childrenCount: { drugs: drugs.length, trials: trials.length, loaded: hasLoaded }, onToggleExpand: toggleExpand },
+      });
+    } else if (nodeData.type === 'drug') {
+      const drug = nodeData.data as DrugResult;
+      nodes.push({ id: nodeData.id, type: 'drugNode', position: { x, y }, data: { brandName: drug.brandName, genericName: drug.genericName, sourceIcdCode: nodeData.parentCode! } });
+      edges.push({ id: `e-drug-${nodeData.parentCode}-${nodeData.idx}`, source: nodeData.parentCode!, target: nodeData.id, type: 'default', animated: true, style: { stroke: '#3B82F6', strokeWidth: 1.5, opacity: 0.5, strokeDasharray: '5,5' } });
+    } else {
+      const trial = nodeData.data as ClinicalTrialResult;
+      nodes.push({ id: nodeData.id, type: 'trialNode', position: { x, y }, data: { nctId: trial.nctId, title: trial.title, status: trial.status, sourceIcdCode: nodeData.parentCode! } });
+      edges.push({ id: `e-trial-${nodeData.parentCode}-${nodeData.idx}`, source: nodeData.parentCode!, target: nodeData.id, type: 'default', animated: true, style: { stroke: '#9333EA', strokeWidth: 1.5, opacity: 0.5, strokeDasharray: '5,5' } });
+    }
+  });
+  
+  // Add edges between consecutive ICD codes
+  const icdNodes = results.map(r => r.code);
+  for (let i = 1; i < icdNodes.length; i++) {
+    edges.push({
+      id: `e-icd-${icdNodes[i-1]}-${icdNodes[i]}`,
+      source: icdNodes[i-1],
+      target: icdNodes[i],
+      type: 'default',
+      animated: true,
+      style: { stroke: '#00D084', strokeWidth: 2, opacity: 0.4 },
+    });
+  }
+  
+  return { nodes, edges, stats: { icdCount: results.length, drugCount, trialCount, visibleDrugCount, visibleTrialCount, expandedCount: expandedNodes.size } };
+}
+
+// =============================================================================
+// Phase 7D: Layout Router
+// =============================================================================
+
+/**
+ * Routes to the appropriate layout function based on layoutType
+ */
+function calculateLayout(
+  layoutType: LayoutType,
+  results: ICD10Result[],
+  drugsMap: Map<string, DrugResult[]>,
+  trialsMap: Map<string, ClinicalTrialResult[]>,
+  expandedNodes: Set<string>,
+  toggleExpand: (code: string) => void
+) {
+  switch (layoutType) {
+    case 'radial':
+      return radialLayout(results, drugsMap, trialsMap, expandedNodes, toggleExpand);
+    case 'circular':
+      return circularLayout(results, drugsMap, trialsMap, expandedNodes, toggleExpand);
+    case 'hierarchical':
+    default:
+      return convertToNodesAndEdges(results, drugsMap, trialsMap, expandedNodes, toggleExpand);
+  }
+}
+
+// =============================================================================
 // Custom Background Component
 // =============================================================================
 
@@ -335,23 +553,220 @@ function MindMapInner({ results, drugsMap, trialsMap }: MindMapInnerProps) {
     setExpandedNodes(new Set());
   }, [results]);
   
+  // ==========================================================================
+  // Phase 7D: Layout Type State
+  // ==========================================================================
+  
+  const [layoutType, setLayoutType] = useState<LayoutType>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('mindmap-layout');
+      if (saved === 'hierarchical' || saved === 'radial' || saved === 'circular') {
+        return saved;
+      }
+    }
+    return 'hierarchical';
+  });
+  
+  // Persist layout choice to localStorage
+  useEffect(() => {
+    localStorage.setItem('mindmap-layout', layoutType);
+  }, [layoutType]);
+  
+  // ==========================================================================
+  // Phase 7B: Hover Highlighting State
+  // ==========================================================================
+  
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  
+  // Compute connected nodes for highlighting (O(1) lookup with Set)
+  const { highlightedNodes, highlightedEdges } = useMemo(() => {
+    if (!hoveredNodeId) {
+      return { highlightedNodes: new Set<string>(), highlightedEdges: new Set<string>() };
+    }
+    
+    const connected = new Set<string>([hoveredNodeId]);
+    const connectedEdgeIds = new Set<string>();
+    
+    // Find the hovered node to determine its type
+    const isIcdNode = results.some(r => r.code === hoveredNodeId);
+    
+    if (isIcdNode) {
+      // Hovering ICD → highlight all its drug/trial children
+      // Drug IDs: drug-{icdCode}-{index}, Trial IDs: trial-{icdCode}-{index}
+      const drugs = drugsMap.get(hoveredNodeId) || [];
+      const trials = trialsMap.get(hoveredNodeId) || [];
+      
+      drugs.forEach((_, idx) => {
+        connected.add(`drug-${hoveredNodeId}-${idx}`);
+        connectedEdgeIds.add(`e-drug-${hoveredNodeId}-${idx}`);
+      });
+      
+      trials.forEach((_, idx) => {
+        connected.add(`trial-${hoveredNodeId}-${idx}`);
+        connectedEdgeIds.add(`e-trial-${hoveredNodeId}-${idx}`);
+      });
+    } else {
+      // Hovering Drug or Trial → highlight parent ICD
+      // Extract parent ICD code from node ID pattern: drug-{icdCode}-{index} or trial-{icdCode}-{index}
+      const match = hoveredNodeId.match(/^(drug|trial)-(.+)-\d+$/);
+      if (match) {
+        const parentIcdCode = match[2];
+        connected.add(parentIcdCode);
+        // Also highlight the edge connecting this node to parent
+        connectedEdgeIds.add(`e-${match[1]}-${parentIcdCode}-${hoveredNodeId.split('-').pop()}`);
+      }
+    }
+    
+    return { highlightedNodes: connected, highlightedEdges: connectedEdgeIds };
+  }, [hoveredNodeId, results, drugsMap, trialsMap]);
+  
+  // Mouse event handlers (disabled during focus mode)
+  const onNodeMouseEnter = useCallback((_: React.MouseEvent, node: Node<AllNodeData>) => {
+    setHoveredNodeId(node.id);
+  }, []);
+  
+  const onNodeMouseLeave = useCallback(() => {
+    setHoveredNodeId(null);
+  }, []);
+  
+  // ==========================================================================
+  // Phase 7C: Focus Mode State (Persistent Highlight)
+  // ==========================================================================
+  
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+  
+  // Compute focused nodes (same logic as hover)
+  const { focusedNodes, focusedEdges } = useMemo(() => {
+    if (!focusedNodeId) {
+      return { focusedNodes: new Set<string>(), focusedEdges: new Set<string>() };
+    }
+    
+    const connected = new Set<string>([focusedNodeId]);
+    const connectedEdgeIds = new Set<string>();
+    
+    const isIcdNode = results.some(r => r.code === focusedNodeId);
+    
+    if (isIcdNode) {
+      const drugs = drugsMap.get(focusedNodeId) || [];
+      const trials = trialsMap.get(focusedNodeId) || [];
+      
+      drugs.forEach((_, idx) => {
+        connected.add(`drug-${focusedNodeId}-${idx}`);
+        connectedEdgeIds.add(`e-drug-${focusedNodeId}-${idx}`);
+      });
+      
+      trials.forEach((_, idx) => {
+        connected.add(`trial-${focusedNodeId}-${idx}`);
+        connectedEdgeIds.add(`e-trial-${focusedNodeId}-${idx}`);
+      });
+    } else {
+      const match = focusedNodeId.match(/^(drug|trial)-(.+)-\d+$/);
+      if (match) {
+        const parentIcdCode = match[2];
+        connected.add(parentIcdCode);
+        connectedEdgeIds.add(`e-${match[1]}-${parentIcdCode}-${focusedNodeId.split('-').pop()}`);
+      }
+    }
+    
+    return { focusedNodes: connected, focusedEdges: connectedEdgeIds };
+  }, [focusedNodeId, results, drugsMap, trialsMap]);
+  
+  // Click node → toggle focus
+  const onNodeClick = useCallback((_: React.MouseEvent, node: Node<AllNodeData>) => {
+    setFocusedNodeId(prev => prev === node.id ? null : node.id);
+  }, []);
+  
+  // Click background → exit focus
+  const onPaneClick = useCallback(() => {
+    if (focusedNodeId) {
+      setFocusedNodeId(null);
+    }
+  }, [focusedNodeId]);
+  
+  // Reset focus when results change (new search)
+  useEffect(() => {
+    setFocusedNodeId(null);
+  }, [results]);
+  
+  // ==========================================================================
+  // Node and Edge Generation
+  // ==========================================================================
+  
   const { nodes: initialNodes, edges: initialEdges, stats } = useMemo(
-    () => convertToNodesAndEdges(results, drugsMap, trialsMap, expandedNodes, toggleExpand),
-    [results, drugsMap, trialsMap, expandedNodes, toggleExpand]
+    () => calculateLayout(layoutType, results, drugsMap, trialsMap, expandedNodes, toggleExpand),
+    [layoutType, results, drugsMap, trialsMap, expandedNodes, toggleExpand]
   );
   
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   
-  // Update nodes when data changes
+  // Update nodes when data or layout changes
   useEffect(() => {
-    const { nodes: newNodes, edges: newEdges } = convertToNodesAndEdges(
-      results, drugsMap, trialsMap, expandedNodes, toggleExpand
+    const { nodes: newNodes, edges: newEdges } = calculateLayout(
+      layoutType, results, drugsMap, trialsMap, expandedNodes, toggleExpand
     );
     setNodes(newNodes);
     setEdges(newEdges);
-    setTimeout(() => fitView({ padding: 0.2, duration: 800 }), 100);
-  }, [results, drugsMap, trialsMap, expandedNodes, toggleExpand, setNodes, setEdges, fitView]);
+    setTimeout(() => fitView({ padding: 0.2, duration: 500 }), 100);
+  }, [layoutType, results, drugsMap, trialsMap, expandedNodes, toggleExpand, setNodes, setEdges, fitView]);
+  
+  // Phase 7B/7C: Apply highlight state to nodes (Focus > Hover > Normal)
+  const highlightedNodesArray = useMemo(() => {
+    // Focus mode takes precedence
+    if (focusedNodeId) {
+      return nodes.map(node => ({
+        ...node,
+        data: {
+          ...node.data,
+          highlightState: focusedNodes.has(node.id) ? 'focused' : 'focus-dimmed',
+        },
+      }));
+    }
+    
+    // Hover mode (only when not focused)
+    if (hoveredNodeId) {
+      return nodes.map(node => ({
+        ...node,
+        data: {
+          ...node.data,
+          highlightState: highlightedNodes.has(node.id) ? 'highlighted' : 'dimmed',
+        },
+      }));
+    }
+    
+    // No interaction - return as-is
+    return nodes;
+  }, [nodes, focusedNodeId, focusedNodes, hoveredNodeId, highlightedNodes]);
+  
+  // Phase 7B/7C: Apply highlight state to edges (Focus > Hover > Normal)
+  const highlightedEdgesArray = useMemo(() => {
+    // Focus mode takes precedence
+    if (focusedNodeId) {
+      return edges.map(edge => ({
+        ...edge,
+        style: {
+          ...edge.style,
+          opacity: focusedEdges.has(edge.id) ? 0.9 : 0.05,
+          strokeWidth: focusedEdges.has(edge.id) ? 3 : 1,
+        },
+      }));
+    }
+    
+    // Hover mode
+    if (hoveredNodeId) {
+      return edges.map(edge => ({
+        ...edge,
+        style: {
+          ...edge.style,
+          opacity: highlightedEdges.has(edge.id) ? 0.8 : 0.1,
+          strokeWidth: highlightedEdges.has(edge.id) ? 3 : 1.5,
+        },
+      }));
+    }
+    
+    // No interaction - return as-is
+    return edges;
+  }, [edges, focusedNodeId, focusedEdges, hoveredNodeId, highlightedEdges]);
   
   const onMoveEnd = useCallback((_: unknown, viewport: { zoom: number }) => {
     setZoomLevel(viewport.zoom);
@@ -368,12 +783,16 @@ function MindMapInner({ results, drugsMap, trialsMap }: MindMapInnerProps) {
       <HolographicBackground />
       
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
+        nodes={highlightedNodesArray}
+        edges={highlightedEdgesArray}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onMoveEnd={onMoveEnd}
+        onNodeMouseEnter={onNodeMouseEnter}
+        onNodeMouseLeave={onNodeMouseLeave}
+        onNodeClick={onNodeClick}
+        onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
         connectionLineType={ConnectionLineType.SmoothStep}
         fitView
@@ -422,9 +841,65 @@ function MindMapInner({ results, drugsMap, trialsMap }: MindMapInnerProps) {
           zoomable
         />
         
-        {/* Phase 7A: Expand/Collapse Controls */}
+        {/* Phase 7A: Expand/Collapse Controls + Phase 7D: Layout Selector */}
         <Panel position="top-left">
-          <div className="bg-gray-900/80 backdrop-blur-md rounded-xl px-4 py-3 shadow-xl border border-[#00D084]/30">
+          <div className="bg-gray-900/80 backdrop-blur-md rounded-xl px-4 py-3 shadow-xl border border-[#00D084]/30 space-y-3">
+            {/* Phase 7D: Layout Selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500 mr-1">Layout:</span>
+              <div className="flex rounded-lg border border-gray-700 overflow-hidden">
+                <button
+                  onClick={() => setLayoutType('hierarchical')}
+                  className={`
+                    flex items-center gap-1.5 px-3 py-1.5
+                    text-xs font-medium
+                    transition-colors duration-200
+                    ${layoutType === 'hierarchical'
+                      ? 'bg-[#00D084]/30 text-[#00D084] border-r border-[#00D084]/30'
+                      : 'bg-gray-800/50 text-gray-400 hover:bg-gray-700/50 border-r border-gray-700'
+                    }
+                  `}
+                  title="Hierarchical layout - ICD codes at top, children below"
+                >
+                  <span>📊</span>
+                  <span>Tree</span>
+                </button>
+                <button
+                  onClick={() => setLayoutType('radial')}
+                  className={`
+                    flex items-center gap-1.5 px-3 py-1.5
+                    text-xs font-medium
+                    transition-colors duration-200
+                    ${layoutType === 'radial'
+                      ? 'bg-[#00D084]/30 text-[#00D084] border-r border-[#00D084]/30'
+                      : 'bg-gray-800/50 text-gray-400 hover:bg-gray-700/50 border-r border-gray-700'
+                    }
+                  `}
+                  title="Radial layout - ICD codes in center circle, children radiating outward"
+                >
+                  <span>☀️</span>
+                  <span>Radial</span>
+                </button>
+                <button
+                  onClick={() => setLayoutType('circular')}
+                  className={`
+                    flex items-center gap-1.5 px-3 py-1.5
+                    text-xs font-medium
+                    transition-colors duration-200
+                    ${layoutType === 'circular'
+                      ? 'bg-[#00D084]/30 text-[#00D084]'
+                      : 'bg-gray-800/50 text-gray-400 hover:bg-gray-700/50'
+                    }
+                  `}
+                  title="Circular layout - All nodes arranged in a circle"
+                >
+                  <span>🔵</span>
+                  <span>Circle</span>
+                </button>
+              </div>
+            </div>
+            
+            {/* Expand/Collapse Row */}
             <div className="flex items-center gap-3">
               {/* Expand All Button */}
               <button
@@ -533,6 +1008,60 @@ function MindMapInner({ results, drugsMap, trialsMap }: MindMapInnerProps) {
             </div>
           </div>
         </Panel>
+        
+        {/* Phase 7C: Focus Mode Badge */}
+        {focusedNodeId && (
+          <Panel position="bottom-left">
+            <div className="bg-gray-900/90 backdrop-blur-md rounded-xl px-4 py-2.5 shadow-xl border border-yellow-500/40 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="flex items-center gap-3">
+                {/* Focus icon */}
+                <div className="flex items-center gap-2">
+                  <span className="text-yellow-400 text-sm">🎯</span>
+                  <span className="text-xs text-gray-400">FOCUS MODE</span>
+                </div>
+                
+                {/* Focused node code */}
+                <div className="px-2 py-1 bg-yellow-500/20 rounded-md border border-yellow-500/30">
+                  <span className="text-sm font-mono font-bold text-yellow-400">
+                    {focusedNodeId.startsWith('drug-') 
+                      ? focusedNodeId.replace(/^drug-(.+)-\d+$/, '$1') + ' 💊'
+                      : focusedNodeId.startsWith('trial-')
+                        ? focusedNodeId.replace(/^trial-(.+)-\d+$/, '$1') + ' 🧪'
+                        : focusedNodeId
+                    }
+                  </span>
+                </div>
+                
+                {/* Connected count */}
+                <span className="text-xs text-gray-500">
+                  {focusedNodes.size} node{focusedNodes.size !== 1 ? 's' : ''}
+                </span>
+                
+                {/* Exit button */}
+                <button
+                  onClick={() => setFocusedNodeId(null)}
+                  className="
+                    flex items-center justify-center
+                    w-6 h-6 rounded-full
+                    bg-gray-700/50 hover:bg-red-500/30
+                    text-gray-400 hover:text-red-400
+                    border border-gray-600 hover:border-red-500/50
+                    transition-all duration-200
+                    text-xs
+                  "
+                  title="Exit focus mode (or click background)"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              {/* Hint */}
+              <p className="text-[10px] text-gray-500 mt-1.5 border-t border-gray-700 pt-1.5">
+                Click background or another node to change focus
+              </p>
+            </div>
+          </Panel>
+        )}
         
         {/* Stats Panel */}
         <Panel position="top-right" className="flex flex-col gap-2">

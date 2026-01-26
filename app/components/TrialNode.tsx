@@ -19,11 +19,15 @@ import { TrialStatus } from '../types/icd';
 // Types
 // =============================================================================
 
+import { HighlightState } from '../types/icd';
+
 export interface TrialNodeData {
   nctId: string;
   title: string;
   status: TrialStatus;
   sourceIcdCode: string;
+  /** Phase 7B: Highlight state for hover interactions */
+  highlightState?: HighlightState;
 }
 
 // =============================================================================
@@ -51,6 +55,15 @@ const statusColors: Record<TrialStatus, string> = {
 function TrialNode({ data, selected }: NodeProps<TrialNodeData>) {
   const statusColor = statusColors[data.status] || statusColors.OTHER;
   
+  // Phase 7B/7C: Compute highlight CSS classes
+  const highlightClass = {
+    'normal': '',
+    'highlighted': 'scale-105 z-10',
+    'dimmed': 'opacity-30',
+    'focused': 'scale-105 z-10 ring-2 ring-white/60 ring-offset-2 ring-offset-transparent',
+    'focus-dimmed': 'opacity-[0.15]',
+  }[data.highlightState ?? 'normal'];
+  
   return (
     <div 
       className={`
@@ -60,6 +73,11 @@ function TrialNode({ data, selected }: NodeProps<TrialNodeData>) {
         fade-in
         zoom-in-50
         duration-500
+        
+        /* Phase 7B: Hover highlighting */
+        transition-all
+        duration-200
+        ${highlightClass}
       `}
       title={`${data.nctId}: ${data.title}`}
     >

@@ -18,10 +18,14 @@ import { Pill } from 'lucide-react';
 // Types
 // =============================================================================
 
+import { HighlightState } from '../types/icd';
+
 export interface DrugNodeData {
   brandName: string;
   genericName: string;
   sourceIcdCode: string;
+  /** Phase 7B: Highlight state for hover interactions */
+  highlightState?: HighlightState;
 }
 
 // =============================================================================
@@ -39,6 +43,15 @@ const colors = {
 // =============================================================================
 
 function DrugNode({ data, selected }: NodeProps<DrugNodeData>) {
+  // Phase 7B/7C: Compute highlight CSS classes
+  const highlightClass = {
+    'normal': '',
+    'highlighted': 'scale-105 z-10',
+    'dimmed': 'opacity-30',
+    'focused': 'scale-105 z-10 ring-2 ring-white/60 ring-offset-2 ring-offset-transparent',
+    'focus-dimmed': 'opacity-[0.15]',
+  }[data.highlightState ?? 'normal'];
+  
   return (
     <div 
       className={`
@@ -48,6 +61,11 @@ function DrugNode({ data, selected }: NodeProps<DrugNodeData>) {
         fade-in
         zoom-in-50
         duration-500
+        
+        /* Phase 7B: Hover highlighting */
+        transition-all
+        duration-200
+        ${highlightClass}
       `}
       title={`${data.brandName}\n${data.genericName}`}
     >

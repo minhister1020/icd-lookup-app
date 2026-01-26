@@ -63,6 +63,15 @@ function getColors(category: string | undefined) {
 function IcdNode({ data, selected }: NodeProps<IcdNodeData>) {
   const colors = getColors(data.category);
   
+  // Phase 7B/7C: Compute highlight CSS classes
+  const highlightClass = {
+    'normal': '',
+    'highlighted': 'scale-105 z-10',
+    'dimmed': 'opacity-30',
+    'focused': 'scale-105 z-10 ring-2 ring-white/60 ring-offset-2 ring-offset-transparent',
+    'focus-dimmed': 'opacity-[0.15]',
+  }[data.highlightState ?? 'normal'];
+  
   return (
     <div 
       className={`
@@ -74,6 +83,11 @@ function IcdNode({ data, selected }: NodeProps<IcdNodeData>) {
         fade-in
         zoom-in-50
         duration-500
+        
+        /* Phase 7B: Hover highlighting */
+        transition-all
+        duration-200
+        ${highlightClass}
       `}
       title={`${data.code}: ${data.name}`}
     >
