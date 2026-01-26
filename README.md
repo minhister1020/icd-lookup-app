@@ -58,7 +58,10 @@ The **ICD Mind Map Lookup Tool** is a modern web application that transforms med
 
 ### 🗺️ Interactive Mind Map Visualization
 - **Three Node Types**: ICD codes (green), Drugs (blue), Trials (purple)
-- Hierarchical layout with clear relationships
+- **🎯 Click-to-Expand** — Progressive disclosure of drug/trial connections
+- **✨ Hover Highlighting** — See connections light up on hover
+- **🎯 Focus Mode** — Click to spotlight one branch, dim the rest
+- **🎨 Multiple Layouts** — Hierarchical, Radial, and Circular views
 - Drag, zoom, and pan navigation
 - Hover tooltips with detailed information
 - Animated edges showing data connections
@@ -202,6 +205,122 @@ Track what you've searched with rich metadata:
 - **Top Result Preview** — Quick reference to best match
 - **Re-Search** — Click to run the search again
 - **Clear History** — Remove individual or all entries
+
+---
+
+## 🗺️ Interactive Mind Map (Phase 7)
+
+Transform your search results into a visual knowledge graph with powerful interactive features!
+
+### Click-to-Expand (Phase 7A)
+
+Nodes start collapsed — click to reveal connected drugs and trials:
+
+```
+Before:                         After clicking ⊕:
+
+  [E11.9]                         [E11.9]
+    │                                │
+  [⊕ +3💊 +2🧪]                ├── [Metformin] 💊
+                                    ├── [Glipizide] 💊
+                                    ├── [Jardiance] 💊
+                                    ├── [NCT001234] 🧪
+                                    └── [NCT005678] 🧪
+```
+
+**Features:**
+- **Badge Preview** — See `+3💊 +2🧪` before expanding
+- **Expand All / Collapse All** — Quick toggle for all nodes
+- **Progressive Disclosure** — Keep the mind map clean and focused
+
+### Hover Highlighting (Phase 7B)
+
+Hover over any node to see its connections light up:
+
+```
+Hover [E11.9]:
+- E11.9 and connected drugs/trials → 100% opacity
+- Everything else → 30% opacity (dimmed)
+- Connected edges → thicker and brighter
+```
+
+**Features:**
+- Instant visual feedback
+- Works on ICD codes, drugs, and trials
+- Smooth 200ms transitions
+
+### Focus Mode (Phase 7C)
+
+Click any node to enter Focus Mode for detailed exploration:
+
+```
+┌──────────────────────────────────────────────────┐
+│ 🎯 FOCUS MODE │ E11.9 │ 4 nodes │ [✕]          │
+│ Click background or another node to change      │
+└──────────────────────────────────────────────────┘
+
+Focused branch → 100% opacity with glow ring
+Everything else → 15% opacity (heavily dimmed)
+```
+
+**Features:**
+- Click node to focus, click again to exit
+- Click background to exit focus
+- Focus badge shows node code and connection count
+- Deeper dimming than hover for clear isolation
+
+### Multiple Layouts (Phase 7D)
+
+Switch between three layout algorithms:
+
+| Layout | Icon | Best For |
+|--------|------|----------|
+| **Hierarchical** | 📊 Tree | Clear parent-child relationships |
+| **Radial** | ☀️ | Centering on key nodes |
+| **Circular** | 🔵 | Comparing many nodes at once |
+
+```
+Hierarchical:                 Radial:                    Circular:
+
+   [ICD-1]──[ICD-2]              [Drug]                    [ICD-1]
+      │        │               ╱       ╲                 ╱        ╲
+   [Drug]   [Trial]        [ICD-1]──[ICD-2]          [Drug]    [Trial]
+                               ╲       ╱                 ╲        ╱
+                              [Trial]                    [ICD-2]
+```
+
+**Features:**
+- **One-click switching** — Layout selector in top-left panel
+- **Smooth transitions** — Animated position changes (500ms)
+- **Persistent choice** — Layout saved to localStorage
+- **Works with all features** — Expand, hover, and focus work in all layouts
+
+### Mind Map Controls
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│ Layout: [📊 Tree ✓] [☀️ Radial] [🔵 Circle]                   │
+├────────────────────────────────────────────────────────────────┤
+│ [⊕ Expand All] [⊖ Collapse All] │ 3/5 expanded │ [?]          │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### Stats Panel
+
+Real-time statistics in the top-right corner:
+
+```
+┌───────────────────────┐
+│ ZOOM: 125%            │
+├───────────────────────┤
+│ NODES                 │
+│ • ICD Codes     5     │
+│ • Drugs         3/10  │ ← 3 visible, 10 loaded
+│ • Trials        2/8   │
+│ ────────────────      │
+│   Visible       10/23 │
+└───────────────────────┘
+```
 
 ---
 
@@ -356,15 +475,23 @@ Example searches:
 ### Using the Mind Map
 
 1. Toggle to **Mind Map** view using the view switcher
-2. **Drag** nodes to rearrange the layout
-3. **Scroll** to zoom in/out
-4. **Hover** over any node for details
-5. Load drugs/trials in List view to see them in the Mind Map
+2. **Load Data** — Click "View Drugs" or "View Trials" in List view first
+3. **Expand Nodes** — Click the ⊕ button on ICD codes to show connections
+4. **Hover** — Mouse over nodes to highlight connections
+5. **Focus** — Click any node to spotlight that branch
+6. **Switch Layouts** — Try Hierarchical, Radial, or Circular views
+7. **Navigate** — Drag nodes, scroll to zoom, use minimap
 
 **Node Colors:**
 - 🟢 **Green** = ICD-10 Codes (primary nodes)
 - 🔵 **Blue** = Drugs (connected to ICD codes)
 - 🟣 **Purple** = Clinical Trials (connected to ICD codes)
+
+**Keyboard Shortcuts:**
+- **Scroll** = Zoom in/out
+- **Click + Drag** = Pan the canvas
+- **Click node** = Focus mode (click again to exit)
+- **Click background** = Exit focus mode
 
 ---
 
@@ -380,10 +507,10 @@ icd-lookup-app/
 │   │   ├── DrugCard.tsx        # Individual drug display (blue theme)
 │   │   ├── TrialCard.tsx       # Individual trial display (purple theme)
 │   │   ├── ViewToggle.tsx      # List/Mind Map view switcher
-│   │   ├── MindMapView.tsx     # React Flow canvas with multi-node support
-│   │   ├── IcdNode.tsx         # Custom React Flow node (green)
-│   │   ├── DrugNode.tsx        # Custom React Flow node (blue)
-│   │   ├── TrialNode.tsx       # Custom React Flow node (purple)
+│   │   ├── MindMapView.tsx     # React Flow canvas with layouts & interactions (Phase 7)
+│   │   ├── IcdNode.tsx         # Custom React Flow node with expand button (green)
+│   │   ├── DrugNode.tsx        # Custom React Flow node with highlighting (blue)
+│   │   ├── TrialNode.tsx       # Custom React Flow node with highlighting (purple)
 │   │   ├── FavoritesPanel.tsx  # Favorites slide-in panel (Phase 6)
 │   │   └── HistoryPanel.tsx    # History slide-in panel (Phase 6)
 │   ├── lib/
@@ -404,6 +531,7 @@ icd-lookup-app/
 │   └── screenshot.png          # README screenshot
 ├── PLAN.md                     # Development plan & progress
 ├── AGENTS.md                   # AI assistant guidelines
+├── CHANGELOG.md                # Version history & release notes
 └── README.md                   # This file
 ```
 
@@ -458,6 +586,7 @@ GET https://clinicaltrials.gov/api/v2/studies
 
 ### Completed Features
 
+- [x] **Interactive Mind Map** — Click-to-expand, hover highlighting, focus mode, multiple layouts (Phase 7)
 - [x] **Favorites & History** — Save codes, track searches, export/import JSON (Phase 6)
 - [x] **Common Terms Translation** — Search with everyday language (Phase 5)
 - [x] **Intelligent Ranking** — Multi-factor relevance scoring (Phase 4)
@@ -466,6 +595,7 @@ GET https://clinicaltrials.gov/api/v2/studies
 
 ### Planned Features
 
+- [ ] **Force-Directed Layout** — Physics-based organic node positioning
 - [ ] **Mind Map Export** — Save mind map as PNG/SVG image
 - [ ] **Sharing** — Generate shareable links to searches
 - [ ] **Offline Mode** — Cache data for offline access
