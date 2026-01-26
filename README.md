@@ -38,6 +38,7 @@ The **ICD Mind Map Lookup Tool** is a modern web application that transforms med
 ### 🔍 ICD-10 Code Search
 - Search by condition name (e.g., "diabetes", "hypertension")
 - Search by ICD-10 code directly (e.g., "E11", "I10")
+- **🗣️ Common Terms Translation** — Search with everyday language like "heart attack"
 - **🎯 Intelligent Relevance Ranking** — Most clinically useful codes appear first
 - Instant results from the National Library of Medicine
 - Recent searches saved locally for quick access
@@ -70,6 +71,64 @@ The **ICD Mind Map Lookup Tool** is a modern web application that transforms med
 - Loading skeletons and smooth transitions
 - HealthVerity-inspired color palette (#00D084 green)
 - Glass-morphism and gradient effects
+
+---
+
+## 🗣️ Common Terms Translation (Phase 5)
+
+Search using **everyday language** and get professional medical results! The app automatically translates 85+ common terms to their medical equivalents.
+
+### How It Works
+
+```
+User types: "heart attack"
+     ↓
+Translates to: "myocardial infarction"
+     ↓
+Returns: I21.9, I21.3, I21.4... (heart attack codes)
+     ↓
+Shows badge: "💡 Showing results for 'myocardial infarction'"
+```
+
+### Example Translations
+
+| You Search | We Search | ICD Codes |
+|------------|-----------|-----------|
+| heart attack | myocardial infarction | I21.* |
+| stroke | cerebral infarction | I63.* |
+| broken bone | fracture | S.* |
+| high blood pressure | hypertension | I10.* |
+| flu | influenza | J09.* |
+| heartburn | gastroesophageal reflux | K21.* |
+| UTI | urinary tract infection | N39.* |
+| anxiety attack | panic disorder | F41.0 |
+
+### Categories Covered (85+ Terms)
+
+| Category | Terms | Examples |
+|----------|-------|----------|
+| **Cardiovascular** | 18 | heart attack, stroke, high blood pressure |
+| **Respiratory** | 14 | flu, cold, pneumonia, asthma attack |
+| **Musculoskeletal** | 14 | broken bone, sprain, arthritis, back pain |
+| **Gastrointestinal** | 12 | heartburn, stomach flu, food poisoning |
+| **Mental Health** | 10 | anxiety attack, depression, panic attack |
+| **Neurological** | 8 | migraine, seizure, dizziness |
+| **Dermatological** | 5 | rash, hives, eczema |
+| **And more...** | 4+ | UTI, kidney stones, etc. |
+
+### Smart Features
+
+- **Case-insensitive** — "HEART ATTACK" and "heart attack" both work
+- **Partial matching** — "my heart attack symptoms" finds "heart attack"
+- **Dual search** — Searches both medical term AND original for best coverage
+- **Educational** — Badge shows what medical term was used
+
+### Search Tips Tooltip
+
+Click the ℹ️ icon in the search bar to see tips:
+- Use common terms like "heart attack" or "broken bone"
+- Use medical terms like "myocardial infarction"
+- Use ICD codes like "E11.9" or "I21"
 
 ---
 
@@ -253,11 +312,13 @@ icd-lookup-app/
 │   │   ├── DrugNode.tsx        # Custom React Flow node (blue)
 │   │   └── TrialNode.tsx       # Custom React Flow node (purple)
 │   ├── lib/
-│   │   ├── api.ts              # ClinicalTables API helper
+│   │   ├── api.ts              # ClinicalTables API helper (with translation)
 │   │   ├── openFdaApi.ts       # OpenFDA API helper
 │   │   ├── clinicalTrialsApi.ts # ClinicalTrials.gov API helper
 │   │   ├── scoring.ts          # Relevance scoring algorithm (Phase 4)
-│   │   └── commonCodes.ts      # ICD-10 frequency data (100+ codes)
+│   │   ├── commonCodes.ts      # ICD-10 frequency data (100+ codes)
+│   │   ├── termMappings.ts     # Common → Medical term mappings (Phase 5)
+│   │   └── termMapper.ts       # Translation logic (Phase 5)
 │   ├── types/
 │   │   └── icd.ts              # TypeScript interfaces & helpers
 │   ├── globals.css             # Global styles & animations
@@ -321,6 +382,7 @@ GET https://clinicaltrials.gov/api/v2/studies
 
 ### Completed Features
 
+- [x] **Common Terms Translation** — Search with everyday language (Phase 5)
 - [x] **Intelligent Ranking** — Multi-factor relevance scoring (Phase 4)
 - [x] **Pagination** — Load more results with "Load More" button
 - [x] **Multi-API Integration** — ICD-10, OpenFDA, ClinicalTrials.gov

@@ -17,8 +17,8 @@
 
 'use client';
 
-import { useState } from 'react';
-import { Search, Loader2, Clock, X } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Search, Loader2, Clock, Info } from 'lucide-react';
 
 // =============================================================================
 // Props Interface
@@ -40,6 +40,19 @@ export default function SearchBar({
   recentSearches = []
 }: SearchBarProps) {
   const [query, setQuery] = useState('');
+  const [showTooltip, setShowTooltip] = useState(false);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  
+  // Close tooltip when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
+        setShowTooltip(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,12 +82,12 @@ export default function SearchBar({
             type="text"
             value={query}
             onChange={handleInputChange}
-            placeholder="Search conditions (e.g., diabetes, hypertension, E11.9)"
+            placeholder="Search (e.g., heart attack, diabetes, I21.9)"
             disabled={isLoading}
             className="
               w-full
               pl-12
-              pr-4
+              pr-12
               py-4
               text-base
               sm:text-lg
@@ -99,6 +112,80 @@ export default function SearchBar({
               duration-200
             "
           />
+          
+          {/* Info Tooltip Button (Step 8) */}
+          <div className="absolute right-4 top-1/2 -translate-y-1/2" ref={tooltipRef}>
+            <button
+              type="button"
+              onClick={() => setShowTooltip(!showTooltip)}
+              className="
+                p-1.5
+                rounded-full
+                text-gray-400
+                hover:text-[#00D084]
+                hover:bg-[#00D084]/10
+                transition-colors
+                duration-200
+              "
+              aria-label="Search tips"
+            >
+              <Info className="w-4 h-4" />
+            </button>
+            
+            {/* Tooltip Dropdown */}
+            {showTooltip && (
+              <div className="
+                absolute
+                right-0
+                top-full
+                mt-2
+                w-72
+                p-4
+                bg-white
+                dark:bg-gray-800
+                rounded-xl
+                shadow-xl
+                border
+                border-gray-200
+                dark:border-gray-700
+                z-50
+                animate-in fade-in slide-in-from-top-2
+                duration-200
+              ">
+                <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-sm mb-2">
+                  Search Tips
+                </h4>
+                <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="text-[#00D084] font-bold">•</span>
+                    <span>
+                      <strong className="text-gray-700 dark:text-gray-300">Common terms:</strong>{' '}
+                      Use everyday language like &ldquo;heart attack&rdquo; or &ldquo;broken bone&rdquo;
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-[#00D084] font-bold">•</span>
+                    <span>
+                      <strong className="text-gray-700 dark:text-gray-300">Medical terms:</strong>{' '}
+                      Search directly with &ldquo;myocardial infarction&rdquo; or &ldquo;fracture&rdquo;
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-[#00D084] font-bold">•</span>
+                    <span>
+                      <strong className="text-gray-700 dark:text-gray-300">ICD codes:</strong>{' '}
+                      Enter codes like &ldquo;E11.9&rdquo; or &ldquo;I21&rdquo;
+                    </span>
+                  </li>
+                </ul>
+                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    We automatically translate common terms to medical terminology for better results.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
         
         {/* Search Button */}
@@ -191,36 +278,49 @@ export default function SearchBar({
           </div>
         )}
         
-        {/* Quick Try Suggestions */}
+        {/* Quick Try Suggestions - Mix of common terms and medical terms */}
         <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
           <span>Try:</span>
+          {/* Common terms (will be translated) */}
           <button 
             type="button"
-            onClick={() => { setQuery('diabetes'); }}
+            onClick={() => { setQuery('heart attack'); onSearch('heart attack'); }}
+            className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+            title="Translates to: myocardial infarction"
+          >
+            heart attack
+          </button>
+          <button 
+            type="button"
+            onClick={() => { setQuery('broken bone'); onSearch('broken bone'); }}
+            className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+            title="Translates to: fracture"
+          >
+            broken bone
+          </button>
+          {/* Medical terms (no translation needed) */}
+          <button 
+            type="button"
+            onClick={() => { setQuery('diabetes'); onSearch('diabetes'); }}
             className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-[#00D084]/10 hover:text-[#00A66C] dark:hover:text-[#00D084] transition-colors"
           >
             diabetes
           </button>
           <button 
             type="button"
-            onClick={() => { setQuery('hypertension'); }}
-            className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-[#00D084]/10 hover:text-[#00A66C] dark:hover:text-[#00D084] transition-colors"
-          >
-            hypertension
-          </button>
-          <button 
-            type="button"
-            onClick={() => { setQuery('E11.9'); }}
+            onClick={() => { setQuery('I21.9'); onSearch('I21.9'); }}
             className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-[#00D084]/10 hover:text-[#00A66C] dark:hover:text-[#00D084] transition-colors font-mono"
+            title="ICD-10 code for acute myocardial infarction"
           >
-            E11.9
+            I21.9
           </button>
           <button 
             type="button"
-            onClick={() => { setQuery('anxiety'); }}
-            className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-[#00D084]/10 hover:text-[#00A66C] dark:hover:text-[#00D084] transition-colors"
+            onClick={() => { setQuery('high blood pressure'); onSearch('high blood pressure'); }}
+            className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+            title="Translates to: hypertension"
           >
-            anxiety
+            high blood pressure
           </button>
         </div>
       </div>

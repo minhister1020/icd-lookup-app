@@ -12,10 +12,17 @@
  * - Fetches 50 results for better ranking pool
  * - Scores results by clinical relevance
  * - Returns top 25 sorted by score (not alphabetically)
+ * 
+ * Phase 5 Update: Added common terms translation
+ * - Translates lay terms to medical terminology before search
+ * - "heart attack" → searches "myocardial infarction"
+ * - Combines results from both original and translated terms
+ * - Returns translation metadata for UI display
  */
 
-import { ICD10Result, SearchResponse, SearchResultsWithMeta } from '../types/icd';
+import { ICD10Result, SearchResponse, SearchResultsWithTranslation, ScoredICD10Result } from '../types/icd';
 import { scoreAndRankResults } from './scoring';
+import { translateQuery } from './termMapper';
 
 // =============================================================================
 // Configuration
@@ -53,30 +60,38 @@ const DISPLAY_LIMIT = 25;
  * - Applies multi-factor relevance scoring (keyword, popularity, specificity, exactness)
  * - Returns top 25 results sorted by clinical relevance, not alphabetically
  * 
- * @param query - The search term (e.g., "diabetes" or "E11.9")
- * @returns Promise that resolves to SearchResultsWithMeta containing:
+ * Phase 5 Enhancement:
+ * - Translates common terms to medical terminology
+ * - "heart attack" → searches "myocardial infarction"
+ * - Combines results from both terms for best coverage
+ * - Returns translation metadata for UI display
+ * 
+ * @param query - The search term (e.g., "diabetes", "heart attack", or "E11.9")
+ * @returns Promise that resolves to SearchResultsWithTranslation containing:
  *          - results: Top 25 scored results
  *          - totalCount: Total matching results in API
  *          - displayedCount: Number currently shown
  *          - hasMore: Whether more results can be loaded
+ *          - translation: Translation metadata (if query was translated)
  * @throws Error if the network request fails or response is invalid
  * 
  * @example
- * // Search for diabetes-related codes
- * const { results, totalCount } = await searchICD10('diabetes');
- * console.log(`Found ${totalCount} results, showing top ${results.length}`);
- * // Results are now sorted by relevance:
- * // E11.9 (Type 2 diabetes) appears before E08.0 (rare diabetes variant)
+ * // Search with common term - gets translated
+ * const { results, translation } = await searchICD10('heart attack');
+ * // translation.medicalTerm = "myocardial infarction"
+ * // Results include I21.9, I21.3, etc.
+ * 
+ * @example
+ * // Search with medical term - no translation
+ * const { results, translation } = await searchICD10('diabetes mellitus');
+ * // translation.wasTranslated = false
  */
-export async function searchICD10(query: string): Promise<SearchResultsWithMeta> {
+export async function searchICD10(query: string): Promise<SearchResultsWithTranslation> {
   // Step 1: Validate the input
   // --------------------------
-  // trim() removes whitespace from both ends of the string
-  // This prevents searches with just spaces
   const trimmedQuery = query.trim();
   
   if (!trimmedQuery) {
-    // Return empty result with metadata if query is empty
     return {
       results: [],
       totalCount: 0,
@@ -85,63 +100,56 @@ export async function searchICD10(query: string): Promise<SearchResultsWithMeta>
     };
   }
 
-  // Step 2: Build the API URL
-  // -------------------------
-  // Phase 4: Added maxList to fetch more results for better ranking
-  const params = new URLSearchParams({
-    sf: 'code,name',       // sf = "search fields" - we want both code and name
-    terms: trimmedQuery,   // terms = the search query
-    maxList: String(FETCH_LIMIT)  // Fetch 50 results for scoring pool
-  });
+  // Step 2: Translate query if it's a common term (Phase 5)
+  // -------------------------------------------------------
+  // This converts lay terms like "heart attack" to medical terms
+  // like "myocardial infarction" for better API results
+  const translation = translateQuery(trimmedQuery);
   
-  const url = `${API_BASE_URL}?${params.toString()}`;
-  
-  // Step 3: Make the API request
-  // ----------------------------
+  // Step 3: Search for all terms and combine results
+  // ------------------------------------------------
   try {
-    const response = await fetch(url);
+    let allResults: ICD10Result[] = [];
+    let maxTotalCount = 0;
     
-    // Check if the request was successful (status code 200-299)
-    if (!response.ok) {
-      throw new Error(`API request failed with status: ${response.status}`);
+    // Search for each term in searchTerms array
+    // (Usually 1 term, or 2 if translated: [medical, original])
+    for (const searchTerm of translation.searchTerms) {
+      const { results, totalCount } = await searchSingleTerm(searchTerm);
+      allResults = allResults.concat(results);
+      maxTotalCount = Math.max(maxTotalCount, totalCount);
     }
     
-    // Step 4: Parse the JSON response
+    // Step 4: Deduplicate results by ICD code
+    // ---------------------------------------
+    // When searching both "myocardial infarction" and "heart attack",
+    // some codes might appear in both result sets
+    const uniqueResults = deduplicateResults(allResults);
+    
+    // Step 5: Apply relevance scoring
     // -------------------------------
-    const data: SearchResponse = await response.json();
+    // Score against the ORIGINAL query for best keyword matching
+    // This ensures "heart attack" matches score well even when
+    // we searched "myocardial infarction"
+    const primarySearchTerm = translation.wasTranslated 
+      ? translation.medicalTerm! 
+      : trimmedQuery;
     
-    // Extract total count from API response (index 0)
-    const apiTotalCount = data[0];
+    const scoredResults = scoreAndRankResults(uniqueResults, primarySearchTerm);
     
-    // Step 5: Transform the response into ICD10Result objects
-    // -------------------------------------------------------
-    const rawResults = parseSearchResponse(data);
-    
-    // Step 6: Apply relevance scoring (Phase 4 Enhancement)
-    // -----------------------------------------------------
-    // This transforms alphabetically-ordered results into
-    // relevance-ordered results based on:
-    // - Keyword match quality (35%)
-    // - Code popularity (40%)
-    // - Code specificity (15%)
-    // - Exactness bonus (10%)
-    const scoredResults = scoreAndRankResults(rawResults, trimmedQuery);
-    
-    // Step 7: Return top results with metadata
+    // Step 6: Return top results with metadata
     // ----------------------------------------
-    // Take only the top DISPLAY_LIMIT results for initial display
     const displayResults = scoredResults.slice(0, DISPLAY_LIMIT);
     
     return {
       results: displayResults,
-      totalCount: apiTotalCount,
+      totalCount: maxTotalCount,
       displayedCount: displayResults.length,
-      hasMore: apiTotalCount > displayResults.length
+      hasMore: maxTotalCount > displayResults.length,
+      translation: translation.wasTranslated ? translation : undefined
     };
     
   } catch (error) {
-    // Step 8: Handle errors gracefully
-    // --------------------------------
     if (error instanceof Error) {
       throw new Error(`Failed to search ICD-10 codes: ${error.message}`);
     }
@@ -150,19 +158,73 @@ export async function searchICD10(query: string): Promise<SearchResultsWithMeta>
 }
 
 /**
+ * Searches the API for a single term (internal helper).
+ * 
+ * @param term - The search term
+ * @returns Raw results and total count
+ */
+async function searchSingleTerm(term: string): Promise<{ results: ICD10Result[]; totalCount: number }> {
+  const params = new URLSearchParams({
+    sf: 'code,name',
+    terms: term,
+    maxList: String(FETCH_LIMIT)
+  });
+  
+  const url = `${API_BASE_URL}?${params.toString()}`;
+  const response = await fetch(url);
+  
+  if (!response.ok) {
+    throw new Error(`API request failed with status: ${response.status}`);
+  }
+  
+  const data: SearchResponse = await response.json();
+  const totalCount = data[0];
+  const results = parseSearchResponse(data);
+  
+  return { results, totalCount };
+}
+
+/**
+ * Removes duplicate ICD codes from combined results.
+ * 
+ * When searching both "myocardial infarction" and "heart attack",
+ * some codes might appear in both result sets. This function
+ * keeps only the first occurrence of each code.
+ * 
+ * @param results - Combined results from multiple searches
+ * @returns Deduplicated results
+ */
+function deduplicateResults(results: ICD10Result[]): ICD10Result[] {
+  const seen = new Set<string>();
+  const unique: ICD10Result[] = [];
+  
+  for (const result of results) {
+    if (!seen.has(result.code)) {
+      seen.add(result.code);
+      unique.push(result);
+    }
+  }
+  
+  return unique;
+}
+
+/**
  * Fetches additional results for "Load More" functionality.
  * 
  * Note: Since ClinicalTables API doesn't support true pagination with offset,
  * we fetch a larger batch and score them. This function increases the display limit.
  * 
- * @param query - The search term
+ * Phase 5: Also supports translated queries - uses the same translation
+ * that was applied in the initial search.
+ * 
+ * @param query - The search term (original user input)
  * @param currentCount - Number of results already displayed
  * @returns Promise with additional scored results
  */
 export async function searchICD10More(
   query: string,
   currentCount: number
-): Promise<SearchResultsWithMeta> {
+): Promise<SearchResultsWithTranslation> {
   const trimmedQuery = query.trim();
   
   if (!trimmedQuery) {
@@ -174,38 +236,56 @@ export async function searchICD10More(
     };
   }
 
+  // Apply translation (same as initial search)
+  const translation = translateQuery(trimmedQuery);
+  
   // Fetch a larger batch for more results
   const fetchLimit = Math.min(currentCount + DISPLAY_LIMIT + 25, 500);
   
-  const params = new URLSearchParams({
-    sf: 'code,name',
-    terms: trimmedQuery,
-    maxList: String(fetchLimit)
-  });
-  
-  const url = `${API_BASE_URL}?${params.toString()}`;
-  
   try {
-    const response = await fetch(url);
+    let allResults: ICD10Result[] = [];
+    let maxTotalCount = 0;
     
-    if (!response.ok) {
-      throw new Error(`API request failed with status: ${response.status}`);
+    // Search for each term
+    for (const searchTerm of translation.searchTerms) {
+      const params = new URLSearchParams({
+        sf: 'code,name',
+        terms: searchTerm,
+        maxList: String(fetchLimit)
+      });
+      
+      const url = `${API_BASE_URL}?${params.toString()}`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`API request failed with status: ${response.status}`);
+      }
+      
+      const data: SearchResponse = await response.json();
+      const totalCount = data[0];
+      const results = parseSearchResponse(data);
+      
+      allResults = allResults.concat(results);
+      maxTotalCount = Math.max(maxTotalCount, totalCount);
     }
     
-    const data: SearchResponse = await response.json();
-    const apiTotalCount = data[0];
-    const rawResults = parseSearchResponse(data);
-    const scoredResults = scoreAndRankResults(rawResults, trimmedQuery);
+    // Deduplicate and score
+    const uniqueResults = deduplicateResults(allResults);
+    const primarySearchTerm = translation.wasTranslated 
+      ? translation.medicalTerm! 
+      : trimmedQuery;
+    const scoredResults = scoreAndRankResults(uniqueResults, primarySearchTerm);
     
-    // Return next batch of results (skip already displayed)
+    // Return next batch of results
     const newDisplayLimit = currentCount + DISPLAY_LIMIT;
     const displayResults = scoredResults.slice(0, newDisplayLimit);
     
     return {
       results: displayResults,
-      totalCount: apiTotalCount,
+      totalCount: maxTotalCount,
       displayedCount: displayResults.length,
-      hasMore: apiTotalCount > displayResults.length && scoredResults.length > displayResults.length
+      hasMore: maxTotalCount > displayResults.length && scoredResults.length > displayResults.length,
+      translation: translation.wasTranslated ? translation : undefined
     };
     
   } catch (error) {

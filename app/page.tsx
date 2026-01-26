@@ -30,7 +30,7 @@ import SearchResults from './components/SearchResults';
 import { searchICD10, searchICD10More } from './lib/api';
 
 // Import TypeScript types for type safety
-import { ViewMode, DrugResult, ClinicalTrialResult, ScoredICD10Result } from './types/icd';
+import { ViewMode, DrugResult, ClinicalTrialResult, ScoredICD10Result, TranslationResult } from './types/icd';
 
 // =============================================================================
 // Main Component
@@ -58,6 +58,9 @@ export default function Home() {
   const [hasMore, setHasMore] = useState<boolean>(false);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [currentQuery, setCurrentQuery] = useState<string>('');
+  
+  // Phase 5: Translation metadata for displaying translation notice
+  const [translation, setTranslation] = useState<TranslationResult | undefined>(undefined);
   
   // Phase 3C: Centralized drug/trial state for Mind Map
   // Maps ICD code -> array of related data
@@ -167,15 +170,23 @@ export default function Home() {
     addToRecentSearches(query);
     
     try {
-      // Phase 4: searchICD10 now returns scored results with metadata
-      const { results: scoredResults, totalCount: total, hasMore: more } = await searchICD10(query);
+      // Phase 5: searchICD10 now returns translation metadata
+      const { 
+        results: scoredResults, 
+        totalCount: total, 
+        hasMore: more,
+        translation: translationResult  // New in Phase 5
+      } = await searchICD10(query);
+      
       setResults(scoredResults);
       setTotalCount(total);
       setHasMore(more);
+      setTranslation(translationResult);  // Save translation for UI display
     } catch (err) {
       setResults([]);
       setTotalCount(0);
       setHasMore(false);
+      setTranslation(undefined);
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -309,6 +320,7 @@ export default function Home() {
           hasMore={hasMore}
           onLoadMore={handleLoadMore}
           isLoadingMore={isLoadingMore}
+          translation={translation}  // Phase 5: Pass translation for UI display
         />
       </main>
 

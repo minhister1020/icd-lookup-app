@@ -15,11 +15,68 @@
  * - hasMore flag for future "Load More" functionality
  */
 
-import { AlertCircle, SearchX, Sparkles, Loader2, ChevronDown } from 'lucide-react';
-import { ScoredICD10Result, ViewMode, DrugResult, ClinicalTrialResult } from '../types/icd';
+import { AlertCircle, SearchX, Sparkles, Loader2, ChevronDown, Lightbulb } from 'lucide-react';
+import { ScoredICD10Result, ViewMode, DrugResult, ClinicalTrialResult, TranslationResult } from '../types/icd';
 import ResultCard from './ResultCard';
 import ViewToggle from './ViewToggle';
 import MindMapView from './MindMapView';
+
+// =============================================================================
+// Translation Badge Component (Phase 5)
+// =============================================================================
+
+interface TranslationBadgeProps {
+  translation: TranslationResult;
+}
+
+function TranslationBadge({ translation }: TranslationBadgeProps) {
+  if (!translation.wasTranslated) return null;
+  
+  return (
+    <div className="
+      mb-4
+      p-3
+      rounded-xl
+      bg-gradient-to-r from-blue-50 to-indigo-50
+      dark:from-blue-900/20 dark:to-indigo-900/20
+      border border-blue-200/50
+      dark:border-blue-800/50
+      animate-in fade-in slide-in-from-top-2
+      duration-300
+    ">
+      <div className="flex items-start gap-3">
+        {/* Icon */}
+        <div className="
+          flex-shrink-0
+          w-8 h-8
+          rounded-lg
+          bg-blue-100 dark:bg-blue-800/30
+          flex items-center justify-center
+        ">
+          <Lightbulb className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+        </div>
+        
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            Showing results for{' '}
+            <span className="font-semibold text-blue-700 dark:text-blue-300">
+              &ldquo;{translation.medicalTerm}&rdquo;
+            </span>
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            You searched: &ldquo;{translation.originalTerm}&rdquo;
+            {translation.icdHint && (
+              <span className="ml-2 text-blue-500 dark:text-blue-400">
+                • Related codes: {translation.icdHint}*
+              </span>
+            )}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // =============================================================================
 // Skeleton Card Component
@@ -79,6 +136,9 @@ interface SearchResultsProps {
   // Phase 4C: Load More functionality
   onLoadMore?: () => void;
   isLoadingMore?: boolean;
+  
+  // Phase 5: Translation metadata for displaying translation notice
+  translation?: TranslationResult;
 }
 
 // =============================================================================
@@ -100,6 +160,7 @@ export default function SearchResults({
   hasMore = false,
   onLoadMore,
   isLoadingMore = false,
+  translation,  // Phase 5: Translation metadata
 }: SearchResultsProps) {
   
   // Count total nodes for display
@@ -278,6 +339,11 @@ export default function SearchResults({
           </div>
         </div>
       </div>
+      
+      {/* Phase 5: Translation Badge - Show when query was translated */}
+      {translation?.wasTranslated && (
+        <TranslationBadge translation={translation} />
+      )}
       
       {/* Conditional View Rendering */}
       {viewMode === 'list' ? (

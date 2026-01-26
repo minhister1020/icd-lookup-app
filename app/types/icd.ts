@@ -496,3 +496,121 @@ export interface SearchResultsWithMeta {
   /** Whether more results can be loaded */
   hasMore: boolean;
 }
+
+// =============================================================================
+// Phase 5: Common Terms Translation Types
+// =============================================================================
+
+/**
+ * Result of translating a user's search query from common
+ * language to medical terminology.
+ * 
+ * The translation system allows users to search with everyday
+ * terms like "heart attack" and automatically converts them
+ * to proper medical terminology like "myocardial infarction".
+ * 
+ * @example
+ * // Translated query
+ * {
+ *   searchTerms: ["myocardial infarction", "heart attack"],
+ *   wasTranslated: true,
+ *   originalTerm: "heart attack",
+ *   medicalTerm: "myocardial infarction",
+ *   matchedTerm: "heart attack",
+ *   icdHint: "I21",
+ *   message: "Showing results for 'myocardial infarction'"
+ * }
+ * 
+ * @example
+ * // Non-translated query (already medical or unknown)
+ * {
+ *   searchTerms: ["diabetes mellitus"],
+ *   wasTranslated: false,
+ *   originalTerm: "diabetes mellitus"
+ * }
+ */
+export interface TranslationResult {
+  /** 
+   * Terms to actually search in the API.
+   * 
+   * When translated: [medicalTerm, originalTerm] for maximum coverage
+   * When not translated: [originalTerm] only
+   */
+  searchTerms: string[];
+  
+  /** 
+   * Whether the query was translated to a medical term.
+   * 
+   * True: A mapping was found and applied
+   * False: No mapping found, searching original term
+   */
+  wasTranslated: boolean;
+  
+  /** 
+   * The user's original search query (as entered).
+   * 
+   * Always preserved for display and fallback purposes.
+   */
+  originalTerm: string;
+  
+  /** 
+   * The medical terminology equivalent (if translated).
+   * 
+   * Only present when wasTranslated is true.
+   * Example: "myocardial infarction" for "heart attack"
+   */
+  medicalTerm?: string;
+  
+  /** 
+   * The specific term that was matched in our mappings.
+   * 
+   * Useful for partial matches where only part of the query matched.
+   * Example: For query "severe heart attack", matchedTerm = "heart attack"
+   */
+  matchedTerm?: string;
+  
+  /** 
+   * ICD-10 code family hint for relevance scoring.
+   * 
+   * Used to boost scores for codes in the expected family.
+   * Example: "I21" for heart attack codes
+   */
+  icdHint?: string;
+  
+  /** 
+   * User-friendly message for UI display.
+   * 
+   * Example: "Showing results for 'myocardial infarction'"
+   */
+  message?: string;
+}
+
+/**
+ * Enhanced search results that include translation metadata.
+ * 
+ * Extends SearchResultsWithMeta to add information about
+ * any term translation that occurred during the search.
+ * 
+ * @example
+ * {
+ *   results: [...],
+ *   totalCount: 847,
+ *   displayedCount: 25,
+ *   hasMore: true,
+ *   translation: {
+ *     wasTranslated: true,
+ *     originalTerm: "heart attack",
+ *     medicalTerm: "myocardial infarction",
+ *     message: "Showing results for 'myocardial infarction'"
+ *   }
+ * }
+ */
+export interface SearchResultsWithTranslation extends SearchResultsWithMeta {
+  /** 
+   * Translation metadata (if query was translated).
+   * 
+   * Present when the search involved term translation.
+   * Use this to display translation notices in the UI.
+   */
+  translation?: TranslationResult;
+}
