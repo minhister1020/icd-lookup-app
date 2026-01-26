@@ -9,16 +9,17 @@
  * - Glass-morphism search bar
  * - Responsive grid layout
  * 
- * DESIGN FEATURES:
- * - Gradient glow effects
- * - Smooth animations and transitions
- * - Professional medical interface
- * - Dark mode support
+ * Phase 3C: Now manages centralized state for:
+ * - ICD-10 search results
+ * - Drugs per ICD code (Map)
+ * - Clinical trials per ICD code (Map)
+ * 
+ * This allows the Mind Map view to display all loaded data!
  */
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Activity } from 'lucide-react';
 
 // Import our custom components
@@ -29,7 +30,7 @@ import SearchResults from './components/SearchResults';
 import { searchICD10 } from './lib/api';
 
 // Import TypeScript types for type safety
-import { ICD10Result, ViewMode } from './types/icd';
+import { ICD10Result, ViewMode, DrugResult, ClinicalTrialResult } from './types/icd';
 
 // =============================================================================
 // Main Component
@@ -44,6 +45,7 @@ export default function Home() {
   // State Management
   // ---------------------------------------------------------------------------
   
+  // Core search state
   const [results, setResults] = useState<ICD10Result[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,15 +53,17 @@ export default function Home() {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   
+  // Phase 3C: Centralized drug/trial state for Mind Map
+  // Maps ICD code -> array of related data
+  const [drugsMap, setDrugsMap] = useState<Map<string, DrugResult[]>>(new Map());
+  const [trialsMap, setTrialsMap] = useState<Map<string, ClinicalTrialResult[]>>(new Map());
+  
   // ---------------------------------------------------------------------------
-  // Load Recent Searches from localStorage on Mount
+  // Load Preferences from localStorage on Mount
   // ---------------------------------------------------------------------------
   
   useEffect(() => {
-    // This only runs in the browser (after component mounts)
-    // localStorage doesn't exist on the server, so we use useEffect
     try {
-      // Load recent searches
       const savedSearches = localStorage.getItem(RECENT_SEARCHES_KEY);
       if (savedSearches) {
         const parsed = JSON.parse(savedSearches);
@@ -68,16 +72,14 @@ export default function Home() {
         }
       }
       
-      // Load view mode preference
       const savedViewMode = localStorage.getItem(VIEW_MODE_KEY);
       if (savedViewMode === 'list' || savedViewMode === 'mindmap') {
         setViewMode(savedViewMode);
       }
     } catch (err) {
-      // If parsing fails, just start fresh
       console.warn('Failed to load preferences:', err);
     }
-  }, []); // Empty array = only run once on mount
+  }, []);
   
   // ---------------------------------------------------------------------------
   // Helper: Save Search to Recent Searches
@@ -85,18 +87,12 @@ export default function Home() {
   
   const addToRecentSearches = (query: string) => {
     setRecentSearches((prev) => {
-      // Remove the query if it already exists (to avoid duplicates)
       const filtered = prev.filter(
         (item) => item.toLowerCase() !== query.toLowerCase()
       );
-      
-      // Add the new query at the beginning
       const updated = [query, ...filtered];
-      
-      // Keep only the last 5 searches
       const trimmed = updated.slice(0, 5);
       
-      // Save to localStorage
       try {
         localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(trimmed));
       } catch (err) {
@@ -113,13 +109,40 @@ export default function Home() {
   
   const handleViewModeChange = (newMode: ViewMode) => {
     setViewMode(newMode);
-    // Save preference to localStorage
     try {
       localStorage.setItem(VIEW_MODE_KEY, newMode);
     } catch (err) {
       console.warn('Failed to save view mode:', err);
     }
   };
+  
+  // ---------------------------------------------------------------------------
+  // Phase 3C: Callbacks for Drug/Trial Data
+  // ---------------------------------------------------------------------------
+  
+  /**
+   * Called by ResultCard when drugs are loaded for an ICD code.
+   * Updates the centralized drugsMap for Mind Map visualization.
+   */
+  const handleDrugsLoaded = useCallback((icdCode: string, drugs: DrugResult[]) => {
+    setDrugsMap(prev => {
+      const next = new Map(prev);
+      next.set(icdCode, drugs);
+      return next;
+    });
+  }, []);
+  
+  /**
+   * Called by ResultCard when trials are loaded for an ICD code.
+   * Updates the centralized trialsMap for Mind Map visualization.
+   */
+  const handleTrialsLoaded = useCallback((icdCode: string, trials: ClinicalTrialResult[]) => {
+    setTrialsMap(prev => {
+      const next = new Map(prev);
+      next.set(icdCode, trials);
+      return next;
+    });
+  }, []);
   
   // ---------------------------------------------------------------------------
   // Event Handlers
@@ -130,7 +153,10 @@ export default function Home() {
     setError(null);
     setHasSearched(true);
     
-    // Save to recent searches
+    // Clear previous drugs/trials when new search starts
+    setDrugsMap(new Map());
+    setTrialsMap(new Map());
+    
     addToRecentSearches(query);
     
     try {
@@ -180,7 +206,7 @@ export default function Home() {
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00D084]/10 border border-[#00D084]/20">
               <span className="w-2 h-2 rounded-full bg-[#00D084] animate-pulse" />
               <span className="text-xs font-medium text-[#00A66C] dark:text-[#00D084]">
-                Phase 2 - Mind Map
+                Phase 3 - Multi-API
               </span>
             </div>
           </div>
@@ -206,16 +232,14 @@ export default function Home() {
               </span>
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Find medical diagnosis codes instantly. Search by condition name or ICD-10 code.
+              Find medical diagnosis codes, related drugs, and clinical trials.
             </p>
           </div>
           
           {/* Search Card with Glow Effect */}
           <div className="relative">
-            {/* Glow Effect Behind Card */}
             <div className="absolute -inset-1 bg-gradient-to-r from-[#00D084]/30 via-[#00A66C]/20 to-[#00D084]/30 rounded-3xl blur-xl opacity-60" />
             
-            {/* Search Card */}
             <div className="relative bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-xl shadow-gray-200/50 dark:shadow-none p-6 sm:p-8 border border-gray-100 dark:border-gray-700">
               <SearchBar 
                 onSearch={handleSearch}
@@ -238,6 +262,10 @@ export default function Home() {
           hasSearched={hasSearched}
           viewMode={viewMode}
           onViewModeChange={handleViewModeChange}
+          drugsMap={drugsMap}
+          trialsMap={trialsMap}
+          onDrugsLoaded={handleDrugsLoaded}
+          onTrialsLoaded={handleTrialsLoaded}
         />
       </main>
 
@@ -248,19 +276,36 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Data provided by{' '}
+              Data:{' '}
               <a 
                 href="https://clinicaltables.nlm.nih.gov/" 
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#00D084] hover:text-[#00A66C] font-medium transition-colors"
               >
-                ClinicalTables API
+                ClinicalTables
               </a>
-              {' '}• National Library of Medicine
+              {' • '}
+              <a 
+                href="https://open.fda.gov/" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#3B82F6] hover:text-blue-600 font-medium transition-colors"
+              >
+                OpenFDA
+              </a>
+              {' • '}
+              <a 
+                href="https://clinicaltrials.gov/" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#9333EA] hover:text-purple-600 font-medium transition-colors"
+              >
+                ClinicalTrials.gov
+              </a>
             </p>
             <p className="text-xs text-gray-400 dark:text-gray-500">
-              Built with Next.js & Tailwind CSS
+              Built with Next.js & React Flow
             </p>
           </div>
         </div>

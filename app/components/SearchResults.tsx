@@ -4,16 +4,15 @@
  * 
  * Container component with professional styling for all result states.
  * 
- * DESIGN FEATURES:
- * - Modern loading spinner with gradient
- * - Clean error and empty states
- * - Responsive grid layout
- * - Smooth fade-in animations
+ * Phase 3C: Now supports:
+ * - Passing drugsMap and trialsMap to MindMapView
+ * - Callbacks to notify parent when drugs/trials are loaded
+ * - Multi-node mind map visualization
  */
 
 import { AlertCircle, SearchX, Sparkles } from 'lucide-react';
-import { ICD10Result, ViewMode } from '../types/icd';
-import ResultCard from './ResultCard';
+import { ICD10Result, ViewMode, DrugResult, ClinicalTrialResult } from '../types/icd';
+import ResultCard from './ResultCard'; // Phase 3C: Now accepts onDrugsLoaded, onTrialsLoaded
 import ViewToggle from './ViewToggle';
 import MindMapView from './MindMapView';
 
@@ -21,12 +20,6 @@ import MindMapView from './MindMapView';
 // Skeleton Card Component
 // =============================================================================
 
-/**
- * SkeletonCard - Placeholder card shown while loading
- * 
- * Mimics the structure of ResultCard with animated gray boxes.
- * Uses Tailwind's animate-pulse for the shimmer effect.
- */
 function SkeletonCard({ delay = 0 }: { delay?: number }) {
   return (
     <div 
@@ -42,12 +35,10 @@ function SkeletonCard({ delay = 0 }: { delay?: number }) {
       "
       style={{ animationDelay: `${delay}ms` }}
     >
-      {/* Skeleton Code Badge */}
       <div className="inline-flex items-center px-3 py-1.5 rounded-lg bg-gray-200 dark:bg-gray-700 mb-3">
         <div className="h-4 w-16 bg-gray-300 dark:bg-gray-600 rounded" />
       </div>
       
-      {/* Skeleton Name Lines */}
       <div className="space-y-2">
         <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded" />
         <div className="h-4 w-3/4 bg-gray-100 dark:bg-gray-800 rounded" />
@@ -67,6 +58,14 @@ interface SearchResultsProps {
   hasSearched: boolean;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
+  
+  // Phase 3C: Centralized drug/trial data for Mind Map
+  drugsMap?: Map<string, DrugResult[]>;
+  trialsMap?: Map<string, ClinicalTrialResult[]>;
+  
+  // Callbacks when drugs/trials are loaded in ResultCards
+  onDrugsLoaded?: (icdCode: string, drugs: DrugResult[]) => void;
+  onTrialsLoaded?: (icdCode: string, trials: ClinicalTrialResult[]) => void;
 }
 
 // =============================================================================
@@ -79,17 +78,25 @@ export default function SearchResults({
   error,
   hasSearched,
   viewMode,
-  onViewModeChange
+  onViewModeChange,
+  drugsMap = new Map(),
+  trialsMap = new Map(),
+  onDrugsLoaded,
+  onTrialsLoaded,
 }: SearchResultsProps) {
   
+  // Count total nodes for display
+  const drugCount = Array.from(drugsMap.values()).reduce((sum, arr) => sum + arr.length, 0);
+  const trialCount = Array.from(trialsMap.values()).reduce((sum, arr) => sum + arr.length, 0);
+  const totalNodes = results.length + drugCount + trialCount;
+  
   // =========================================================================
-  // State 1: Loading - Show Skeleton Cards
+  // State 1: Loading
   // =========================================================================
   
   if (isLoading) {
     return (
       <div>
-        {/* Loading Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <div className="h-6 w-32 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
@@ -98,15 +105,12 @@ export default function SearchResults({
           <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
         </div>
         
-        {/* Skeleton Cards Grid */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Generate 6 skeleton cards */}
           {[...Array(6)].map((_, index) => (
             <SkeletonCard key={index} delay={index * 100} />
           ))}
         </div>
         
-        {/* Loading Text */}
         <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8 animate-pulse">
           Searching ICD-10 database...
         </p>
@@ -140,7 +144,7 @@ export default function SearchResults({
   }
   
   // =========================================================================
-  // State 3: No Results (after search)
+  // State 3: No Results
   // =========================================================================
   
   if (hasSearched && results.length === 0) {
@@ -172,7 +176,7 @@ export default function SearchResults({
   }
   
   // =========================================================================
-  // State 4: Initial State (before any search)
+  // State 4: Initial State
   // =========================================================================
   
   if (!hasSearched) {
@@ -189,16 +193,15 @@ export default function SearchResults({
             Enter a condition name or ICD-10 code above to get started.
           </p>
           
-          {/* Feature Pills */}
           <div className="flex flex-wrap justify-center gap-2">
             <span className="px-3 py-1 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-600 dark:text-gray-400">
-              🔍 Instant Search
+              🔍 ICD-10 Search
             </span>
             <span className="px-3 py-1 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-600 dark:text-gray-400">
-              📋 Official ICD-10 Codes
+              💊 Drug Info
             </span>
             <span className="px-3 py-1 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-600 dark:text-gray-400">
-              🏥 NLM Database
+              🔬 Clinical Trials
             </span>
           </div>
         </div>
@@ -219,7 +222,9 @@ export default function SearchResults({
             Search Results
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Found {results.length} matching ICD-10 code{results.length !== 1 ? 's' : ''}
+            {results.length} ICD codes
+            {drugCount > 0 && <span className="text-blue-500"> • {drugCount} drugs</span>}
+            {trialCount > 0 && <span className="text-purple-500"> • {trialCount} trials</span>}
           </p>
         </div>
         
@@ -229,10 +234,12 @@ export default function SearchResults({
             currentView={viewMode}
             onViewChange={onViewModeChange}
           />
-          <div className="px-3 py-1.5 rounded-full bg-[#00D084]/10 border border-[#00D084]/20">
-            <span className="text-sm font-semibold text-[#00A66C] dark:text-[#00D084]">
-              {results.length}
-            </span>
+          <div className="flex items-center gap-1.5">
+            <div className="px-3 py-1.5 rounded-full bg-[#00D084]/10 border border-[#00D084]/20">
+              <span className="text-sm font-semibold text-[#00A66C] dark:text-[#00D084]">
+                {viewMode === 'mindmap' ? totalNodes : results.length}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -250,13 +257,30 @@ export default function SearchResults({
               <ResultCard
                 code={result.code}
                 name={result.name}
+                onDrugsLoaded={onDrugsLoaded}
+                onTrialsLoaded={onTrialsLoaded}
               />
             </div>
           ))}
         </div>
       ) : (
-        /* Mind Map View - React Flow Canvas */
-        <MindMapView results={results} />
+        /* Mind Map View - React Flow Canvas with All Data */
+        <div>
+          {/* Hint for loading more data */}
+          {drugCount === 0 && trialCount === 0 && (
+            <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 text-center">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                💡 <strong>Tip:</strong> Switch to List view and click &quot;View Drugs&quot; or &quot;View Trials&quot; on any card to load related data into the Mind Map!
+              </p>
+            </div>
+          )}
+          
+          <MindMapView 
+            results={results}
+            drugsMap={drugsMap}
+            trialsMap={trialsMap}
+          />
+        </div>
       )}
     </div>
   );

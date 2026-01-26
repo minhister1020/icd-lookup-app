@@ -43,13 +43,19 @@ interface ResultCardProps {
   
   /** The condition name (e.g., "Type 2 diabetes mellitus without complications") */
   name: string;
+  
+  /** Phase 3C: Callback when drugs are loaded (for Mind Map sync) */
+  onDrugsLoaded?: (icdCode: string, drugs: DrugResult[]) => void;
+  
+  /** Phase 3C: Callback when trials are loaded (for Mind Map sync) */
+  onTrialsLoaded?: (icdCode: string, trials: ClinicalTrialResult[]) => void;
 }
 
 // =============================================================================
 // Component
 // =============================================================================
 
-export default function ResultCard({ code, name }: ResultCardProps) {
+export default function ResultCard({ code, name, onDrugsLoaded, onTrialsLoaded }: ResultCardProps) {
   // =========================================================================
   // Drug State (Phase 3A)
   // =========================================================================
@@ -96,6 +102,11 @@ export default function ResultCard({ code, name }: ResultCardProps) {
       const results = await searchDrugsByCondition(name);
       setDrugs(results);
       setHasFetchedDrugs(true);
+      
+      // Phase 3C: Notify parent for Mind Map sync
+      if (onDrugsLoaded) {
+        onDrugsLoaded(code, results);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load drugs';
       setDrugsError(message);
@@ -132,6 +143,11 @@ export default function ResultCard({ code, name }: ResultCardProps) {
       const results = await searchTrialsByCondition(name);
       setTrials(results);
       setHasFetchedTrials(true);
+      
+      // Phase 3C: Notify parent for Mind Map sync
+      if (onTrialsLoaded) {
+        onTrialsLoaded(code, results);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load trials';
       setTrialsError(message);
