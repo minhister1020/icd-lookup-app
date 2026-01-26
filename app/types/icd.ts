@@ -121,6 +121,8 @@ export type ViewMode = 'list' | 'mindmap';
  * 
  * React Flow nodes have a `data` property that can contain
  * any custom data. We use it to pass ICD information.
+ * 
+ * Phase 7A: Added expansion state for progressive disclosure.
  */
 export interface IcdNodeData {
   /** The ICD-10 code (e.g., "E11.9") */
@@ -131,6 +133,19 @@ export interface IcdNodeData {
   
   /** Optional: Category for grouping (e.g., "E11" for diabetes codes) */
   category?: string;
+  
+  /** Phase 7A: Whether this node's children are visible */
+  isExpanded?: boolean;
+  
+  /** Phase 7A: Count of children (drugs/trials) */
+  childrenCount?: {
+    drugs: number;
+    trials: number;
+    loaded: boolean; // Whether data has been fetched from API
+  };
+  
+  /** Phase 7A: Callback to toggle expansion state */
+  onToggleExpand?: (code: string) => void;
 }
 
 /**

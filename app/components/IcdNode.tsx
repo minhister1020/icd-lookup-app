@@ -154,7 +154,7 @@ function IcdNode({ data, selected }: NodeProps<IcdNodeData>) {
         />
       </div>
       
-      {/* Tooltip on Hover */}
+      {/* Tooltip on Hover - Only show when no expand button or not hovering expand */}
       <div 
         className="
           absolute
@@ -181,9 +181,89 @@ function IcdNode({ data, selected }: NodeProps<IcdNodeData>) {
           shadow-xl
           whitespace-normal
         "
+        style={{ marginTop: data.childrenCount ? '3.5rem' : '0.5rem' }}
       >
         {data.name}
       </div>
+      
+      {/* Phase 7A: Expand/Collapse Button */}
+      {data.childrenCount && (data.childrenCount.drugs > 0 || data.childrenCount.trials > 0) && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            data.onToggleExpand?.(data.code);
+          }}
+          className={`
+            absolute
+            left-1/2
+            -translate-x-1/2
+            top-full
+            mt-2
+            px-3
+            py-1.5
+            rounded-lg
+            text-xs
+            font-medium
+            transition-all
+            duration-200
+            hover:scale-105
+            active:scale-95
+            shadow-lg
+            z-40
+            ${data.isExpanded 
+              ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600' 
+              : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white border border-blue-400/30'
+            }
+          `}
+          title={data.isExpanded ? 'Collapse children' : 'Expand to show drugs & trials'}
+        >
+          {data.isExpanded ? (
+            <span className="flex items-center gap-1.5">
+              <span className="text-base leading-none">⊖</span>
+              <span>Collapse</span>
+            </span>
+          ) : (
+            <span className="flex items-center gap-2">
+              <span className="text-base leading-none">⊕</span>
+              {data.childrenCount.drugs > 0 && (
+                <span className="flex items-center gap-0.5">
+                  <span>{data.childrenCount.drugs}</span>
+                  <span>💊</span>
+                </span>
+              )}
+              {data.childrenCount.trials > 0 && (
+                <span className="flex items-center gap-0.5">
+                  <span>{data.childrenCount.trials}</span>
+                  <span>🧪</span>
+                </span>
+              )}
+            </span>
+          )}
+        </button>
+      )}
+      
+      {/* Phase 7A: "Load data" hint when no children loaded */}
+      {data.childrenCount && !data.childrenCount.loaded && data.childrenCount.drugs === 0 && data.childrenCount.trials === 0 && (
+        <div 
+          className="
+            absolute
+            left-1/2
+            -translate-x-1/2
+            top-full
+            mt-2
+            px-2
+            py-1
+            rounded
+            bg-gray-800/80
+            text-gray-400
+            text-[10px]
+            whitespace-nowrap
+            pointer-events-none
+          "
+        >
+          Click View Drugs/Trials in list
+        </div>
+      )}
       
       {/* Handles - Invisible but functional */}
       <Handle
