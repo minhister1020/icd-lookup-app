@@ -7,10 +7,13 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
 [![React Flow](https://img.shields.io/badge/React_Flow-12-FF0072?logo=react)](https://reactflow.dev/)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?logo=vercel)](https://icd-lookup-app.vercel.app/)
 
-<!-- 
-[Live Demo](https://your-deployment-url.vercel.app) 
--->
+## 🌐 Live Demo
+
+**👉 [https://icd-lookup-app.vercel.app/](https://icd-lookup-app.vercel.app/)**
+
+Try it now — no installation required!
 
 ![ICD Mind Map Screenshot](./public/screenshot.png)
 *Interactive mind map visualization showing ICD codes, related drugs, and clinical trials*
