@@ -20,12 +20,13 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Activity, Star } from 'lucide-react';
+import { Activity, Star, Clock } from 'lucide-react';
 
 // Import our custom components
 import SearchBar from './components/SearchBar';
 import SearchResults from './components/SearchResults';
 import FavoritesPanel from './components/FavoritesPanel';
+import HistoryPanel from './components/HistoryPanel';
 
 // Import our API helper function
 import { searchICD10, searchICD10More } from './lib/api';
@@ -35,11 +36,15 @@ import {
   getFavorites, 
   saveFavorites, 
   createFavoritesMap,
-  getCodeCategory 
+  getCodeCategory,
+  getSearchHistory,
+  addToHistory,
+  clearSearchHistory,
+  removeFromHistory
 } from './lib/favoritesStorage';
 
 // Import TypeScript types for type safety
-import { ViewMode, DrugResult, ClinicalTrialResult, ScoredICD10Result, TranslationResult, FavoriteICD } from './types/icd';
+import { ViewMode, DrugResult, ClinicalTrialResult, ScoredICD10Result, TranslationResult, FavoriteICD, SearchHistoryEntry } from './types/icd';
 
 // =============================================================================
 // Main Component
@@ -80,6 +85,10 @@ export default function Home() {
   const [favorites, setFavorites] = useState<FavoriteICD[]>([]);
   const [showFavoritesPanel, setShowFavoritesPanel] = useState(false);
   
+  // Phase 6C: Enhanced search history state
+  const [searchHistory, setSearchHistory] = useState<SearchHistoryEntry[]>([]);
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+  
   // Create a Map for O(1) favorite lookup
   const favoritesMap = useMemo(() => createFavoritesMap(favorites), [favorites]);
   
@@ -105,6 +114,10 @@ export default function Home() {
       // Phase 6: Load favorites from localStorage
       const savedFavorites = getFavorites();
       setFavorites(savedFavorites);
+      
+      // Phase 6C: Load enhanced search history
+      const savedHistory = getSearchHistory();
+      setSearchHistory(savedHistory);
     } catch {
       // Silently fail if localStorage is not available
     }
@@ -144,6 +157,50 @@ export default function Home() {
       // Silently fail if localStorage is not available
     }
   };
+  
+  // ---------------------------------------------------------------------------
+  // Phase 6C: Enhanced History Functions
+  // ---------------------------------------------------------------------------
+  
+  /**
+   * Adds a search to enhanced history with metadata.
+   * Called after a successful search.
+   */
+  const addToEnhancedHistory = useCallback((query: string, resultCount: number, topResult?: ScoredICD10Result) => {
+    const entry: SearchHistoryEntry = {
+      query,
+      searchedAt: new Date().toISOString(),
+      resultCount,
+      topResultCode: topResult?.code,
+      topResultName: topResult?.name
+    };
+    
+    const updated = addToHistory(entry);
+    setSearchHistory(updated);
+  }, []);
+  
+  /**
+   * Removes a specific history entry.
+   */
+  const handleRemoveHistoryItem = useCallback((query: string) => {
+    const updated = removeFromHistory(query);
+    setSearchHistory(updated);
+  }, []);
+  
+  /**
+   * Clears all search history.
+   */
+  const handleClearHistory = useCallback(() => {
+    clearSearchHistory();
+    setSearchHistory([]);
+    // Also clear legacy recent searches
+    setRecentSearches([]);
+    try {
+      localStorage.removeItem(RECENT_SEARCHES_KEY);
+    } catch {
+      // Silently fail
+    }
+  }, []);
   
   // ---------------------------------------------------------------------------
   // Phase 6: Favorites Functions
@@ -266,6 +323,9 @@ export default function Home() {
       setTotalCount(total);
       setHasMore(more);
       setTranslation(translationResult);  // Save translation for UI display
+      
+      // Phase 6C: Add to enhanced history with metadata
+      addToEnhancedHistory(query, total, scoredResults[0]);
     } catch (err) {
       setResults([]);
       setTotalCount(0);
@@ -376,11 +436,50 @@ export default function Home() {
               )}
             </button>
             
+            {/* Phase 6C: History Button */}
+            <button
+              onClick={() => setShowHistoryPanel(!showHistoryPanel)}
+              className={`
+                group
+                flex items-center gap-2 px-4 py-2 rounded-xl
+                transition-all duration-300 ease-out
+                transform hover:scale-105 active:scale-95
+                ${showHistoryPanel 
+                  ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border-blue-300 dark:border-blue-600 shadow-lg shadow-blue-200/50 dark:shadow-blue-900/30' 
+                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 hover:shadow-lg hover:shadow-blue-100/50 dark:hover:shadow-blue-900/20'
+                }
+                border-2 shadow-md
+              `}
+              aria-label={`View history (${searchHistory.length})`}
+            >
+              <Clock 
+                className={`
+                  w-5 h-5 transition-all duration-300
+                  ${searchHistory.length > 0 
+                    ? 'text-blue-500 group-hover:scale-110' 
+                    : 'text-gray-400 group-hover:text-blue-400'
+                  }
+                `} 
+              />
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 hidden sm:inline">
+                History
+              </span>
+              {searchHistory.length > 0 && (
+                <span className="
+                  px-2 py-0.5 text-xs font-bold rounded-full 
+                  bg-gradient-to-r from-blue-500 to-indigo-500 
+                  text-white shadow-sm
+                ">
+                  {searchHistory.length}
+                </span>
+              )}
+            </button>
+            
             {/* Status Badge */}
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00D084]/10 border border-[#00D084]/20">
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00D084]/10 border border-[#00D084]/20">
               <span className="w-2 h-2 rounded-full bg-[#00D084] animate-pulse" />
               <span className="text-xs font-medium text-[#00A66C] dark:text-[#00D084]">
-                Phase 6 - Favorites
+                Phase 6 - Complete
               </span>
             </div>
           </div>
@@ -510,6 +609,16 @@ export default function Home() {
         onRemove={removeFavorite}
         onSearch={handleSearch}
         onClearAll={clearAllFavorites}
+      />
+      
+      {/* Phase 6C: History Panel */}
+      <HistoryPanel
+        isOpen={showHistoryPanel}
+        onClose={() => setShowHistoryPanel(false)}
+        history={searchHistory}
+        onRemove={handleRemoveHistoryItem}
+        onSearch={handleSearch}
+        onClearAll={handleClearHistory}
       />
     </div>
   );
