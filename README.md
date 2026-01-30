@@ -1,12 +1,11 @@
-# 🏥 ICD Mind Map Lookup Tool
+# 🏥 ICD Lookup Tool
 
-> **Find medical diagnosis codes, related drugs, and clinical trials — all in one interactive visualization**
+> **Find medical diagnosis codes, related drugs, and clinical trials — organized by body system**
 
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
-[![React Flow](https://img.shields.io/badge/React_Flow-12-FF0072?logo=react)](https://reactflow.dev/)
 [![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?logo=vercel)](https://icd-lookup-app.vercel.app/)
 
 ## 🌐 Live Demo
@@ -15,20 +14,21 @@
 
 Try it now — no installation required!
 
-![ICD Mind Map Screenshot](./public/screenshot.png)
-*Interactive mind map visualization showing ICD codes, related drugs, and clinical trials*
+![ICD Lookup Screenshot](./public/screenshot.png)
+*Search results organized by body system with collapsible category sections*
 
 ---
 
 ## 📋 Overview
 
-The **ICD Mind Map Lookup Tool** is a modern web application that transforms medical code lookup into an intuitive, visual experience. Search for any medical condition and instantly discover related ICD-10 codes, FDA-approved drugs, and active clinical trials — all presented in a beautiful, interactive mind map.
+The **ICD Lookup Tool** is a modern web application that transforms medical code lookup into an intuitive, organized experience. Search for any medical condition and instantly discover related ICD-10 codes, FDA-approved drugs, and active clinical trials — all organized by body system/disease chapter for easy navigation.
 
 ### ✨ What Makes It Unique
 
+- **Category Grouping** — Results organized by ICD-10 chapter (Endocrine, Circulatory, Respiratory, etc.)
 - **Multi-API Integration** — Seamlessly combines data from three authoritative medical databases
-- **Visual Discovery** — Transform dry medical codes into an explorable knowledge graph
-- **Futuristic Design** — Tony Stark-inspired holographic UI with smooth animations
+- **Intelligent Ranking** — Most clinically relevant codes appear first
+- **Common Terms Search** — Search with everyday language like "heart attack"
 - **Zero Configuration** — No API keys required, works out of the box
 
 ---
@@ -56,30 +56,28 @@ The **ICD Mind Map Lookup Tool** is a modern web application that transforms med
 - Trial status, sponsor, and location information
 - Eligibility criteria and study summaries
 
-### 🗺️ Interactive Mind Map Visualization
-- **Three Node Types**: ICD codes (green), Drugs (blue), Trials (purple)
-- **🎯 Click-to-Expand** — Progressive disclosure of drug/trial connections
-- **✨ Hover Highlighting** — See connections light up on hover
-- **🎯 Focus Mode** — Click to spotlight one branch, dim the rest
-- **🎨 Multiple Layouts** — Hierarchical, Radial, and Circular views
-- Drag, zoom, and pan navigation
-- Hover tooltips with detailed information
-- Animated edges showing data connections
-- Real-time node counter and zoom indicator
+### 📊 Category Grouping (NEW!)
+- **21 ICD-10 Chapters** — Results organized by body system/disease type
+- **Collapsible Sections** — Accordion-style expand/collapse for each category
+- **Color-Coded Borders** — Visual distinction per chapter (Endocrine=green, Circulatory=red, etc.)
+- **Chapter Icons** — Heart for Circulatory, Brain for Mental/Nervous, etc.
+- **View Toggle** — Switch between Flat (grid) and Grouped (category) views
+- **Expand All / Collapse All** — Quick controls for all categories
+- **Smart Defaults** — Top category and small categories start expanded
 
-### ⭐ Favorites & History (NEW!)
+### ⭐ Favorites & History
 - **Star favorites** — Save frequently used ICD codes
 - **Favorites panel** — Quick access with category colors
 - **Search history** — Track searches with timestamps
 - **Export/Import** — Backup and share favorites as JSON
 
 ### 🎨 UI/UX Features
-- Toggle between List View and Mind Map View
+- Toggle between Flat and Grouped views
 - Dark mode support
 - Mobile-responsive design
 - Loading skeletons and smooth transitions
 - HealthVerity-inspired color palette (#00D084 green)
-- Glass-morphism and gradient effects
+- Full keyboard accessibility (Enter/Space to toggle categories)
 
 ---
 
@@ -138,6 +136,79 @@ Click the ℹ️ icon in the search bar to see tips:
 - Use common terms like "heart attack" or "broken bone"
 - Use medical terms like "myocardial infarction"
 - Use ICD codes like "E11.9" or "I21"
+
+---
+
+## 📊 Category Grouping (Phase 7A)
+
+Organize search results by ICD-10 chapter for easier navigation!
+
+### How It Works
+
+```
+Search "diabetes":
+     ↓
+Results grouped into categories:
+     ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 25 results in 3 categories                                  │
+│                                                             │
+│ ▼ 💚 Endocrine (18 results)                                │
+│   ├── E11.9   Type 2 diabetes mellitus...    🔥 Top Match  │
+│   ├── E11.65  Type 2 diabetes with hyperglycemia           │
+│   └── E10.9   Type 1 diabetes mellitus...                  │
+│                                                             │
+│ ▶ ❤️ Circulatory (5 results)                               │
+│      I25.10, I25.84, I79.2...                              │
+│                                                             │
+│ ▶ 📋 Health Factors (2 results)                            │
+│      Z13.1, Z86.32                                         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### ICD-10 Chapters (21 Total)
+
+| Chapter | Code Range | Icon | Color |
+|---------|------------|------|-------|
+| Infectious | A00-B99 | 🦠 | Red |
+| Neoplasms | C00-D49 | ⭕ | Pink |
+| Blood | D50-D89 | 💧 | Rose |
+| **Endocrine** | E00-E89 | 📈 | Emerald |
+| Mental | F01-F99 | 🧠 | Violet |
+| Nervous | G00-G99 | 🧠 | Purple |
+| Eye | H00-H59 | 👁️ | Cyan |
+| Ear | H60-H95 | 👂 | Teal |
+| **Circulatory** | I00-I99 | ❤️ | Red |
+| **Respiratory** | J00-J99 | 💨 | Sky |
+| Digestive | K00-K95 | 🍴 | Amber |
+| Skin | L00-L99 | 👕 | Orange |
+| Musculoskeletal | M00-M99 | 🦴 | Lime |
+| Genitourinary | N00-N99 | ⭕ | Fuchsia |
+| Pregnancy | O00-O9A | 👶 | Pink |
+| Perinatal | P00-P96 | 👶 | Blue |
+| Congenital | Q00-Q99 | 🧬 | Indigo |
+| Symptoms | R00-R99 | 🩺 | Slate |
+| Injuries | S00-T88 | 🩹 | Yellow |
+| External Causes | V00-Y99 | 🚗 | Gray |
+| Health Factors | Z00-Z99 | 📋 | Green |
+
+### Features
+
+| Feature | Description |
+|---------|-------------|
+| **Collapsible** | Click category header to expand/collapse |
+| **Smart Defaults** | First category + categories with ≤3 results start expanded |
+| **Expand/Collapse All** | Quick controls for bulk operations |
+| **View Toggle** | Switch between Flat (grid) and Grouped views |
+| **Preserved State** | Expand/collapse choices maintained during Load More |
+| **Category Sorting** | Most relevant category (highest scoring result) appears first |
+
+### Accessibility
+
+- **Keyboard Navigation** — Enter/Space to toggle categories
+- **ARIA Attributes** — `aria-expanded`, `aria-controls`, `role="button"`
+- **Focus States** — Visible focus ring for keyboard users
+- **Screen Reader Friendly** — Proper labeling and structure
 
 ---
 
@@ -208,122 +279,6 @@ Track what you've searched with rich metadata:
 
 ---
 
-## 🗺️ Interactive Mind Map (Phase 7)
-
-Transform your search results into a visual knowledge graph with powerful interactive features!
-
-### Click-to-Expand (Phase 7A)
-
-Nodes start collapsed — click to reveal connected drugs and trials:
-
-```
-Before:                         After clicking ⊕:
-
-  [E11.9]                         [E11.9]
-    │                                │
-  [⊕ +3💊 +2🧪]                ├── [Metformin] 💊
-                                    ├── [Glipizide] 💊
-                                    ├── [Jardiance] 💊
-                                    ├── [NCT001234] 🧪
-                                    └── [NCT005678] 🧪
-```
-
-**Features:**
-- **Badge Preview** — See `+3💊 +2🧪` before expanding
-- **Expand All / Collapse All** — Quick toggle for all nodes
-- **Progressive Disclosure** — Keep the mind map clean and focused
-
-### Hover Highlighting (Phase 7B)
-
-Hover over any node to see its connections light up:
-
-```
-Hover [E11.9]:
-- E11.9 and connected drugs/trials → 100% opacity
-- Everything else → 30% opacity (dimmed)
-- Connected edges → thicker and brighter
-```
-
-**Features:**
-- Instant visual feedback
-- Works on ICD codes, drugs, and trials
-- Smooth 200ms transitions
-
-### Focus Mode (Phase 7C)
-
-Click any node to enter Focus Mode for detailed exploration:
-
-```
-┌──────────────────────────────────────────────────┐
-│ 🎯 FOCUS MODE │ E11.9 │ 4 nodes │ [✕]          │
-│ Click background or another node to change      │
-└──────────────────────────────────────────────────┘
-
-Focused branch → 100% opacity with glow ring
-Everything else → 15% opacity (heavily dimmed)
-```
-
-**Features:**
-- Click node to focus, click again to exit
-- Click background to exit focus
-- Focus badge shows node code and connection count
-- Deeper dimming than hover for clear isolation
-
-### Multiple Layouts (Phase 7D)
-
-Switch between three layout algorithms:
-
-| Layout | Icon | Best For |
-|--------|------|----------|
-| **Hierarchical** | 📊 Tree | Clear parent-child relationships |
-| **Radial** | ☀️ | Centering on key nodes |
-| **Circular** | 🔵 | Comparing many nodes at once |
-
-```
-Hierarchical:                 Radial:                    Circular:
-
-   [ICD-1]──[ICD-2]              [Drug]                    [ICD-1]
-      │        │               ╱       ╲                 ╱        ╲
-   [Drug]   [Trial]        [ICD-1]──[ICD-2]          [Drug]    [Trial]
-                               ╲       ╱                 ╲        ╱
-                              [Trial]                    [ICD-2]
-```
-
-**Features:**
-- **One-click switching** — Layout selector in top-left panel
-- **Smooth transitions** — Animated position changes (500ms)
-- **Persistent choice** — Layout saved to localStorage
-- **Works with all features** — Expand, hover, and focus work in all layouts
-
-### Mind Map Controls
-
-```
-┌────────────────────────────────────────────────────────────────┐
-│ Layout: [📊 Tree ✓] [☀️ Radial] [🔵 Circle]                   │
-├────────────────────────────────────────────────────────────────┤
-│ [⊕ Expand All] [⊖ Collapse All] │ 3/5 expanded │ [?]          │
-└────────────────────────────────────────────────────────────────┘
-```
-
-### Stats Panel
-
-Real-time statistics in the top-right corner:
-
-```
-┌───────────────────────┐
-│ ZOOM: 125%            │
-├───────────────────────┤
-│ NODES                 │
-│ • ICD Codes     5     │
-│ • Drugs         3/10  │ ← 3 visible, 10 loaded
-│ • Trials        2/8   │
-│ ────────────────      │
-│   Visible       10/23 │
-└───────────────────────┘
-```
-
----
-
 ## 🎯 Intelligent Search Ranking (Phase 4)
 
 Unlike traditional medical code databases that return results alphabetically, ICD Mind Map uses a **multi-factor relevance algorithm** to show the most clinically useful codes first.
@@ -383,7 +338,6 @@ Popularity scores are based on:
 | [Next.js 15](https://nextjs.org/) | React framework with App Router |
 | [React 19](https://react.dev/) | UI component library |
 | [TypeScript 5](https://www.typescriptlang.org/) | Type-safe JavaScript |
-| [React Flow 12](https://reactflow.dev/) | Mind map visualization |
 
 ### Styling & Components
 | Technology | Purpose |
@@ -472,26 +426,23 @@ Example searches:
 3. Click **View Trials** (purple button) to see clinical trials
 4. Click any NCT ID to open the full trial on ClinicalTrials.gov
 
-### Using the Mind Map
+### Using Category Grouping
 
-1. Toggle to **Mind Map** view using the view switcher
-2. **Load Data** — Click "View Drugs" or "View Trials" in List view first
-3. **Expand Nodes** — Click the ⊕ button on ICD codes to show connections
-4. **Hover** — Mouse over nodes to highlight connections
-5. **Focus** — Click any node to spotlight that branch
-6. **Switch Layouts** — Try Hierarchical, Radial, or Circular views
-7. **Navigate** — Drag nodes, scroll to zoom, use minimap
+1. Search for a condition (e.g., "diabetes")
+2. Results appear grouped by body system/disease chapter
+3. Toggle between **Flat** (grid) and **Grouped** views
+4. Click category headers to expand/collapse sections
+5. Use **Expand All** / **Collapse All** for bulk operations
 
-**Node Colors:**
-- 🟢 **Green** = ICD-10 Codes (primary nodes)
-- 🔵 **Blue** = Drugs (connected to ICD codes)
-- 🟣 **Purple** = Clinical Trials (connected to ICD codes)
+**Category Colors:**
+- 💚 **Emerald** = Endocrine (diabetes, thyroid)
+- ❤️ **Red** = Circulatory (heart, blood pressure)
+- 💙 **Sky** = Respiratory (lung, breathing)
+- 💜 **Purple** = Mental/Nervous (brain, psychology)
 
 **Keyboard Shortcuts:**
-- **Scroll** = Zoom in/out
-- **Click + Drag** = Pan the canvas
-- **Click node** = Focus mode (click again to exit)
-- **Click background** = Exit focus mode
+- **Enter / Space** = Toggle category expand/collapse
+- **Tab** = Navigate between categories
 
 ---
 
@@ -501,38 +452,36 @@ Example searches:
 icd-lookup-app/
 ├── app/
 │   ├── components/
-│   │   ├── SearchBar.tsx       # Search input with recent searches
-│   │   ├── SearchResults.tsx   # Results container with view toggle
-│   │   ├── ResultCard.tsx      # ICD result card with star & drug/trial expansion
-│   │   ├── DrugCard.tsx        # Individual drug display (blue theme)
-│   │   ├── TrialCard.tsx       # Individual trial display (purple theme)
-│   │   ├── ViewToggle.tsx      # List/Mind Map view switcher
-│   │   ├── MindMapView.tsx     # React Flow canvas with layouts & interactions (Phase 7)
-│   │   ├── IcdNode.tsx         # Custom React Flow node with expand button (green)
-│   │   ├── DrugNode.tsx        # Custom React Flow node with highlighting (blue)
-│   │   ├── TrialNode.tsx       # Custom React Flow node with highlighting (purple)
-│   │   ├── FavoritesPanel.tsx  # Favorites slide-in panel (Phase 6)
-│   │   └── HistoryPanel.tsx    # History slide-in panel (Phase 6)
+│   │   ├── SearchBar.tsx        # Search input with recent searches
+│   │   ├── SearchResults.tsx    # Results container with view toggle (Flat/Grouped)
+│   │   ├── ResultCard.tsx       # ICD result card with star & drug/trial expansion
+│   │   ├── CategorySection.tsx  # Collapsible category section (Phase 7A)
+│   │   ├── DrugCard.tsx         # Individual drug display (blue theme)
+│   │   ├── TrialCard.tsx        # Individual trial display (purple theme)
+│   │   ├── FavoritesPanel.tsx   # Favorites slide-in panel (Phase 6)
+│   │   └── HistoryPanel.tsx     # History slide-in panel (Phase 6)
 │   ├── lib/
-│   │   ├── api.ts              # ClinicalTables API helper (with translation)
-│   │   ├── openFdaApi.ts       # OpenFDA API helper
+│   │   ├── api.ts               # ClinicalTables API helper (with translation)
+│   │   ├── chapterMapping.ts    # ICD-10 chapter lookup (21 chapters) (Phase 7A)
+│   │   ├── grouping.ts          # Grouping algorithm & helpers (Phase 7A)
+│   │   ├── openFdaApi.ts        # OpenFDA API helper
 │   │   ├── clinicalTrialsApi.ts # ClinicalTrials.gov API helper
-│   │   ├── scoring.ts          # Relevance scoring algorithm (Phase 4)
-│   │   ├── commonCodes.ts      # ICD-10 frequency data (100+ codes)
-│   │   ├── termMappings.ts     # Common → Medical term mappings (Phase 5)
-│   │   ├── termMapper.ts       # Translation logic (Phase 5)
-│   │   └── favoritesStorage.ts # Favorites & History localStorage utils (Phase 6)
+│   │   ├── scoring.ts           # Relevance scoring algorithm (Phase 4)
+│   │   ├── commonCodes.ts       # ICD-10 frequency data (100+ codes)
+│   │   ├── termMappings.ts      # Common → Medical term mappings (Phase 5)
+│   │   ├── termMapper.ts        # Translation logic (Phase 5)
+│   │   └── favoritesStorage.ts  # Favorites & History localStorage utils (Phase 6)
 │   ├── types/
-│   │   └── icd.ts              # TypeScript interfaces & helpers
-│   ├── globals.css             # Global styles & animations
-│   ├── layout.tsx              # Root layout
-│   └── page.tsx                # Main page with state management
+│   │   └── icd.ts               # TypeScript interfaces & helpers
+│   ├── globals.css              # Global styles & animations
+│   ├── layout.tsx               # Root layout
+│   └── page.tsx                 # Main page with state management
 ├── public/
-│   └── screenshot.png          # README screenshot
-├── PLAN.md                     # Development plan & progress
-├── AGENTS.md                   # AI assistant guidelines
-├── CHANGELOG.md                # Version history & release notes
-└── README.md                   # This file
+│   └── screenshot.png           # README screenshot
+├── PLAN.md                      # Development plan & progress
+├── AGENTS.md                    # AI assistant guidelines
+├── CHANGELOG.md                 # Version history & release notes
+└── README.md                    # This file
 ```
 
 ---
@@ -586,7 +535,7 @@ GET https://clinicaltrials.gov/api/v2/studies
 
 ### Completed Features
 
-- [x] **Interactive Mind Map** — Click-to-expand, hover highlighting, focus mode, multiple layouts (Phase 7)
+- [x] **Category Grouping** — Results organized by ICD-10 chapter with collapsible sections (Phase 7A)
 - [x] **Favorites & History** — Save codes, track searches, export/import JSON (Phase 6)
 - [x] **Common Terms Translation** — Search with everyday language (Phase 5)
 - [x] **Intelligent Ranking** — Multi-factor relevance scoring (Phase 4)
@@ -595,8 +544,7 @@ GET https://clinicaltrials.gov/api/v2/studies
 
 ### Planned Features
 
-- [ ] **Force-Directed Layout** — Physics-based organic node positioning
-- [ ] **Mind Map Export** — Save mind map as PNG/SVG image
+- [ ] **Category Filters** — Filter by specific ICD-10 chapter
 - [ ] **Sharing** — Generate shareable links to searches
 - [ ] **Offline Mode** — Cache data for offline access
 - [ ] **Advanced Filters** — Filter by code range, date, status
@@ -675,15 +623,14 @@ copies or substantial portions of the Software.
 
 ### Libraries & Tools
 - [Next.js](https://nextjs.org/) — The React framework for production
-- [React Flow](https://reactflow.dev/) — Powerful node-based graph library
 - [Tailwind CSS](https://tailwindcss.com/) — Utility-first CSS framework
 - [Lucide Icons](https://lucide.dev/) — Beautiful open-source icons
 - [Vercel](https://vercel.com/) — Deployment platform
 
 ### Inspiration
 - HealthVerity's commitment to healthcare data innovation
-- Tony Stark's holographic interfaces from Iron Man
-- Modern medical dashboards and visualization tools
+- Modern medical dashboards and organized data visualization
+- ICD-10 chapter organization for clinical clarity
 
 ---
 

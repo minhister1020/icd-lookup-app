@@ -3,23 +3,36 @@
  * =======================
  * 
  * Container component with professional styling for all result states.
+ * Displays ICD-10 search results in a card grid or grouped by category.
  * 
- * Phase 3C: Now supports:
- * - Passing drugsMap and trialsMap to MindMapView
- * - Callbacks to notify parent when drugs/trials are loaded
- * - Multi-node mind map visualization
- * 
- * Phase 4: Added support for:
+ * Features:
  * - Scored results with relevance ranking
  * - Total count display ("847 results, showing top 25")
- * - hasMore flag for future "Load More" functionality
+ * - Load More functionality
+ * - Favorites support
+ * - Category grouping by ICD-10 chapter (Phase 7)
+ * - Expand/Collapse all controls
  */
 
-import { AlertCircle, SearchX, Sparkles, Loader2, ChevronDown, Lightbulb } from 'lucide-react';
-import { ScoredICD10Result, ViewMode, DrugResult, ClinicalTrialResult, TranslationResult, FavoriteICD } from '../types/icd';
+'use client';
+
+import { useState, useMemo, useCallback } from 'react';
+import { 
+  AlertCircle, 
+  SearchX, 
+  Sparkles, 
+  Loader2, 
+  ChevronDown, 
+  Lightbulb,
+  LayoutGrid,
+  Layers,
+  ChevronsUpDown,
+  ChevronsDownUp
+} from 'lucide-react';
+import { ScoredICD10Result, DrugResult, ClinicalTrialResult, TranslationResult, FavoriteICD, GroupedSearchResults } from '../types/icd';
 import ResultCard from './ResultCard';
-import ViewToggle from './ViewToggle';
-import MindMapView from './MindMapView';
+import CategorySection from './CategorySection';
+import { groupByChapter, toggleCategoryExpansion, expandAllCategories, collapseAllCategories } from '../lib/grouping';
 
 // =============================================================================
 // Translation Badge Component (Phase 5)
@@ -118,10 +131,8 @@ interface SearchResultsProps {
   isLoading: boolean;
   error: string | null;
   hasSearched: boolean;
-  viewMode: ViewMode;
-  onViewModeChange: (mode: ViewMode) => void;
   
-  // Phase 3C: Centralized drug/trial data for Mind Map
+  // Centralized drug/trial data (cached for ResultCards)
   drugsMap?: Map<string, DrugResult[]>;
   trialsMap?: Map<string, ClinicalTrialResult[]>;
   
@@ -153,6 +164,12 @@ interface SearchResultsProps {
 }
 
 // =============================================================================
+// View Mode Type
+// =============================================================================
+
+type ViewMode = 'flat' | 'grouped';
+
+// =============================================================================
 // Component
 // =============================================================================
 
@@ -161,8 +178,6 @@ export default function SearchResults({
   isLoading, 
   error,
   hasSearched,
-  viewMode,
-  onViewModeChange,
   drugsMap = new Map(),
   trialsMap = new Map(),
   onDrugsLoaded,
@@ -184,10 +199,104 @@ export default function SearchResults({
   onSearchFromFavorite,
 }: SearchResultsProps) {
   
-  // Count total nodes for display
-  const drugCount = Array.from(drugsMap.values()).reduce((sum, arr) => sum + arr.length, 0);
-  const trialCount = Array.from(trialsMap.values()).reduce((sum, arr) => sum + arr.length, 0);
-  const totalNodes = results.length + drugCount + trialCount;
+  // =========================================================================
+  // Phase 7: Category Grouping State
+  // =========================================================================
+  
+  /** View mode: 'flat' for card grid, 'grouped' for category sections */
+  const [viewMode, setViewMode] = useState<ViewMode>('grouped');
+  
+  /** Grouped results - computed from results array */
+  const [groupedResults, setGroupedResults] = useState<GroupedSearchResults | null>(null);
+  
+  /**
+   * Compute grouped results whenever results change.
+   * We use useMemo for efficient re-computation.
+   */
+  const computedGroupedResults = useMemo(() => {
+    if (results.length === 0) return null;
+    return groupByChapter(results);
+  }, [results]);
+  
+  /**
+   * Merge computed groups with any existing expansion state.
+   * This preserves user's expand/collapse choices after Load More.
+   */
+  const displayedGroupedResults = useMemo(() => {
+    if (!computedGroupedResults) return null;
+    
+    // If we have previous state, merge expansion states
+    if (groupedResults) {
+      const existingExpansions = new Map<number, boolean>();
+      groupedResults.categories.forEach(cat => {
+        existingExpansions.set(cat.chapter.id, cat.isExpanded);
+      });
+      
+      return {
+        ...computedGroupedResults,
+        categories: computedGroupedResults.categories.map((cat, index) => ({
+          ...cat,
+          // Preserve existing expansion state if available, otherwise use default
+          isExpanded: existingExpansions.has(cat.chapter.id) 
+            ? existingExpansions.get(cat.chapter.id)!
+            : (index === 0 || cat.results.length <= 3) // Default: first category or small categories
+        }))
+      };
+    }
+    
+    return computedGroupedResults;
+  }, [computedGroupedResults, groupedResults]);
+  
+  /**
+   * Handle category toggle - update the grouped results state.
+   */
+  const handleCategoryToggle = useCallback((chapterId: number) => {
+    if (!displayedGroupedResults) return;
+    
+    const updated = toggleCategoryExpansion(displayedGroupedResults, chapterId);
+    setGroupedResults(updated);
+  }, [displayedGroupedResults]);
+  
+  /**
+   * Expand all categories.
+   */
+  const handleExpandAll = useCallback(() => {
+    if (!displayedGroupedResults) return;
+    
+    const updated = expandAllCategories(displayedGroupedResults);
+    setGroupedResults(updated);
+  }, [displayedGroupedResults]);
+  
+  /**
+   * Collapse all categories.
+   */
+  const handleCollapseAll = useCallback(() => {
+    if (!displayedGroupedResults) return;
+    
+    const updated = collapseAllCategories(displayedGroupedResults);
+    setGroupedResults(updated);
+  }, [displayedGroupedResults]);
+  
+  /**
+   * Check if a code is favorited - wrapper for parent callback.
+   */
+  const checkIsFavorite = useCallback((code: string): boolean => {
+    if (isFavorited) return isFavorited(code);
+    return favoritesMap.has(code);
+  }, [isFavorited, favoritesMap]);
+  
+  /**
+   * Toggle favorite for a result in grouped view.
+   */
+  const handleToggleFavoriteGrouped = useCallback((code: string, name: string) => {
+    if (!onToggleFavorite) return;
+    
+    // Find the result in results array to pass full object
+    const result = results.find(r => r.code === code);
+    if (result) {
+      onToggleFavorite(result);
+    }
+  }, [onToggleFavorite, results]);
   
   // Phase 4: Calculate if showing subset of results
   const showingSubset = totalCount > results.length;
@@ -315,6 +424,9 @@ export default function SearchResults({
   // State 5: Has Results
   // =========================================================================
   
+  // Get the grouped data for display
+  const grouped = displayedGroupedResults;
+  
   return (
     <div>
       {/* Results Header */}
@@ -328,8 +440,25 @@ export default function SearchResults({
             </span>
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {/* Phase 4: Show total count with "showing top X" */}
-            {showingSubset ? (
+            {/* Phase 7: Show grouped info when in grouped mode */}
+            {viewMode === 'grouped' && grouped ? (
+              <>
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {results.length}
+                </span>
+                {' results in '}
+                <span className="font-medium text-[#00D084]">
+                  {grouped.totalCategories}
+                </span>
+                {' '}
+                {grouped.totalCategories === 1 ? 'category' : 'categories'}
+                {showingSubset && (
+                  <span className="text-gray-400 dark:text-gray-500">
+                    {' '}(from {totalCount.toLocaleString()} total)
+                  </span>
+                )}
+              </>
+            ) : showingSubset ? (
               <>
                 <span className="font-medium text-gray-700 dark:text-gray-300">
                   {totalCount.toLocaleString()}
@@ -340,24 +469,82 @@ export default function SearchResults({
             ) : (
               <>{results.length} ICD codes</>
             )}
-            {drugCount > 0 && <span className="text-blue-500"> • {drugCount} drugs</span>}
-            {trialCount > 0 && <span className="text-purple-500"> • {trialCount} trials</span>}
           </p>
         </div>
         
-        {/* View Toggle + Count Badge */}
-        <div className="flex items-center gap-3">
-          <ViewToggle 
-            currentView={viewMode}
-            onViewChange={onViewModeChange}
-          />
-          <div className="flex items-center gap-1.5">
-            <div className="px-3 py-1.5 rounded-full bg-[#00D084]/10 border border-[#00D084]/20">
-              <span className="text-sm font-semibold text-[#00A66C] dark:text-[#00D084]">
-                {viewMode === 'mindmap' ? totalNodes : results.length}
-              </span>
-            </div>
+        {/* View Controls */}
+        <div className="flex items-center gap-2">
+          {/* View Mode Toggle */}
+          <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+            <button
+              type="button"
+              onClick={() => setViewMode('flat')}
+              className={`
+                flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium
+                transition-all duration-150
+                ${viewMode === 'flat'
+                  ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }
+              `}
+              title="Flat view - show all results in a grid"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Flat</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('grouped')}
+              className={`
+                flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium
+                transition-all duration-150
+                ${viewMode === 'grouped'
+                  ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }
+              `}
+              title="Grouped view - organize by body system"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Grouped</span>
+            </button>
           </div>
+          
+          {/* Expand/Collapse All - Only show in grouped mode */}
+          {viewMode === 'grouped' && grouped && grouped.totalCategories > 1 && (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={handleExpandAll}
+                className="
+                  flex items-center gap-1 px-2 py-1.5
+                  text-xs text-gray-500 dark:text-gray-400
+                  hover:text-gray-700 dark:hover:text-gray-300
+                  hover:bg-gray-100 dark:hover:bg-gray-800
+                  rounded-md transition-colors
+                "
+                title="Expand all categories"
+              >
+                <ChevronsUpDown className="w-3.5 h-3.5" />
+                <span className="hidden lg:inline">Expand</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleCollapseAll}
+                className="
+                  flex items-center gap-1 px-2 py-1.5
+                  text-xs text-gray-500 dark:text-gray-400
+                  hover:text-gray-700 dark:hover:text-gray-300
+                  hover:bg-gray-100 dark:hover:bg-gray-800
+                  rounded-md transition-colors
+                "
+                title="Collapse all categories"
+              >
+                <ChevronsDownUp className="w-3.5 h-3.5" />
+                <span className="hidden lg:inline">Collapse</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
       
@@ -366,91 +553,94 @@ export default function SearchResults({
         <TranslationBadge translation={translation} />
       )}
       
-      {/* Conditional View Rendering */}
-      {viewMode === 'list' ? (
-        /* List View - Card Grid */
-        <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {results.map((result, index) => (
-              <div 
-                key={result.code}
-                className="animate-in fade-in slide-in-from-bottom-2"
-                style={{ animationDelay: `${Math.min(index, 10) * 50}ms`, animationFillMode: 'backwards' }}
-              >
-                <ResultCard
-                  code={result.code}
-                  name={result.name}
-                  onDrugsLoaded={onDrugsLoaded}
-                  onTrialsLoaded={onTrialsLoaded}
-                  // Phase 4C: Pass relevance data for badges
-                  score={result.score}
-                  rank={index + 1}
-                  // Phase 6: Favorites props
-                  isFavorite={isFavorited ? isFavorited(result.code) : favoritesMap.has(result.code)}
-                  onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(result) : undefined}
-                />
-              </div>
-            ))}
-          </div>
-          
-          {/* Phase 4C: Load More Button */}
-          {hasMore && onLoadMore && (
-            <div className="mt-8 text-center">
-              <button
-                onClick={onLoadMore}
-                disabled={isLoadingMore}
-                className="
-                  inline-flex items-center gap-2
-                  px-6 py-3
-                  bg-white dark:bg-gray-800
-                  border border-gray-200 dark:border-gray-700
-                  rounded-xl
-                  text-gray-700 dark:text-gray-300
-                  font-medium
-                  shadow-sm
-                  hover:shadow-md
-                  hover:border-[#00D084]/50
-                  hover:text-[#00A66C] dark:hover:text-[#00D084]
-                  disabled:opacity-50
-                  disabled:cursor-not-allowed
-                  transition-all duration-200
-                "
-              >
-                {isLoadingMore ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Loading more...
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="w-4 h-4" />
-                    Load More Results
-                  </>
-                )}
-              </button>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                Showing {results.length} of {totalCount.toLocaleString()} results
-              </p>
+      {/* Phase 7: Grouped View - Category Sections */}
+      {viewMode === 'grouped' && grouped ? (
+        <div className="space-y-4">
+          {grouped.categories.map((category, index) => (
+            <div
+              key={category.chapter.id}
+              className="animate-in fade-in slide-in-from-bottom-2"
+              style={{ 
+                animationDelay: `${Math.min(index, 5) * 75}ms`, 
+                animationFillMode: 'backwards' 
+              }}
+            >
+              <CategorySection
+                category={category}
+                onToggle={handleCategoryToggle}
+                isFirstCategory={index === 0}
+                onToggleFavorite={handleToggleFavoriteGrouped}
+                isFavorite={checkIsFavorite}
+                onDrugsLoaded={onDrugsLoaded}
+                onTrialsLoaded={onTrialsLoaded}
+              />
             </div>
-          )}
-        </>
+          ))}
+        </div>
       ) : (
-        /* Mind Map View - React Flow Canvas with All Data */
-        <div>
-          {/* Hint for loading more data */}
-          {drugCount === 0 && trialCount === 0 && (
-            <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 text-center">
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                💡 <strong>Tip:</strong> Switch to List view and click &quot;View Drugs&quot; or &quot;View Trials&quot; on any card to load related data into the Mind Map!
-              </p>
+        /* Flat View - Card Grid */
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {results.map((result, index) => (
+            <div 
+              key={result.code}
+              className="animate-in fade-in slide-in-from-bottom-2"
+              style={{ animationDelay: `${Math.min(index, 10) * 50}ms`, animationFillMode: 'backwards' }}
+            >
+              <ResultCard
+                code={result.code}
+                name={result.name}
+                onDrugsLoaded={onDrugsLoaded}
+                onTrialsLoaded={onTrialsLoaded}
+                // Phase 4C: Pass relevance data for badges
+                score={result.score}
+                rank={index + 1}
+                // Phase 6: Favorites props
+                isFavorite={isFavorited ? isFavorited(result.code) : favoritesMap.has(result.code)}
+                onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(result) : undefined}
+              />
             </div>
-          )}
-          
-          <MindMapView 
-            results={results}
-            drugsMap={drugsMap}
-            trialsMap={trialsMap}
-          />
+          ))}
+        </div>
+      )}
+      
+      {/* Phase 4C: Load More Button */}
+      {hasMore && onLoadMore && (
+        <div className="mt-8 text-center">
+          <button
+            onClick={onLoadMore}
+            disabled={isLoadingMore}
+            className="
+              inline-flex items-center gap-2
+              px-6 py-3
+              bg-white dark:bg-gray-800
+              border border-gray-200 dark:border-gray-700
+              rounded-xl
+              text-gray-700 dark:text-gray-300
+              font-medium
+              shadow-sm
+              hover:shadow-md
+              hover:border-[#00D084]/50
+              hover:text-[#00A66C] dark:hover:text-[#00D084]
+              disabled:opacity-50
+              disabled:cursor-not-allowed
+              transition-all duration-200
+            "
+          >
+            {isLoadingMore ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading more...
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-4 h-4" />
+                Load More Results
+              </>
+            )}
+          </button>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            Showing {results.length} of {totalCount.toLocaleString()} results
+          </p>
         </div>
       )}
     </div>

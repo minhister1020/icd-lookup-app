@@ -76,7 +76,7 @@ export default function ResultCard({
   score, 
   rank,
   isFavorite = false,
-  onToggleFavorite
+  onToggleFavorite,
 }: ResultCardProps) {
   // =========================================================================
   // Drug State (Phase 3A)
@@ -317,7 +317,7 @@ export default function ResultCard({
             </h3>
           </div>
           
-          {/* Right Side: Star Button + Chevron */}
+          {/* Right Side: Action Buttons */}
           <div className="flex items-center gap-2 flex-shrink-0">
             {/* Phase 6: Star/Favorite Button */}
             <button

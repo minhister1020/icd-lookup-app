@@ -99,81 +99,6 @@ export interface SearchState {
 }
 
 // =============================================================================
-// View Mode Type (Phase 2: Mind Map)
-// =============================================================================
-
-/**
- * ViewMode - Controls how search results are displayed.
- * 
- * - 'list': Traditional card grid layout (default)
- * - 'mindmap': Interactive React Flow node visualization
- * 
- * Used by the ViewToggle component to switch between views.
- */
-export type ViewMode = 'list' | 'mindmap';
-
-// =============================================================================
-// React Flow Node Types (Phase 2: Mind Map)
-// =============================================================================
-
-/**
- * Phase 7B/7C: Highlight state for hover and focus interactions.
- * - 'normal': No interactions active, full opacity
- * - 'highlighted': Hover active, connected to hovered node (100%, scale)
- * - 'dimmed': Hover active, NOT connected (30% opacity)
- * - 'focused': Focus active, connected to focused node (100%, ring glow)
- * - 'focus-dimmed': Focus active, NOT connected (15% opacity)
- */
-export type HighlightState = 'normal' | 'highlighted' | 'dimmed' | 'focused' | 'focus-dimmed';
-
-/**
- * Data structure passed to each ICD node in the mind map.
- * 
- * React Flow nodes have a `data` property that can contain
- * any custom data. We use it to pass ICD information.
- * 
- * Phase 7A: Added expansion state for progressive disclosure.
- * Phase 7B: Added highlight state for hover interactions.
- */
-export interface IcdNodeData {
-  /** The ICD-10 code (e.g., "E11.9") */
-  code: string;
-  
-  /** The condition name */
-  name: string;
-  
-  /** Optional: Category for grouping (e.g., "E11" for diabetes codes) */
-  category?: string;
-  
-  /** Phase 7A: Whether this node's children are visible */
-  isExpanded?: boolean;
-  
-  /** Phase 7A: Count of children (drugs/trials) */
-  childrenCount?: {
-    drugs: number;
-    trials: number;
-    loaded: boolean; // Whether data has been fetched from API
-  };
-  
-  /** Phase 7A: Callback to toggle expansion state */
-  onToggleExpand?: (code: string) => void;
-  
-  /** Phase 7B: Highlight state for hover interactions */
-  highlightState?: HighlightState;
-}
-
-/**
- * Position type for React Flow nodes.
- * 
- * x: horizontal position on canvas
- * y: vertical position on canvas
- */
-export interface NodePosition {
-  x: number;
-  y: number;
-}
-
-// =============================================================================
 // Phase 3: Drug Result Interface (OpenFDA Integration)
 // =============================================================================
 
@@ -726,6 +651,136 @@ export interface SearchHistoryEntry {
   /** Optional: Top result name */
   topResultName?: string;
 }
+
+// =============================================================================
+// Phase 7: Category Grouping Types (ICD-10 Chapter Organization)
+// =============================================================================
+
+/**
+ * Represents an ICD-10-CM chapter (body system/disease category).
+ * 
+ * ICD-10 codes are organized into 21 chapters based on body system
+ * or disease type. The first letter(s) of a code determine its chapter.
+ * 
+ * @example
+ * {
+ *   id: 4,
+ *   name: "Endocrine, Nutritional and Metabolic Diseases",
+ *   shortName: "Endocrine",
+ *   codeRange: "E00-E89",
+ *   color: "emerald"
+ * }
+ * 
+ * Chapter Examples:
+ * - E11.9 → Chapter 4 (Endocrine) - Diabetes
+ * - I10   → Chapter 9 (Circulatory) - Hypertension
+ * - J06.9 → Chapter 10 (Respiratory) - Upper respiratory infection
+ */
+export interface ChapterInfo {
+  /** 
+   * Chapter number (1-21 per ICD-10-CM specification).
+   * 0 is reserved for "Unknown" fallback.
+   */
+  id: number;
+  
+  /** 
+   * Full official chapter name.
+   * Example: "Endocrine, Nutritional and Metabolic Diseases"
+   */
+  name: string;
+  
+  /** 
+   * Short display name for compact UI.
+   * Example: "Endocrine"
+   */
+  shortName: string;
+  
+  /** 
+   * The code range covered by this chapter.
+   * Example: "E00-E89"
+   */
+  codeRange: string;
+  
+  /** 
+   * Tailwind color name for visual distinction.
+   * Used to generate classes like "bg-{color}-100", "text-{color}-700"
+   * Example: "emerald", "red", "sky"
+   */
+  color: string;
+}
+
+/**
+ * A group of search results belonging to the same ICD-10 chapter.
+ * 
+ * Used to organize search results by body system/disease category
+ * for better navigation and understanding.
+ * 
+ * @example
+ * {
+ *   chapter: { id: 4, shortName: "Endocrine", ... },
+ *   results: [
+ *     { code: "E11.9", name: "Type 2 diabetes...", score: 95 },
+ *     { code: "E10.9", name: "Type 1 diabetes...", score: 82 }
+ *   ],
+ *   topScore: 95,
+ *   isExpanded: true
+ * }
+ */
+export interface CategoryGroup {
+  /** Chapter metadata for this group */
+  chapter: ChapterInfo;
+  
+  /** 
+   * Results belonging to this chapter.
+   * Sorted by relevance score (highest first).
+   */
+  results: ScoredICD10Result[];
+  
+  /** 
+   * Highest relevance score in this group.
+   * Used to sort categories (most relevant category first).
+   */
+  topScore: number;
+  
+  /** 
+   * Whether this category is expanded in the UI.
+   * Default: true for first category, false for others.
+   */
+  isExpanded: boolean;
+}
+
+/**
+ * Complete grouped search results ready for UI rendering.
+ * 
+ * Contains all results organized by chapter with summary statistics.
+ * 
+ * @example
+ * {
+ *   categories: [
+ *     { chapter: { shortName: "Endocrine" }, results: [...], topScore: 95 },
+ *     { chapter: { shortName: "Circulatory" }, results: [...], topScore: 72 }
+ *   ],
+ *   totalResults: 25,
+ *   totalCategories: 3
+ * }
+ */
+export interface GroupedSearchResults {
+  /** 
+   * Array of category groups.
+   * Sorted by topScore descending (most relevant category first).
+   */
+  categories: CategoryGroup[];
+  
+  /** Total number of results across all categories */
+  totalResults: number;
+  
+  /** Number of distinct chapters/categories */
+  totalCategories: number;
+}
+
+// =============================================================================
+// Helper Functions for Category Colors
+// =============================================================================
 
 /**
  * Returns the category color for an ICD code.

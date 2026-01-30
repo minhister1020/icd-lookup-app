@@ -44,7 +44,7 @@ import {
 } from './lib/favoritesStorage';
 
 // Import TypeScript types for type safety
-import { ViewMode, DrugResult, ClinicalTrialResult, ScoredICD10Result, TranslationResult, FavoriteICD, SearchHistoryEntry } from './types/icd';
+import { DrugResult, ClinicalTrialResult, ScoredICD10Result, TranslationResult, FavoriteICD, SearchHistoryEntry } from './types/icd';
 
 // =============================================================================
 // Main Component
@@ -52,7 +52,6 @@ import { ViewMode, DrugResult, ClinicalTrialResult, ScoredICD10Result, Translati
 
 // Keys for localStorage
 const RECENT_SEARCHES_KEY = 'icd-recent-searches';
-const VIEW_MODE_KEY = 'icd-view-mode';
 
 export default function Home() {
   // ---------------------------------------------------------------------------
@@ -65,7 +64,6 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
   
   // Phase 4: Search metadata for pagination and total count display
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -76,8 +74,8 @@ export default function Home() {
   // Phase 5: Translation metadata for displaying translation notice
   const [translation, setTranslation] = useState<TranslationResult | undefined>(undefined);
   
-  // Phase 3C: Centralized drug/trial state for Mind Map
-  // Maps ICD code -> array of related data
+  // Phase 3C: Centralized drug/trial state
+  // Maps ICD code -> array of related data (used by ResultCard to cache loaded data)
   const [drugsMap, setDrugsMap] = useState<Map<string, DrugResult[]>>(new Map());
   const [trialsMap, setTrialsMap] = useState<Map<string, ClinicalTrialResult[]>>(new Map());
   
@@ -104,11 +102,6 @@ export default function Home() {
         if (Array.isArray(parsed)) {
           setRecentSearches(parsed);
         }
-      }
-      
-      const savedViewMode = localStorage.getItem(VIEW_MODE_KEY);
-      if (savedViewMode === 'list' || savedViewMode === 'mindmap') {
-        setViewMode(savedViewMode);
       }
       
       // Phase 6: Load favorites from localStorage
@@ -147,17 +140,6 @@ export default function Home() {
   
   // ---------------------------------------------------------------------------
   // Helper: Handle View Mode Change
-  // ---------------------------------------------------------------------------
-  
-  const handleViewModeChange = (newMode: ViewMode) => {
-    setViewMode(newMode);
-    try {
-      localStorage.setItem(VIEW_MODE_KEY, newMode);
-    } catch {
-      // Silently fail if localStorage is not available
-    }
-  };
-  
   // ---------------------------------------------------------------------------
   // Phase 6C: Enhanced History Functions
   // ---------------------------------------------------------------------------
@@ -500,7 +482,7 @@ export default function Home() {
             <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00D084]/10 border border-[#00D084]/20">
               <span className="w-2 h-2 rounded-full bg-[#00D084] animate-pulse" />
               <span className="text-xs font-medium text-[#00A66C] dark:text-[#00D084]">
-                Phase 6 - Complete
+                Phase 7 - Complete
               </span>
             </div>
           </div>
@@ -554,8 +536,6 @@ export default function Home() {
           isLoading={isLoading}
           error={error}
           hasSearched={hasSearched}
-          viewMode={viewMode}
-          onViewModeChange={handleViewModeChange}
           drugsMap={drugsMap}
           trialsMap={trialsMap}
           onDrugsLoaded={handleDrugsLoaded}

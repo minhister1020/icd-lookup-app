@@ -1,9 +1,54 @@
 # Changelog
 
-All notable changes to the ICD Mind Map Lookup Tool will be documented in this file.
+All notable changes to the ICD Lookup Tool will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## [Unreleased]
+
+### Added - Category Grouping (Phase 7A)
+
+Organizes ICD-10 search results by disease chapter for easier navigation.
+
+#### Category Organization
+- Search results grouped by ICD-10 chapter (21 chapters covering all body systems)
+- Categories include: Infectious, Neoplasms, Blood, Endocrine, Mental, Nervous, Eye, Ear, Circulatory, Respiratory, Digestive, Skin, Musculoskeletal, Genitourinary, Pregnancy, Perinatal, Congenital, Symptoms, Injuries, External Causes, Health Factors
+- Categories sorted by relevance (chapter with highest-scoring result appears first)
+- Color-coded left borders for visual distinction per category
+- Chapter icons (Heart for Circulatory, Brain for Mental/Nervous, etc.)
+
+#### Collapsible Sections
+- Accordion-style expand/collapse for each category
+- Smart default expansion: first category and categories with ≤3 results start expanded
+- "Expand All" and "Collapse All" controls
+- Smooth animations with 300ms transitions
+- Collapsed preview shows first 4 ICD codes as compact pills
+
+#### View Toggle
+- Switch between **Flat** (traditional grid) and **Grouped** (category sections) views
+- View preference stored in component state
+- Summary header shows "X results in Y categories"
+
+#### Accessibility
+- Full keyboard navigation (Enter/Space to toggle categories)
+- ARIA attributes (`aria-expanded`, `aria-controls`, `role="button"`)
+- Visible focus states with ring indicator
+- Screen reader friendly with proper labeling
+
+#### Technical Details
+- New files: `chapterMapping.ts`, `grouping.ts`, `CategorySection.tsx`
+- O(n) grouping algorithm using Map for efficient lookups
+- Preserves expand/collapse state during "Load More" operations
+- Memoized computations to prevent unnecessary re-renders
+- Dark mode support throughout
+
+### Changed
+- SearchResults component now supports grouped rendering
+- Updated header to show category count in grouped view
+- Removed Mind Map feature (simplified to list-only interface)
 
 ---
 
