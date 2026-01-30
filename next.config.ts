@@ -7,10 +7,9 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   
-  // Allow builds to succeed even with ESLint warnings
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // Note: ESLint config moved out of next.config.ts in Next.js 16+
+  // To ignore ESLint during builds, use: next build --no-lint
+  // Or configure in eslint.config.mjs
 };
 
 export default nextConfig;

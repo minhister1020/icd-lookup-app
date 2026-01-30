@@ -169,19 +169,12 @@ export function sortCategoriesByRelevance(categories: CategoryGroup[]): Category
 /**
  * Determines the default expansion state for a category.
  * 
- * Rules (in order of priority):
- * 1. First category (index 0) → Always expanded (contains top match)
- * 2. Categories with ≤3 results → Expanded (small, easy to scan)
- * 3. All other categories → Collapsed (prevent overwhelming the user)
+ * All categories start collapsed by default to show chapter headers
+ * and the filter dropdown immediately. Users can expand manually.
  * 
- * @param category - The category to check
- * @param index - Position in the sorted category list (0 = first/most relevant)
- * @returns true if the category should start expanded
- * 
- * @example
- * getDefaultExpandedState(endocrineCategory, 0) // true (first category)
- * getDefaultExpandedState(tinyCategory, 3)      // true (only 2 results)
- * getDefaultExpandedState(bigCategory, 2)       // false (not first, many results)
+ * @param category - The category (unused, kept for API compatibility)
+ * @param index - Position in list (unused, kept for API compatibility)
+ * @returns false - all categories start collapsed
  */
 export function getDefaultExpandedState(category: CategoryGroup, index: number): boolean {
   // All categories start collapsed by default.
