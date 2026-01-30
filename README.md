@@ -51,10 +51,12 @@ The **ICD Lookup Tool** is a modern web application that transforms medical code
 - Warning and safety data
 
 ### 🔬 Clinical Trials (ClinicalTrials.gov)
-- Find actively recruiting clinical trials
+- Find clinical trials across 5+ statuses (Recruiting, Active, Completed, Terminated, Withdrawn)
+- **Interactive filter pills** — Toggle status filters with live-updating counts
 - NCT IDs with direct links to full trial details
 - Trial status, sponsor, and location information
 - Eligibility criteria and study summaries
+- Up to 15 trials per ICD code with smart defaults
 
 ### 📊 Category Grouping (NEW!)
 - **21 ICD-10 Chapters** — Results organized by body system/disease type
@@ -535,6 +537,7 @@ GET https://clinicaltrials.gov/api/v2/studies
 
 ### Completed Features
 
+- [x] **Clinical Trials Filtering** — Filter trials by status with interactive pills (Phase 9)
 - [x] **Category Grouping** — Results organized by ICD-10 chapter with collapsible sections (Phase 7A)
 - [x] **Favorites & History** — Save codes, track searches, export/import JSON (Phase 6)
 - [x] **Common Terms Translation** — Search with everyday language (Phase 5)
@@ -544,7 +547,7 @@ GET https://clinicaltrials.gov/api/v2/studies
 
 ### Planned Features
 
-- [ ] **Category Filters** — Filter by specific ICD-10 chapter
+- [ ] **Chapter Filters** — Filter ICD results by specific chapter
 - [ ] **Sharing** — Generate shareable links to searches
 - [ ] **Offline Mode** — Cache data for offline access
 - [ ] **Advanced Filters** — Filter by code range, date, status

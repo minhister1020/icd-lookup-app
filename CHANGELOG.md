@@ -9,6 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Clinical Trials Multi-Status Filtering (Phase 9)
+
+Enhanced clinical trials feature with interactive filtering and expanded results.
+
+#### Filter Pills UI
+- Interactive pill/chip toggles for 5 trial statuses: Recruiting, Active, Completed, Terminated, Withdrawn
+- Purple highlight for selected filters, gray for unselected
+- Live count badges on each pill showing available trials per status
+- Filters reset to smart defaults when section is collapsed
+
+#### Expanded Trial Support
+- Increased from 5 to 15 trials per ICD code
+- Fetch trials across multiple statuses in a single API call
+- Added WITHDRAWN status type with orange color badge
+- Dynamic "X of Y" count updates as filters are toggled
+
+#### Accessibility & UX
+- ARIA labels and `aria-pressed` states for screen readers
+- Keyboard navigable filter pills
+- Mobile-responsive flex-wrap layout
+- Smooth transitions on filter toggle
+- "No trials match current filters" message with helpful hint
+
+#### Technical Details
+- Client-side filtering with `useMemo` for instant response
+- `useEffect` to reset filters on section collapse
+- Conditional "Other" status pill for unexpected API statuses
+- Updated `TrialStatus` type to include WITHDRAWN
+
+---
+
 ### Added - Category Grouping (Phase 7A)
 
 Organizes ICD-10 search results by disease chapter for easier navigation.
