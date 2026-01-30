@@ -224,13 +224,15 @@ export function extractSearchTerms(conditionName: string): string {
  * - ACTIVE_NOT_RECRUITING: Running but not taking new participants
  * - COMPLETED: Trial has finished
  * - TERMINATED: Trial was stopped early
- * - OTHER: Any other status (withdrawn, suspended, etc.)
+ * - WITHDRAWN: Trial was withdrawn before enrollment began
+ * - OTHER: Any other status (suspended, etc.)
  */
 export type TrialStatus = 
   | 'RECRUITING' 
   | 'ACTIVE_NOT_RECRUITING' 
   | 'COMPLETED' 
   | 'TERMINATED' 
+  | 'WITHDRAWN'
   | 'OTHER';
 
 /**
@@ -331,6 +333,8 @@ export function getTrialStatusColor(status: TrialStatus): { text: string; bg: st
       return { text: 'text-gray-700 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-700' };
     case 'TERMINATED':
       return { text: 'text-red-700 dark:text-red-400', bg: 'bg-red-100 dark:bg-red-900/30' };
+    case 'WITHDRAWN':
+      return { text: 'text-orange-700 dark:text-orange-400', bg: 'bg-orange-100 dark:bg-orange-900/30' };
     default:
       return { text: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-700' };
   }

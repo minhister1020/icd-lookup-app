@@ -31,8 +31,18 @@ const CLINICALTRIALS_BASE_URL = 'https://clinicaltrials.gov/api/v2/studies';
 
 /**
  * Default number of trial results to fetch.
+ * Increased to 15 to show more variety across different statuses.
  */
-const DEFAULT_PAGE_SIZE = 5;
+const DEFAULT_PAGE_SIZE = 15;
+
+/**
+ * Default statuses to fetch when none specified.
+ * Focuses on the most useful statuses for users:
+ * - RECRUITING: Actively seeking participants
+ * - ACTIVE_NOT_RECRUITING: Running trials (useful for awareness)
+ * - COMPLETED: Finished trials (useful for research)
+ */
+const DEFAULT_STATUSES: TrialStatus[] = ['RECRUITING', 'ACTIVE_NOT_RECRUITING', 'COMPLETED'];
 
 // =============================================================================
 // Main Search Function
@@ -43,25 +53,35 @@ const DEFAULT_PAGE_SIZE = 5;
  * 
  * @param conditionName - The condition name (e.g., "Type 2 diabetes mellitus")
  * @param options - Optional search parameters
+ * @param options.pageSize - Number of results to fetch (default: 15)
+ * @param options.statuses - Array of trial statuses to include (default: RECRUITING, ACTIVE, COMPLETED)
  * @returns Promise resolving to array of ClinicalTrialResult objects
  * @throws Error if API request fails
  * 
  * @example
+ * // Default: fetches RECRUITING, ACTIVE_NOT_RECRUITING, COMPLETED trials
  * const trials = await searchTrialsByCondition("diabetes");
- * console.log(trials);
- * // [
- * //   { nctId: "NCT05642013", title: "Study of...", status: "RECRUITING", ... },
- * //   ...
- * // ]
+ * 
+ * @example
+ * // Custom: fetch only RECRUITING trials
+ * const recruiting = await searchTrialsByCondition("diabetes", {
+ *   statuses: ['RECRUITING']
+ * });
+ * 
+ * @example
+ * // Fetch all statuses including TERMINATED and WITHDRAWN
+ * const allTrials = await searchTrialsByCondition("diabetes", {
+ *   statuses: ['RECRUITING', 'ACTIVE_NOT_RECRUITING', 'COMPLETED', 'TERMINATED', 'WITHDRAWN']
+ * });
  */
 export async function searchTrialsByCondition(
   conditionName: string,
   options: {
     pageSize?: number;
-    recruitingOnly?: boolean;
+    statuses?: TrialStatus[];
   } = {}
 ): Promise<ClinicalTrialResult[]> {
-  const { pageSize = DEFAULT_PAGE_SIZE, recruitingOnly = true } = options;
+  const { pageSize = DEFAULT_PAGE_SIZE, statuses = DEFAULT_STATUSES } = options;
   
   // Step 1: Clean the condition name for better search results
   const searchTerms = extractSearchTerms(conditionName);
@@ -73,16 +93,24 @@ export async function searchTrialsByCondition(
   // Step 2: Build the API URL
   // --------------------------
   // query.cond = condition/disease search
-  // filter.overallStatus = filter by recruitment status
+  // filter.overallStatus = filter by recruitment status (comma-separated for multiple)
   // pageSize = number of results
   const params = new URLSearchParams({
     'query.cond': searchTerms,
     'pageSize': pageSize.toString(),
   });
   
-  // Only show recruiting trials by default (most useful for users)
-  if (recruitingOnly) {
-    params.append('filter.overallStatus', 'RECRUITING');
+  // Add status filter if statuses are specified
+  // ClinicalTrials.gov API accepts comma-separated values for multiple statuses
+  if (statuses.length > 0) {
+    // Map our TrialStatus values to API values (handle ACTIVE_NOT_RECRUITING format)
+    const apiStatuses = statuses.map(s => 
+      s === 'OTHER' ? '' : s  // Skip OTHER as it's our catch-all
+    ).filter(Boolean);
+    
+    if (apiStatuses.length > 0) {
+      params.append('filter.overallStatus', apiStatuses.join(','));
+    }
   }
   
   const url = `${CLINICALTRIALS_BASE_URL}?${params.toString()}`;
@@ -262,6 +290,8 @@ function normalizeStatus(status?: string): TrialStatus {
       return 'COMPLETED';
     case 'TERMINATED':
       return 'TERMINATED';
+    case 'WITHDRAWN':
+      return 'WITHDRAWN';
     default:
       return 'OTHER';
   }

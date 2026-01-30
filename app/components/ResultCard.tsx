@@ -17,7 +17,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { 
   ChevronRight, 
   Pill, 
@@ -28,7 +28,7 @@ import {
   AlertCircle,
   Star
 } from 'lucide-react';
-import { DrugResult, ClinicalTrialResult } from '../types/icd';
+import { DrugResult, ClinicalTrialResult, TrialStatus } from '../types/icd';
 import { searchDrugsByCondition } from '../lib/openFdaApi';
 import { searchTrialsByCondition } from '../lib/clinicalTrialsApi';
 import DrugCard from './DrugCard';
@@ -95,6 +95,65 @@ export default function ResultCard({
   const [trialsError, setTrialsError] = useState<string | null>(null);
   const [trialsExpanded, setTrialsExpanded] = useState(false);
   const [hasFetchedTrials, setHasFetchedTrials] = useState(false);
+  
+  // =========================================================================
+  // Trial Filter State (Phase 9: Enhanced Trial Filtering)
+  // =========================================================================
+  
+  /**
+   * Default status filters - show the most useful statuses by default.
+   * Users can toggle to include TERMINATED and WITHDRAWN.
+   * OTHER is included to handle any unexpected API statuses.
+   */
+  const DEFAULT_STATUS_FILTERS: Set<TrialStatus> = new Set([
+    'RECRUITING',
+    'ACTIVE_NOT_RECRUITING', 
+    'COMPLETED',
+    'OTHER'  // Include OTHER to show trials with unexpected statuses
+  ]);
+  
+  /**
+   * Set of currently active status filters.
+   * Trials are only shown if their status is in this Set.
+   */
+  const [statusFilters, setStatusFilters] = useState<Set<TrialStatus>>(
+    new Set(DEFAULT_STATUS_FILTERS)
+  );
+  
+  /**
+   * Toggles a status filter on/off.
+   * If status is currently active, removes it. Otherwise, adds it.
+   */
+  const toggleStatusFilter = (status: TrialStatus) => {
+    setStatusFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(status)) {
+        next.delete(status);
+      } else {
+        next.add(status);
+      }
+      return next;
+    });
+  };
+  
+  /**
+   * Filtered trials based on active status filters.
+   * Memoized to avoid re-filtering on every render.
+   */
+  const filteredTrials = useMemo(
+    () => trials.filter(trial => statusFilters.has(trial.status)),
+    [trials, statusFilters]
+  );
+  
+  /**
+   * Reset filters to defaults when the trial section is collapsed.
+   * This ensures each expansion starts with smart defaults.
+   */
+  useEffect(() => {
+    if (!trialsExpanded) {
+      setStatusFilters(new Set(DEFAULT_STATUS_FILTERS));
+    }
+  }, [trialsExpanded]);
   
   // =========================================================================
   // Drug Handlers
@@ -493,7 +552,7 @@ export default function ResultCard({
                 : 'View Trials'
             }
           </span>
-          {!trialsLoading && hasFetchedTrials && trials.length > 0 && (
+          {!trialsLoading && hasFetchedTrials && filteredTrials.length > 0 && (
             <span 
               className={`
                 ml-1
@@ -508,7 +567,7 @@ export default function ResultCard({
                 }
               `}
             >
-              {trials.length}
+              {filteredTrials.length}
             </span>
           )}
           {!trialsLoading && (
@@ -634,28 +693,128 @@ export default function ResultCard({
               </div>
             )}
             
-            {/* No Results State */}
+            {/* No Results State - No trials found from API */}
             {!trialsLoading && !trialsError && hasFetchedTrials && trials.length === 0 && (
               <div className="text-center py-4">
                 <FlaskConical className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  No recruiting trials found
+                  No trials found
                 </p>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                  There may be no currently recruiting trials for this condition
+                  There may be no clinical trials for this condition
+                </p>
+              </div>
+            )}
+            
+            {/* Filter Pills - Show when trials exist */}
+            {!trialsLoading && !trialsError && hasFetchedTrials && trials.length > 0 && (
+              <div className="mb-4">
+                {/* Section Header */}
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-1.5 mb-3">
+                  <FlaskConical className="w-3 h-3" />
+                  Clinical Trials ({filteredTrials.length}{filteredTrials.length !== trials.length ? ` of ${trials.length}` : ''})
+                </p>
+                
+                {/* Filter Pills */}
+                <div className="flex flex-wrap gap-2" role="group" aria-label="Filter trials by status">
+                  {/* Main status pills */}
+                  {(['RECRUITING', 'ACTIVE_NOT_RECRUITING', 'COMPLETED', 'TERMINATED', 'WITHDRAWN'] as TrialStatus[]).map((status) => {
+                    const isSelected = statusFilters.has(status);
+                    const count = trials.filter(t => t.status === status).length;
+                    // Format label: ACTIVE_NOT_RECRUITING → "Active"
+                    const label = status === 'ACTIVE_NOT_RECRUITING' 
+                      ? 'Active' 
+                      : status.charAt(0) + status.slice(1).toLowerCase().replace(/_/g, ' ');
+                    
+                    return (
+                      <button
+                        key={status}
+                        type="button"
+                        onClick={() => toggleStatusFilter(status)}
+                        aria-pressed={isSelected}
+                        aria-label={`${label} trials: ${count}. ${isSelected ? 'Currently shown' : 'Currently hidden'}`}
+                        className={`
+                          px-3
+                          py-1.5
+                          min-h-[32px]
+                          rounded-full
+                          text-xs
+                          font-medium
+                          cursor-pointer
+                          transition-all
+                          duration-150
+                          select-none
+                          ${isSelected
+                            ? 'bg-purple-500 text-white hover:bg-purple-600 focus:ring-2 focus:ring-purple-300 focus:ring-offset-1'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 focus:ring-2 focus:ring-gray-300 focus:ring-offset-1'
+                          }
+                        `}
+                      >
+                        {label}
+                        <span className={`ml-1 ${isSelected ? 'opacity-80' : 'opacity-60'}`}>
+                          ({count})
+                        </span>
+                      </button>
+                    );
+                  })}
+                  
+                  {/* OTHER status pill - only show if there are trials with OTHER status */}
+                  {trials.some(t => t.status === 'OTHER') && (() => {
+                    const isSelected = statusFilters.has('OTHER');
+                    const count = trials.filter(t => t.status === 'OTHER').length;
+                    
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => toggleStatusFilter('OTHER')}
+                        aria-pressed={isSelected}
+                        aria-label={`Other trials: ${count}. ${isSelected ? 'Currently shown' : 'Currently hidden'}`}
+                        className={`
+                          px-3
+                          py-1.5
+                          min-h-[32px]
+                          rounded-full
+                          text-xs
+                          font-medium
+                          cursor-pointer
+                          transition-all
+                          duration-150
+                          select-none
+                          ${isSelected
+                            ? 'bg-purple-500 text-white hover:bg-purple-600 focus:ring-2 focus:ring-purple-300 focus:ring-offset-1'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 focus:ring-2 focus:ring-gray-300 focus:ring-offset-1'
+                          }
+                        `}
+                      >
+                        Other
+                        <span className={`ml-1 ${isSelected ? 'opacity-80' : 'opacity-60'}`}>
+                          ({count})
+                        </span>
+                      </button>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+            
+            {/* No Filtered Results State - Trials exist but all filtered out */}
+            {!trialsLoading && !trialsError && hasFetchedTrials && trials.length > 0 && filteredTrials.length === 0 && (
+              <div className="text-center py-4">
+                <FlaskConical className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  No trials match current filters
+                </p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  Select at least one status filter above
                 </p>
               </div>
             )}
             
             {/* Trials List */}
-            {!trialsLoading && !trialsError && trials.length > 0 && (
+            {!trialsLoading && !trialsError && filteredTrials.length > 0 && (
               <div className="space-y-3">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
-                  <FlaskConical className="w-3 h-3" />
-                  Recruiting Clinical Trials ({trials.length})
-                </p>
                 <div className="grid gap-3 sm:grid-cols-1">
-                  {trials.map((trial) => (
+                  {filteredTrials.map((trial) => (
                     <TrialCard key={trial.nctId} trial={trial} />
                   ))}
                 </div>
