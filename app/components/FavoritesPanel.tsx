@@ -22,9 +22,10 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { X, Star, Search, Trash2, Clock, Download, Upload, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, Star, Search, Trash2, Clock, Download, Upload, CheckCircle, AlertCircle, FileSpreadsheet } from 'lucide-react';
 import { FavoriteICD, getCategoryColor } from '../types/icd';
 import { formatRelativeTime } from '../lib/favoritesStorage';
+import { getChapter } from '../lib/chapterMapping';
 
 // =============================================================================
 // Props Interface
@@ -117,6 +118,53 @@ export default function FavoritesPanel({
     } catch (error) {
       console.error('Export failed:', error);
       showStatus('error', 'Export failed');
+    }
+  };
+  
+  // Export favorites as CSV file
+  const handleExportCSV = () => {
+    try {
+      // Helper function to escape CSV values
+      // Wraps in quotes if contains comma, quote, or newline; escapes internal quotes
+      const escapeCSV = (value: string): string => {
+        if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        return value;
+      };
+      
+      // Build CSV content
+      const header = 'Code,Description,Chapter';
+      const rows = favorites.map(favorite => {
+        const chapter = getChapter(favorite.code);
+        return [
+          escapeCSV(favorite.code),
+          escapeCSV(favorite.name),
+          escapeCSV(chapter.name)
+        ].join(',');
+      });
+      
+      const csvContent = [header, ...rows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      
+      // Generate filename with date
+      const date = new Date().toISOString().split('T')[0];
+      const filename = `icd-favorites-${date}.csv`;
+      
+      // Create download link and click it
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      showStatus('success', `Exported ${favorites.length} favorites as CSV`);
+    } catch (error) {
+      console.error('CSV export failed:', error);
+      showStatus('error', 'CSV export failed');
     }
   };
   
@@ -413,9 +461,30 @@ export default function FavoritesPanel({
                 transition-colors
                 disabled:opacity-50 disabled:cursor-not-allowed
               "
+              title="Export as JSON"
             >
               <Download className="w-4 h-4" />
-              Export
+              JSON
+            </button>
+            
+            <button
+              onClick={handleExportCSV}
+              disabled={favorites.length === 0}
+              className="
+                flex-1 py-2 px-3
+                rounded-lg
+                bg-emerald-50 hover:bg-emerald-100
+                dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40
+                text-emerald-600 dark:text-emerald-400
+                text-sm font-medium
+                flex items-center justify-center gap-2
+                transition-colors
+                disabled:opacity-50 disabled:cursor-not-allowed
+              "
+              title="Export as CSV"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              CSV
             </button>
             
             <button
@@ -430,6 +499,7 @@ export default function FavoritesPanel({
                 flex items-center justify-center gap-2
                 transition-colors
               "
+              title="Import from JSON"
             >
               <Upload className="w-4 h-4" />
               Import
