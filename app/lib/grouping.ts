@@ -184,17 +184,11 @@ export function sortCategoriesByRelevance(categories: CategoryGroup[]): Category
  * getDefaultExpandedState(bigCategory, 2)       // false (not first, many results)
  */
 export function getDefaultExpandedState(category: CategoryGroup, index: number): boolean {
-  // Rule 1: First category is always expanded (contains the top match)
-  if (index === 0) {
-    return true;
-  }
-  
-  // Rule 2: Small categories (≤3 results) are expanded for easy scanning
-  if (category.results.length <= 3) {
-    return true;
-  }
-  
-  // Rule 3: Everything else starts collapsed
+  // All categories start collapsed by default.
+  // This allows users to see all chapter headers + the filter dropdown immediately.
+  // Users can expand individual chapters or use "Expand All" as needed.
+  void category; // Unused but kept for API compatibility
+  void index;    // Unused but kept for API compatibility
   return false;
 }
 

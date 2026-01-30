@@ -32,6 +32,7 @@ import {
 import { ScoredICD10Result, DrugResult, ClinicalTrialResult, TranslationResult, FavoriteICD, GroupedSearchResults } from '../types/icd';
 import ResultCard from './ResultCard';
 import CategorySection from './CategorySection';
+import ChapterFilterDropdown from './ChapterFilterDropdown';
 import { groupByChapter, toggleCategoryExpansion, expandAllCategories, collapseAllCategories } from '../lib/grouping';
 
 // =============================================================================
@@ -209,6 +210,20 @@ export default function SearchResults({
   /** Grouped results - computed from results array */
   const [groupedResults, setGroupedResults] = useState<GroupedSearchResults | null>(null);
   
+  // =========================================================================
+  // Phase 8: Chapter Filter State
+  // =========================================================================
+  
+  /**
+   * Selected chapter IDs for filtering in Grouped view.
+   * 
+   * - Empty array [] = show ALL chapters (no filtering)
+   * - Array with values [4, 9] = only show chapters 4 and 9
+   * 
+   * Filter only applies to Grouped view, not Flat view.
+   */
+  const [selectedChapters, setSelectedChapters] = useState<number[]>([]);
+  
   /**
    * Compute grouped results whenever results change.
    * We use useMemo for efficient re-computation.
@@ -234,18 +249,103 @@ export default function SearchResults({
       
       return {
         ...computedGroupedResults,
-        categories: computedGroupedResults.categories.map((cat, index) => ({
+        categories: computedGroupedResults.categories.map((cat) => ({
           ...cat,
-          // Preserve existing expansion state if available, otherwise use default
+          // Preserve existing expansion state if available, otherwise default to collapsed
           isExpanded: existingExpansions.has(cat.chapter.id) 
             ? existingExpansions.get(cat.chapter.id)!
-            : (index === 0 || cat.results.length <= 3) // Default: first category or small categories
+            : false // Default: all collapsed so users see chapter headers + filter
         }))
       };
     }
     
     return computedGroupedResults;
   }, [computedGroupedResults, groupedResults]);
+  
+  // =========================================================================
+  // Phase 8: Chapter Filter Logic
+  // =========================================================================
+  
+  /**
+   * Filtered grouped results based on selectedChapters.
+   * 
+   * - When selectedChapters is empty → returns all categories (no filtering)
+   * - When selectedChapters has values → only includes matching chapter IDs
+   * 
+   * This filtered result is what gets rendered in Grouped view.
+   */
+  const filteredGroupedResults = useMemo(() => {
+    if (!displayedGroupedResults) return null;
+    
+    // If no chapters selected, show all (no filtering)
+    if (selectedChapters.length === 0) {
+      return displayedGroupedResults;
+    }
+    
+    // Filter categories to only include selected chapters
+    const filteredCategories = displayedGroupedResults.categories.filter(
+      category => selectedChapters.includes(category.chapter.id)
+    );
+    
+    // Calculate new totals for filtered results
+    const filteredTotalResults = filteredCategories.reduce(
+      (sum, cat) => sum + cat.results.length, 
+      0
+    );
+    
+    return {
+      categories: filteredCategories,
+      totalResults: filteredTotalResults,
+      totalCategories: filteredCategories.length
+    };
+  }, [displayedGroupedResults, selectedChapters]);
+  
+  /**
+   * Get list of available chapters from current results.
+   * Used for populating the chapter filter dropdown.
+   */
+  const availableChapters = useMemo(() => {
+    if (!displayedGroupedResults) return [];
+    return displayedGroupedResults.categories.map(cat => cat.chapter);
+  }, [displayedGroupedResults]);
+  
+  /**
+   * Map of chapter ID → number of results in that chapter.
+   * Used to display counts in the dropdown like "Endocrine (12)".
+   */
+  const chapterResultCounts = useMemo(() => {
+    if (!displayedGroupedResults) return new Map<number, number>();
+    
+    const counts = new Map<number, number>();
+    displayedGroupedResults.categories.forEach(cat => {
+      counts.set(cat.chapter.id, cat.results.length);
+    });
+    return counts;
+  }, [displayedGroupedResults]);
+  
+  /**
+   * Clear chapter filter - reset to show all chapters.
+   */
+  const clearChapterFilter = useCallback(() => {
+    setSelectedChapters([]);
+  }, []);
+  
+  /**
+   * Toggle a chapter's selection in the filter.
+   * 
+   * @param chapterId - The chapter ID to toggle
+   */
+  const toggleChapterFilter = useCallback((chapterId: number) => {
+    setSelectedChapters(prev => {
+      if (prev.includes(chapterId)) {
+        // Remove from selection
+        return prev.filter(id => id !== chapterId);
+      } else {
+        // Add to selection
+        return [...prev, chapterId];
+      }
+    });
+  }, []);
   
   /**
    * Handle category toggle - update the grouped results state.
@@ -424,8 +524,8 @@ export default function SearchResults({
   // State 5: Has Results
   // =========================================================================
   
-  // Get the grouped data for display
-  const grouped = displayedGroupedResults;
+  // Get the grouped data for display (use filtered results in grouped view)
+  const grouped = filteredGroupedResults;
   
   return (
     <div>
@@ -444,7 +544,7 @@ export default function SearchResults({
             {viewMode === 'grouped' && grouped ? (
               <>
                 <span className="font-medium text-gray-700 dark:text-gray-300">
-                  {results.length}
+                  {grouped.totalResults}
                 </span>
                 {' results in '}
                 <span className="font-medium text-[#00D084]">
@@ -452,7 +552,13 @@ export default function SearchResults({
                 </span>
                 {' '}
                 {grouped.totalCategories === 1 ? 'category' : 'categories'}
-                {showingSubset && (
+                {/* Phase 8: Show filter info when chapters are filtered */}
+                {selectedChapters.length > 0 && displayedGroupedResults && (
+                  <span className="text-amber-600 dark:text-amber-400">
+                    {' '}(filtered from {displayedGroupedResults.totalCategories})
+                  </span>
+                )}
+                {showingSubset && selectedChapters.length === 0 && (
                   <span className="text-gray-400 dark:text-gray-500">
                     {' '}(from {totalCount.toLocaleString()} total)
                   </span>
@@ -544,6 +650,17 @@ export default function SearchResults({
                 <span className="hidden lg:inline">Collapse</span>
               </button>
             </div>
+          )}
+          
+          {/* Phase 8: Chapter Filter Dropdown - Only show in grouped mode with multiple chapters */}
+          {viewMode === 'grouped' && displayedGroupedResults && displayedGroupedResults.totalCategories > 1 && (
+            <ChapterFilterDropdown
+              availableChapters={availableChapters}
+              selectedChapters={selectedChapters}
+              onToggleChapter={toggleChapterFilter}
+              onClearFilter={clearChapterFilter}
+              chapterResultCounts={chapterResultCounts}
+            />
           )}
         </div>
       </div>

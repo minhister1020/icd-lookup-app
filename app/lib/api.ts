@@ -9,9 +9,9 @@
  * - Reusable across different components
  * 
  * Phase 4 Update: Added intelligent relevance scoring
- * - Fetches 50 results for better ranking pool
+ * - Fetches 150 results for better ranking pool
  * - Scores results by clinical relevance
- * - Returns top 25 sorted by score (not alphabetically)
+ * - Returns top 100 sorted by score (not alphabetically)
  * 
  * Phase 5 Update: Added common terms translation
  * - Translates lay terms to medical terminology before search
@@ -39,14 +39,16 @@ const API_BASE_URL = 'https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search';
 /**
  * Number of results to fetch from the API for scoring pool.
  * We fetch more than we display to find the most relevant codes.
+ * Increased to 150 to support displaying 100 results initially.
  */
-const FETCH_LIMIT = 50;
+const FETCH_LIMIT = 150;
 
 /**
  * Number of results to display initially.
  * Users can load more with the "Load More" button.
+ * Set to 100 to show enough variety for chapter filtering.
  */
-const DISPLAY_LIMIT = 25;
+const DISPLAY_LIMIT = 100;
 
 // =============================================================================
 // Main Search Function
@@ -56,9 +58,9 @@ const DISPLAY_LIMIT = 25;
  * Searches the ClinicalTables API for ICD-10 codes matching the query.
  * 
  * Phase 4 Enhancement:
- * - Fetches 50 results for better ranking pool
+ * - Fetches 150 results for better ranking pool
  * - Applies multi-factor relevance scoring (keyword, popularity, specificity, exactness)
- * - Returns top 25 results sorted by clinical relevance, not alphabetically
+ * - Returns top 100 results sorted by clinical relevance, not alphabetically
  * 
  * Phase 5 Enhancement:
  * - Translates common terms to medical terminology
@@ -68,7 +70,7 @@ const DISPLAY_LIMIT = 25;
  * 
  * @param query - The search term (e.g., "diabetes", "heart attack", or "E11.9")
  * @returns Promise that resolves to SearchResultsWithTranslation containing:
- *          - results: Top 25 scored results
+ *          - results: Top 100 scored results
  *          - totalCount: Total matching results in API
  *          - displayedCount: Number currently shown
  *          - hasMore: Whether more results can be loaded
