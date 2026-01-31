@@ -157,6 +157,31 @@ export default function ResultCard({
   }, [trialsExpanded]);
   
   // =========================================================================
+  // Memoized Drug Filters (calculate once, not multiple times in render)
+  // =========================================================================
+  
+  /**
+   * FDA-approved drugs (score >= 7).
+   * These are drugs specifically approved for this indication.
+   */
+  const fdaApprovedDrugs = useMemo(
+    () => drugs.filter(d => d.relevanceScore >= DRUG_SCORE_THRESHOLDS.FDA_APPROVED),
+    [drugs]
+  );
+  
+  /**
+   * Off-label drugs (score 4-6).
+   * Commonly prescribed for this condition but not FDA-approved for it.
+   */
+  const offLabelDrugs = useMemo(
+    () => drugs.filter(
+      d => d.relevanceScore >= DRUG_SCORE_THRESHOLDS.OFF_LABEL && 
+           d.relevanceScore < DRUG_SCORE_THRESHOLDS.FDA_APPROVED
+    ),
+    [drugs]
+  );
+  
+  // =========================================================================
   // Drug Handlers
   // =========================================================================
   
@@ -675,7 +700,7 @@ export default function ResultCard({
                 )}
 
                 {/* FDA-Approved Treatments Section */}
-                {drugs.filter(d => d.relevanceScore >= DRUG_SCORE_THRESHOLDS.FDA_APPROVED).length > 0 && (
+                {fdaApprovedDrugs.length > 0 && (
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
@@ -683,31 +708,26 @@ export default function ResultCard({
                         FDA-Approved Treatments
                       </h4>
                       <span className="px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
-                        {drugs.filter(d => d.relevanceScore >= DRUG_SCORE_THRESHOLDS.FDA_APPROVED).length}
+                        {fdaApprovedDrugs.length}
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 ml-6">
                       Drugs approved by the FDA for this specific condition
                     </p>
                     <div className="grid gap-2 sm:grid-cols-1">
-                      {drugs
-                        .filter(d => d.relevanceScore >= DRUG_SCORE_THRESHOLDS.FDA_APPROVED)
-                        .map((drug, index) => (
-                          <DrugCard 
-                            key={`fda-${drug.brandName}-${index}`} 
-                            drug={drug} 
-                            badgeType="fda-approved"
-                          />
-                        ))}
+                      {fdaApprovedDrugs.map((drug, index) => (
+                        <DrugCard 
+                          key={`fda-${drug.brandName}-${index}`} 
+                          drug={drug} 
+                          badgeType="fda-approved"
+                        />
+                      ))}
                     </div>
                   </div>
                 )}
 
                 {/* Off-Label Options Section */}
-                {drugs.filter(d => 
-                  d.relevanceScore >= DRUG_SCORE_THRESHOLDS.OFF_LABEL && 
-                  d.relevanceScore < DRUG_SCORE_THRESHOLDS.FDA_APPROVED
-                ).length > 0 && (
+                {offLabelDrugs.length > 0 && (
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <Info className="w-4 h-4 text-amber-600 dark:text-amber-400" />
@@ -715,28 +735,20 @@ export default function ResultCard({
                         Off-Label Options
                       </h4>
                       <span className="px-1.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
-                        {drugs.filter(d => 
-                          d.relevanceScore >= DRUG_SCORE_THRESHOLDS.OFF_LABEL && 
-                          d.relevanceScore < DRUG_SCORE_THRESHOLDS.FDA_APPROVED
-                        ).length}
+                        {offLabelDrugs.length}
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 ml-6">
                       Commonly prescribed for this condition but not FDA-approved for this specific use
                     </p>
                     <div className="grid gap-2 sm:grid-cols-1">
-                      {drugs
-                        .filter(d => 
-                          d.relevanceScore >= DRUG_SCORE_THRESHOLDS.OFF_LABEL && 
-                          d.relevanceScore < DRUG_SCORE_THRESHOLDS.FDA_APPROVED
-                        )
-                        .map((drug, index) => (
-                          <DrugCard 
-                            key={`offlabel-${drug.brandName}-${index}`} 
-                            drug={drug} 
-                            badgeType="off-label"
-                          />
-                        ))}
+                      {offLabelDrugs.map((drug, index) => (
+                        <DrugCard 
+                          key={`offlabel-${drug.brandName}-${index}`} 
+                          drug={drug} 
+                          badgeType="off-label"
+                        />
+                      ))}
                     </div>
                   </div>
                 )}

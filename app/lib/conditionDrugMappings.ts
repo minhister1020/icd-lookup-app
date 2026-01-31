@@ -24,6 +24,43 @@
  */
 
 // =============================================================================
+// Shared Drug Lists (to avoid duplication)
+// =============================================================================
+
+/**
+ * Obesity & Weight Management Drugs
+ * 
+ * FDA-APPROVED for obesity (score 8-10):
+ * - Wegovy (semaglutide) - GLP-1 approved specifically for weight loss
+ * - Saxenda (liraglutide) - GLP-1 approved specifically for weight loss
+ * - Zepbound (tirzepatide) - GLP-1/GIP approved specifically for weight loss
+ * - Qsymia (phentermine/topiramate) - Combination approved for obesity
+ * - Contrave (naltrexone/bupropion) - Combination approved for obesity
+ * - Phentermine (Adipex-P) - Approved for short-term weight loss
+ * - Orlistat (Xenical, Alli) - Lipase inhibitor approved for obesity
+ * 
+ * COMMONLY PRESCRIBED OFF-LABEL (score 4-6):
+ * - Ozempic (semaglutide) - Approved for diabetes, widely used off-label for weight loss
+ * - Mounjaro (tirzepatide) - Approved for diabetes, widely used off-label for weight loss
+ * - Metformin - Approved for diabetes, sometimes used off-label for weight
+ */
+const OBESITY_DRUGS = [
+  // FDA-APPROVED for obesity (will score 8-10)
+  'Wegovy',                  // Semaglutide - obesity indication
+  'Saxenda',                 // Liraglutide - obesity indication
+  'Zepbound',                // Tirzepatide - obesity indication
+  'phentermine/topiramate',  // Qsymia - combination
+  'naltrexone/bupropion',    // Contrave - combination
+  'phentermine',             // Adipex-P, Lomaira
+  'orlistat',                // Xenical, Alli (OTC)
+  'diethylpropion',          // Tenuate
+  // COMMONLY PRESCRIBED OFF-LABEL (will score 4-6)
+  'Ozempic',                 // Semaglutide - diabetes indication, used off-label
+  'Mounjaro',                // Tirzepatide - diabetes indication, used off-label
+  'metformin',               // Diabetes drug, sometimes used off-label for weight
+];
+
+// =============================================================================
 // Condition-Drug Mappings
 // =============================================================================
 
@@ -40,74 +77,12 @@ export const CONDITION_DRUG_MAPPINGS: Record<string, string[]> = {
   // Metabolic & Endocrine Conditions
   // =========================================================================
   
-  /**
-   * Obesity & Weight Management
-   * 
-   * FDA-APPROVED for obesity (score 8-10):
-   * - Wegovy (semaglutide) - GLP-1 approved specifically for weight loss
-   * - Saxenda (liraglutide) - GLP-1 approved specifically for weight loss
-   * - Zepbound (tirzepatide) - GLP-1/GIP approved specifically for weight loss
-   * - Qsymia (phentermine/topiramate) - Combination approved for obesity
-   * - Contrave (naltrexone/bupropion) - Combination approved for obesity
-   * - Phentermine (Adipex-P) - Approved for short-term weight loss
-   * - Orlistat (Xenical, Alli) - Lipase inhibitor approved for obesity
-   * 
-   * COMMONLY PRESCRIBED OFF-LABEL (score 4-6):
-   * - Ozempic (semaglutide) - Approved for diabetes, widely used off-label for weight loss
-   * - Mounjaro (tirzepatide) - Approved for diabetes, widely used off-label for weight loss
-   * - Victoza (liraglutide) - Approved for diabetes, sometimes used off-label
-   * - Metformin - Approved for diabetes, sometimes used off-label for weight
-   */
-  'obesity': [
-    // FDA-APPROVED for obesity (will score 8-10)
-    'Wegovy',                  // Semaglutide - obesity indication
-    'Saxenda',                 // Liraglutide - obesity indication
-    'Zepbound',                // Tirzepatide - obesity indication
-    'phentermine/topiramate',  // Qsymia - combination
-    'naltrexone/bupropion',    // Contrave - combination
-    'phentermine',             // Adipex-P, Lomaira
-    'orlistat',                // Xenical, Alli (OTC)
-    'diethylpropion',          // Tenuate
-    
-    // COMMONLY PRESCRIBED OFF-LABEL (will score 4-6)
-    'Ozempic',                 // Semaglutide - diabetes indication, used off-label
-    'Mounjaro',                // Tirzepatide - diabetes indication, used off-label
-    'metformin',               // Diabetes drug, sometimes used off-label for weight
-  ],
-  
-  // Alias for obesity
-  'weight': [
-    // FDA-APPROVED
-    'Wegovy',
-    'Saxenda',
-    'Zepbound',
-    'phentermine/topiramate',
-    'naltrexone/bupropion',
-    'phentermine',
-    'orlistat',
-    'diethylpropion',
-    // OFF-LABEL
-    'Ozempic',
-    'Mounjaro',
-    'metformin',
-  ],
-  
-  // Alias for morbid obesity
-  'morbid': [
-    // FDA-APPROVED
-    'Wegovy',
-    'Saxenda',
-    'Zepbound',
-    'phentermine/topiramate',
-    'naltrexone/bupropion',
-    'phentermine',
-    'orlistat',
-    'diethylpropion',
-    // OFF-LABEL
-    'Ozempic',
-    'Mounjaro',
-    'metformin',
-  ],
+  // Obesity & Weight Management - all aliases use shared list
+  'obesity': OBESITY_DRUGS,
+  'weight': OBESITY_DRUGS,
+  'morbid': OBESITY_DRUGS,
+  'overweight': OBESITY_DRUGS,
+  'bmi': OBESITY_DRUGS,
   
   /**
    * Type 2 Diabetes Mellitus

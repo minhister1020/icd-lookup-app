@@ -275,10 +275,10 @@ export function getCacheSize(): number {
  * Validates drugs for a medical condition using AI-powered relevance scoring.
  * 
  * This is the main entry point for drug validation. It:
- * 1. Fetches drug candidates from OpenFDA
+ * 1. Fetches drug candidates from curated mappings and RxNorm API
  * 2. Scores each drug's relevance using Claude AI
- * 3. Filters to only clinically relevant drugs
- * 4. Returns sorted results
+ * 3. Filters to only clinically relevant drugs (FDA-approved + off-label)
+ * 4. Deduplicates and returns sorted results
  * 
  * @param conditionName - The medical condition (e.g., "Type 2 diabetes mellitus")
  * @param icdCode - The ICD-10 code (e.g., "E11.9") - used for logging
