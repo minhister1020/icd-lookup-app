@@ -29,9 +29,10 @@ import {
   Star
 } from 'lucide-react';
 import { DrugResult, ClinicalTrialResult, TrialStatus } from '../types/icd';
-import { ValidatedDrugResult } from '../lib/drugValidationPipeline';
+import { ValidatedDrugResult, DRUG_SCORE_THRESHOLDS } from '../lib/drugValidationPipeline';
 import { searchTrialsByCondition } from '../lib/clinicalTrialsApi';
 import DrugCard from './DrugCard';
+import { CheckCircle2, Info } from 'lucide-react';
 import TrialCard from './TrialCard';
 
 // =============================================================================
@@ -660,28 +661,100 @@ export default function ResultCard({
               </div>
             )}
             
-            {/* Drugs List */}
+            {/* Drugs List - Categorized by FDA Approval Status */}
             {!drugsLoading && !drugsError && drugs.length > 0 && (
-              <div className="space-y-3">
-                {/* Header with AI validation notice */}
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
-                    <Pill className="w-3 h-3" />
-                    Validated Treatments ({drugs.length})
-                  </p>
-                  {/* Show notice if AI was unavailable */}
-                  {drugs.some(d => d.relevanceScore === -1) && (
-                    <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" />
-                      AI validation unavailable
+              <div className="space-y-4">
+                {/* Show notice if AI was unavailable */}
+                {drugs.some(d => d.relevanceScore === -1) && (
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50">
+                    <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                    <span className="text-xs text-amber-700 dark:text-amber-300">
+                      AI validation unavailable - showing unfiltered results
                     </span>
-                  )}
-                </div>
-                <div className="grid gap-3 sm:grid-cols-1">
-                  {drugs.map((drug, index) => (
-                    <DrugCard key={`${drug.brandName}-${index}`} drug={drug} />
-                  ))}
-                </div>
+                  </div>
+                )}
+
+                {/* FDA-Approved Treatments Section */}
+                {drugs.filter(d => d.relevanceScore >= DRUG_SCORE_THRESHOLDS.FDA_APPROVED).length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                      <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                        FDA-Approved Treatments
+                      </h4>
+                      <span className="px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+                        {drugs.filter(d => d.relevanceScore >= DRUG_SCORE_THRESHOLDS.FDA_APPROVED).length}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 ml-6">
+                      Drugs approved by the FDA for this specific condition
+                    </p>
+                    <div className="grid gap-2 sm:grid-cols-1">
+                      {drugs
+                        .filter(d => d.relevanceScore >= DRUG_SCORE_THRESHOLDS.FDA_APPROVED)
+                        .map((drug, index) => (
+                          <DrugCard 
+                            key={`fda-${drug.brandName}-${index}`} 
+                            drug={drug} 
+                            badgeType="fda-approved"
+                          />
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Off-Label Options Section */}
+                {drugs.filter(d => 
+                  d.relevanceScore >= DRUG_SCORE_THRESHOLDS.OFF_LABEL && 
+                  d.relevanceScore < DRUG_SCORE_THRESHOLDS.FDA_APPROVED
+                ).length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Info className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                        Off-Label Options
+                      </h4>
+                      <span className="px-1.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+                        {drugs.filter(d => 
+                          d.relevanceScore >= DRUG_SCORE_THRESHOLDS.OFF_LABEL && 
+                          d.relevanceScore < DRUG_SCORE_THRESHOLDS.FDA_APPROVED
+                        ).length}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 ml-6">
+                      Commonly prescribed for this condition but not FDA-approved for this specific use
+                    </p>
+                    <div className="grid gap-2 sm:grid-cols-1">
+                      {drugs
+                        .filter(d => 
+                          d.relevanceScore >= DRUG_SCORE_THRESHOLDS.OFF_LABEL && 
+                          d.relevanceScore < DRUG_SCORE_THRESHOLDS.FDA_APPROVED
+                        )
+                        .map((drug, index) => (
+                          <DrugCard 
+                            key={`offlabel-${drug.brandName}-${index}`} 
+                            drug={drug} 
+                            badgeType="off-label"
+                          />
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Fallback for unscored drugs (AI unavailable) */}
+                {drugs.every(d => d.relevanceScore === -1) && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-1.5 mb-3">
+                      <Pill className="w-3 h-3" />
+                      Related Drugs ({drugs.length})
+                    </p>
+                    <div className="grid gap-2 sm:grid-cols-1">
+                      {drugs.map((drug, index) => (
+                        <DrugCard key={`unscored-${drug.brandName}-${index}`} drug={drug} />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

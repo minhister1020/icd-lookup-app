@@ -30,21 +30,23 @@ import { DrugResult } from '../types/icd';
 // =============================================================================
 
 /**
- * Minimum relevance score to include a drug (0-10 scale).
- * Score 7+ means: FDA-approved, standard-of-care, or well-evidenced off-label use.
+ * Minimum relevance score for FDA-approved drugs (0-10 scale).
+ * Score 7+ means: FDA-approved for this specific indication.
  */
-const HIGH_CONFIDENCE_THRESHOLD = 7;
+const FDA_APPROVED_THRESHOLD = 7;
 
 /**
- * Fallback threshold if no drugs meet high confidence.
- * Score 5+ means: Sometimes used for this condition, may treat symptoms.
+ * Minimum relevance score for off-label drugs (0-10 scale).
+ * Score 4-6 means: Commonly prescribed off-label for this condition.
+ * Below 4: Not clinically relevant, exclude.
  */
-const MEDIUM_CONFIDENCE_THRESHOLD = 5;
+const OFF_LABEL_THRESHOLD = 4;
 
 /**
  * Maximum number of validated drugs to return.
+ * Increased to accommodate both FDA-approved and off-label options.
  */
-const MAX_RESULTS = 5;
+const MAX_RESULTS = 8;
 
 /**
  * Maximum number of drugs to fetch from curated mappings.
@@ -86,6 +88,16 @@ export interface ValidatedDrugResult extends DrugResult {
   /** Brief reasoning from Claude about the score */
   relevanceReasoning?: string;
 }
+
+/**
+ * Export thresholds so UI can categorize drugs.
+ * - Score >= FDA_APPROVED_THRESHOLD: FDA-approved for this indication
+ * - Score >= OFF_LABEL_THRESHOLD but < FDA_APPROVED_THRESHOLD: Off-label use
+ */
+export const DRUG_SCORE_THRESHOLDS = {
+  FDA_APPROVED: FDA_APPROVED_THRESHOLD,
+  OFF_LABEL: OFF_LABEL_THRESHOLD,
+} as const;
 
 /**
  * Cached validation result with metadata.
@@ -408,23 +420,22 @@ export async function validateDrugs(
     });
 
     // =========================================================================
-    // Step 6: Filter by relevance threshold
+    // Step 6: Filter by relevance threshold (include both FDA-approved and off-label)
     // =========================================================================
-    let filteredDrugs = scoredDrugs.filter(
-      drug => drug.relevanceScore >= HIGH_CONFIDENCE_THRESHOLD
+    
+    // Include all drugs with score >= OFF_LABEL_THRESHOLD (4+)
+    // This captures both FDA-approved (7-10) and commonly used off-label (4-6)
+    const filteredDrugs = scoredDrugs.filter(
+      drug => drug.relevanceScore >= OFF_LABEL_THRESHOLD
     );
 
-    console.log(`${logPrefix} ${filteredDrugs.length} drugs passed high confidence (>=${HIGH_CONFIDENCE_THRESHOLD})`);
+    // Log breakdown by category
+    const fdaApproved = filteredDrugs.filter(d => d.relevanceScore >= FDA_APPROVED_THRESHOLD).length;
+    const offLabel = filteredDrugs.filter(d => d.relevanceScore >= OFF_LABEL_THRESHOLD && d.relevanceScore < FDA_APPROVED_THRESHOLD).length;
+    
+    console.log(`${logPrefix} ${fdaApproved} FDA-approved (≥${FDA_APPROVED_THRESHOLD}), ${offLabel} off-label (${OFF_LABEL_THRESHOLD}-${FDA_APPROVED_THRESHOLD - 1})`);
 
-    // If no drugs meet high threshold, try medium threshold
-    if (filteredDrugs.length === 0) {
-      filteredDrugs = scoredDrugs.filter(
-        drug => drug.relevanceScore >= MEDIUM_CONFIDENCE_THRESHOLD
-      );
-      console.log(`${logPrefix} ${filteredDrugs.length} drugs passed medium confidence (>=${MEDIUM_CONFIDENCE_THRESHOLD})`);
-    }
-
-    // If still no drugs, cache empty and return
+    // If no drugs meet minimum threshold, cache empty and return
     if (filteredDrugs.length === 0) {
       console.log(`${logPrefix} No drugs met relevance threshold for this condition`);
       storeInCache(cacheKey, [], conditionName, logPrefix);

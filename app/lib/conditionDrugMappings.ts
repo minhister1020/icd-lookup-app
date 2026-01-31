@@ -42,43 +42,71 @@ export const CONDITION_DRUG_MAPPINGS: Record<string, string[]> = {
   
   /**
    * Obesity & Weight Management
-   * - GLP-1 agonists are first-line for significant weight loss
-   * - Combination drugs for patients who need alternatives
-   * - Older drugs still used but less preferred
+   * 
+   * FDA-APPROVED for obesity (score 8-10):
+   * - Wegovy (semaglutide) - GLP-1 approved specifically for weight loss
+   * - Saxenda (liraglutide) - GLP-1 approved specifically for weight loss
+   * - Zepbound (tirzepatide) - GLP-1/GIP approved specifically for weight loss
+   * - Qsymia (phentermine/topiramate) - Combination approved for obesity
+   * - Contrave (naltrexone/bupropion) - Combination approved for obesity
+   * - Phentermine (Adipex-P) - Approved for short-term weight loss
+   * - Orlistat (Xenical, Alli) - Lipase inhibitor approved for obesity
+   * 
+   * COMMONLY PRESCRIBED OFF-LABEL (score 4-6):
+   * - Ozempic (semaglutide) - Approved for diabetes, widely used off-label for weight loss
+   * - Mounjaro (tirzepatide) - Approved for diabetes, widely used off-label for weight loss
+   * - Victoza (liraglutide) - Approved for diabetes, sometimes used off-label
+   * - Metformin - Approved for diabetes, sometimes used off-label for weight
    */
   'obesity': [
-    'semaglutide',            // Wegovy (weight), Ozempic (diabetes)
-    'liraglutide',            // Saxenda (weight), Victoza (diabetes)
-    'tirzepatide',            // Zepbound (weight), Mounjaro (diabetes)
-    'phentermine/topiramate', // Qsymia - combination
-    'naltrexone/bupropion',   // Contrave - combination
-    'phentermine',            // Adipex-P, Lomaira
-    'orlistat',               // Xenical, Alli (OTC)
-    'diethylpropion',         // Tenuate
+    // FDA-APPROVED for obesity (will score 8-10)
+    'Wegovy',                  // Semaglutide - obesity indication
+    'Saxenda',                 // Liraglutide - obesity indication
+    'Zepbound',                // Tirzepatide - obesity indication
+    'phentermine/topiramate',  // Qsymia - combination
+    'naltrexone/bupropion',    // Contrave - combination
+    'phentermine',             // Adipex-P, Lomaira
+    'orlistat',                // Xenical, Alli (OTC)
+    'diethylpropion',          // Tenuate
+    
+    // COMMONLY PRESCRIBED OFF-LABEL (will score 4-6)
+    'Ozempic',                 // Semaglutide - diabetes indication, used off-label
+    'Mounjaro',                // Tirzepatide - diabetes indication, used off-label
+    'metformin',               // Diabetes drug, sometimes used off-label for weight
   ],
   
   // Alias for obesity
   'weight': [
-    'semaglutide',
-    'liraglutide',
-    'tirzepatide',
+    // FDA-APPROVED
+    'Wegovy',
+    'Saxenda',
+    'Zepbound',
     'phentermine/topiramate',
     'naltrexone/bupropion',
     'phentermine',
     'orlistat',
     'diethylpropion',
+    // OFF-LABEL
+    'Ozempic',
+    'Mounjaro',
+    'metformin',
   ],
   
   // Alias for morbid obesity
   'morbid': [
-    'semaglutide',
-    'liraglutide',
-    'tirzepatide',
+    // FDA-APPROVED
+    'Wegovy',
+    'Saxenda',
+    'Zepbound',
     'phentermine/topiramate',
     'naltrexone/bupropion',
     'phentermine',
     'orlistat',
     'diethylpropion',
+    // OFF-LABEL
+    'Ozempic',
+    'Mounjaro',
+    'metformin',
   ],
   
   /**
