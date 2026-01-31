@@ -23,9 +23,8 @@ import Anthropic from '@anthropic-ai/sdk';
 /**
  * Claude model to use for drug list generation.
  * Haiku is fast and cost-efficient for this simple task.
- * Using same version date as claude-sonnet-4 for consistency.
  */
-const MODEL = 'claude-haiku-4-20250514';
+const MODEL = 'claude-3-5-haiku-20241022';
 
 /**
  * Maximum number of drugs to request from AI.
