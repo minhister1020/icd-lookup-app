@@ -105,8 +105,9 @@ function parseDrugList(response: string): string[] {
         return parsed.filter((item): item is string => typeof item === 'string');
       }
     }
-  } catch {
+  } catch (e) {
     // JSON parsing failed, try other formats
+    console.debug(`${logPrefix} JSON parse failed, trying other formats`, e);
   }
 
   // Strategy 2: Try parsing markdown/numbered list
@@ -206,6 +207,12 @@ function validateDrugList(drugs: string[]): string[] {
 export async function generateDrugListWithAI(
   conditionName: string
 ): Promise<GenerationResult> {
+  // Input validation
+  if (!conditionName || conditionName.trim().length === 0) {
+    console.warn('[DrugGenerator] Empty condition name provided');
+    return { drugs: [], success: false, error: 'Empty condition name' };
+  }
+
   const logPrefix = `[DrugGenerator:${conditionName.slice(0, 30)}]`;
 
   try {
@@ -313,7 +320,7 @@ export async function generateDrugListWithAI(
     // =========================================================================
     // Step 6: Validate and clean
     // =========================================================================
-    const validatedDrugs = validateDrugList(parsedDrugs);
+    const validatedDrugs = validateDrugList(parsedDrugs).slice(0, MAX_DRUGS);
 
     if (validatedDrugs.length === 0) {
       console.warn(`${logPrefix} No valid drugs after validation`);

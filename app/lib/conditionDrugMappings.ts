@@ -54,6 +54,28 @@ interface FallbackCacheEntry {
 }
 
 /**
+ * Statistics about the fallback cache and lookup patterns.
+ */
+export interface FallbackStats {
+  /** Total number of drug lookups performed */
+  totalLookups: number;
+  /** Number of lookups resolved by curated mappings */
+  curatedHits: number;
+  /** Number of lookups resolved by fallback cache */
+  fallbackCacheHits: number;
+  /** Number of lookups that required AI generation */
+  aiGenerations: number;
+  /** Ratio of curated hits to total lookups (0-1) */
+  curatedHitRate: number;
+  /** Current number of entries in fallback cache */
+  fallbackCacheSize: number;
+  /** Number of valid (non-expired) cache entries */
+  validEntries: number;
+  /** Number of expired cache entries pending cleanup */
+  expiredEntries: number;
+}
+
+/**
  * Fallback cache TTL: 24 hours (same as validation cache).
  */
 const FALLBACK_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -247,7 +269,7 @@ function maybeLogTelemetry(): void {
  * 
  * @returns Object with cache metrics
  */
-export function getFallbackStats() {
+export function getFallbackStats(): FallbackStats {
   let validCount = 0;
   let expiredCount = 0;
 
@@ -845,6 +867,12 @@ export const CONDITION_DRUG_MAPPINGS: Record<string, string[]> = {
  * // Subsequent times: Returns from cache (~0 sec)
  */
 export async function getDrugsForCondition(conditionName: string): Promise<string[]> {
+  // Input validation
+  if (!conditionName || conditionName.trim().length === 0) {
+    console.warn('[DrugMappings] Empty condition name provided');
+    return [];
+  }
+
   const logPrefix = `[DrugMappings:${conditionName.slice(0, 30)}]`;
   const normalized = conditionName.toLowerCase().trim();
   const cacheKey = normalizeCacheKey(conditionName);
