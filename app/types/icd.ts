@@ -783,6 +783,77 @@ export interface GroupedSearchResults {
 }
 
 // =============================================================================
+// NIH Medical Conditions API Types
+// =============================================================================
+
+/**
+ * Result from the NIH Medical Conditions API.
+ * 
+ * This API provides rich medical condition data including:
+ * - Clinical names (primary_name)
+ * - Consumer-friendly names (consumer_name)
+ * - Synonyms for common language search
+ * - Direct ICD-10 code mappings
+ * 
+ * @example
+ * // Query: "heart attack"
+ * {
+ *   found: true,
+ *   primaryName: "Myocardial infarction",
+ *   consumerName: "Heart attack (myocardial infarction)",
+ *   synonyms: ["heart attack", "MI", "coronary"],
+ *   icdCodes: [
+ *     { code: "I21.9", name: "Acute myocardial infarction, unspecified" },
+ *     { code: "I21.4", name: "Non-ST elevation (NSTEMI) myocardial infarction" }
+ *   ],
+ *   searchTermsToUse: ["Myocardial infarction", "heart attack"]
+ * }
+ */
+export interface ConditionsAPIResult {
+  /** Whether the Conditions API found matching results */
+  found: boolean;
+  
+  /** 
+   * Clinical/medical term for the condition.
+   * Example: "Myocardial infarction"
+   */
+  primaryName: string | null;
+  
+  /** 
+   * Consumer-friendly term.
+   * Example: "Heart attack (myocardial infarction)"
+   */
+  consumerName: string | null;
+  
+  /** 
+   * All synonyms found across matched conditions.
+   * Includes common language terms and medical abbreviations.
+   */
+  synonyms: string[];
+  
+  /** 
+   * Direct ICD-10 codes from the Conditions API.
+   * These can be used directly without calling the ICD-10 API.
+   */
+  icdCodes: Array<{
+    code: string;
+    name: string;
+  }>;
+  
+  /** 
+   * Terms to use for ICD-10 API search if expansion is needed.
+   * Usually [primaryName, originalQuery] for maximum coverage.
+   */
+  searchTermsToUse: string[];
+  
+  /** 
+   * Related condition names found.
+   * Useful for showing "Did you mean..." suggestions.
+   */
+  relatedConditions?: string[];
+}
+
+// =============================================================================
 // Helper Functions for Category Colors
 // =============================================================================
 
