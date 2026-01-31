@@ -420,12 +420,43 @@ export async function validateDrugs(
     });
 
     // =========================================================================
+    // Step 5.5: Deduplicate by brand name (keep highest-scored entry)
+    // =========================================================================
+    // RxNorm can return multiple dosage forms of the same brand (e.g., "Qsymia 7.5 MG" 
+    // and "Qsymia 15 MG"). We want only one entry per brand name.
+    const uniqueDrugsMap = new Map<string, ValidatedDrugResult>();
+
+    for (const drug of scoredDrugs) {
+      // Normalize brand name for comparison (lowercase, trimmed)
+      const brandKey = drug.brandName.toLowerCase().trim();
+      const existing = uniqueDrugsMap.get(brandKey);
+      
+      if (!existing) {
+        // First occurrence of this brand - keep it
+        uniqueDrugsMap.set(brandKey, drug);
+      } else if (drug.relevanceScore > existing.relevanceScore) {
+        // Found same brand with higher score - replace
+        uniqueDrugsMap.set(brandKey, drug);
+      }
+      // If scores are equal, keep the first one (do nothing)
+    }
+
+    const deduplicatedDrugs = Array.from(uniqueDrugsMap.values());
+
+    // Log deduplication results
+    if (scoredDrugs.length > deduplicatedDrugs.length) {
+      const duplicateCount = scoredDrugs.length - deduplicatedDrugs.length;
+      console.log(`${logPrefix} Deduplicated ${scoredDrugs.length} → ${deduplicatedDrugs.length} unique drugs`);
+      console.log(`${logPrefix} Removed ${duplicateCount} duplicate ${duplicateCount === 1 ? 'entry' : 'entries'}`);
+    }
+
+    // =========================================================================
     // Step 6: Filter by relevance threshold (include both FDA-approved and off-label)
     // =========================================================================
     
     // Include all drugs with score >= OFF_LABEL_THRESHOLD (4+)
     // This captures both FDA-approved (7-10) and commonly used off-label (4-6)
-    const filteredDrugs = scoredDrugs.filter(
+    const filteredDrugs = deduplicatedDrugs.filter(
       drug => drug.relevanceScore >= OFF_LABEL_THRESHOLD
     );
 
