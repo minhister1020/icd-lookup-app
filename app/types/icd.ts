@@ -541,6 +541,16 @@ export interface TranslationResult {
    * Example: "Showing results for 'myocardial infarction'"
    */
   message?: string;
+  
+  /**
+   * Source of the translation (Phase 6).
+   * 
+   * - 'term-mapper': From curated termMappings.ts (Tier 2)
+   * - 'conditions-api': From NIH Conditions API (Tier 1)
+   * 
+   * Useful for debugging and understanding which tier provided the translation.
+   */
+  source?: 'term-mapper' | 'conditions-api';
 }
 
 /**

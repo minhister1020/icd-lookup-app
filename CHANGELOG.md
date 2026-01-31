@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **NIH Medical Conditions API Integration** - Intelligent medical term translation
+  - Tier 1: NIH Conditions API provides ICD codes for 2,400+ medical conditions
+  - Tier 2: Curated termMapper synonyms (85+ manual mappings)
+  - Tier 3: ICD-10 API full-text search
+  - Common terms like "lung cancer", "heart attack", "high blood pressure" now return accurate ICD codes
+  - Consumer-friendly names mapped to clinical terminology (e.g., "heart attack" → "Myocardial infarction")
+  - Built-in synonym database maintained by NIH (reduces maintenance burden)
+  - In-memory cache for Conditions API (24hr TTL, 500 entries max, LRU eviction)
+  - Direct ICD code detection skips Conditions API (e.g., "E11.9" searches directly)
+  - Translation source tracking for debugging (`source: 'conditions-api' | 'term-mapper'`)
+  - Search telemetry logging for performance monitoring
+
 - **AI-Powered Drug Fallback System** - 3-tier drug lookup for universal coverage
   - Tier 1: Curated mappings (fastest, most accurate)
   - Tier 2: Fallback cache (AI-generated lists cached for 24 hours)
@@ -17,6 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Telemetry tracking for drug lookup hit rates (curated vs cached vs AI-generated)
 - `FallbackStats` interface for monitoring cache performance
 - Input validation for empty condition names in drug lookup functions
+
+### Improved
+- Search now handles 2,400+ medical conditions with built-in synonyms (previously 85 manual mappings)
+- Better user experience: lay terms automatically translate to clinical terminology
+- Reduced maintenance burden: NIH maintains the synonym database
 
 ### Fixed
 - Drug search now works for ALL conditions, not just curated ones

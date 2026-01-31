@@ -18,11 +18,18 @@
  * - "heart attack" → searches "myocardial infarction"
  * - Combines results from both original and translated terms
  * - Returns translation metadata for UI display
+ * 
+ * Phase 6 Update: Added NIH Conditions API integration
+ * - Tier 1: Try Conditions API for direct ICD code lookup (2,400+ conditions)
+ * - Tier 2: Fall back to termMapper for curated synonyms
+ * - Tier 3: ICD-10 API search for comprehensive results
+ * - Caches Conditions API results for 24 hours
  */
 
 import { ICD10Result, SearchResponse, SearchResultsWithTranslation, ScoredICD10Result } from '../types/icd';
 import { scoreAndRankResults } from './scoring';
 import { translateQuery } from './termMapper';
+import { searchConditionsAPI, isICD10Code } from './conditionsApi';
 
 // =============================================================================
 // Configuration
@@ -68,6 +75,11 @@ const DISPLAY_LIMIT = 100;
  * - Combines results from both terms for best coverage
  * - Returns translation metadata for UI display
  * 
+ * Phase 6 Enhancement:
+ * - NEW TIER 1: NIH Conditions API provides direct ICD codes for 2,400+ conditions
+ * - Falls back to termMapper (Tier 2) and ICD-10 API (Tier 3) seamlessly
+ * - Search flow: Conditions API → termMapper → ICD-10 API
+ * 
  * @param query - The search term (e.g., "diabetes", "heart attack", or "E11.9")
  * @returns Promise that resolves to SearchResultsWithTranslation containing:
  *          - results: Top 100 scored results
@@ -78,15 +90,14 @@ const DISPLAY_LIMIT = 100;
  * @throws Error if the network request fails or response is invalid
  * 
  * @example
- * // Search with common term - gets translated
+ * // Search with common term - Conditions API finds "Myocardial infarction"
  * const { results, translation } = await searchICD10('heart attack');
- * // translation.medicalTerm = "myocardial infarction"
- * // Results include I21.9, I21.3, etc.
+ * // Results include I21.9, I21.3, etc. with proper scoring
  * 
  * @example
- * // Search with medical term - no translation
- * const { results, translation } = await searchICD10('diabetes mellitus');
- * // translation.wasTranslated = false
+ * // Direct ICD code search - skips Conditions API
+ * const { results } = await searchICD10('E11.9');
+ * // Goes directly to ICD-10 API
  */
 export async function searchICD10(query: string): Promise<SearchResultsWithTranslation> {
   // Step 1: Validate the input
@@ -102,45 +113,122 @@ export async function searchICD10(query: string): Promise<SearchResultsWithTrans
     };
   }
 
-  // Step 2: Translate query if it's a common term (Phase 5)
+  // Step 2: Check if query is a direct ICD-10 code
+  // ----------------------------------------------
+  // If user enters "E11.9" or "I21", skip Conditions API and search directly
+  if (isICD10Code(trimmedQuery)) {
+    console.log(`[Search] Direct ICD code detected: "${trimmedQuery}" → skipping Conditions API`);
+    return searchWithFallback(trimmedQuery);
+  }
+
+  // Step 3: TIER 1 - Try NIH Conditions API first (Phase 6)
   // -------------------------------------------------------
-  // This converts lay terms like "heart attack" to medical terms
-  // like "myocardial infarction" for better API results
-  const translation = translateQuery(trimmedQuery);
+  // This API provides direct ICD codes for 2,400+ conditions
+  // with built-in synonym handling
+  try {
+    const conditionsResult = await searchConditionsAPI(trimmedQuery);
+    
+    if (conditionsResult.found && conditionsResult.icdCodes.length > 0) {
+      console.log(`[Search] ✅ Conditions API HIT: "${trimmedQuery}" → "${conditionsResult.primaryName}" (${conditionsResult.icdCodes.length} direct codes)`);
+      
+      // Start with direct ICD codes from Conditions API
+      let allResults: ICD10Result[] = conditionsResult.icdCodes.map(c => ({
+        code: c.code,
+        name: c.name,
+      }));
+      
+      // Expand results using the medical term for more comprehensive results
+      const searchTerm = conditionsResult.primaryName || trimmedQuery;
+      const { results: expandedResults, totalCount } = await searchSingleTerm(searchTerm);
+      
+      // Also search original query if different from primary name
+      if (conditionsResult.primaryName?.toLowerCase() !== trimmedQuery.toLowerCase()) {
+        const { results: originalResults } = await searchSingleTerm(trimmedQuery);
+        allResults = allResults.concat(originalResults);
+      }
+      
+      // Combine: Conditions API codes first (priority), then expanded results
+      allResults = allResults.concat(expandedResults);
+      
+      // Deduplicate (preserves order, Conditions API codes take priority)
+      const uniqueResults = deduplicateResults(allResults);
+      
+      // Score and rank results
+      const scoredResults = scoreAndRankResults(uniqueResults, searchTerm);
+      
+      // Build translation metadata for UI
+      const translationInfo = conditionsResult.primaryName && 
+        conditionsResult.primaryName.toLowerCase() !== trimmedQuery.toLowerCase()
+        ? {
+            wasTranslated: true,
+            originalTerm: trimmedQuery,
+            medicalTerm: conditionsResult.primaryName,
+            searchTerms: [conditionsResult.primaryName, trimmedQuery],
+            source: 'conditions-api' as const,
+          }
+        : undefined;
+      
+      const displayResults = scoredResults.slice(0, DISPLAY_LIMIT);
+      
+      return {
+        results: displayResults,
+        totalCount: Math.max(totalCount, uniqueResults.length),
+        displayedCount: displayResults.length,
+        hasMore: totalCount > displayResults.length,
+        translation: translationInfo,
+      };
+    }
+    
+    // Conditions API found nothing useful
+    console.log(`[Search] ⚠️ Conditions API MISS: "${trimmedQuery}" → falling back to termMapper`);
+    
+  } catch (error) {
+    // Conditions API failed - continue to fallback (don't throw)
+    console.error(`[Search] ❌ Conditions API error for "${trimmedQuery}":`, error);
+    console.log(`[Search] Continuing with fallback search...`);
+  }
+
+  // Step 4: TIER 2 & 3 - Fall back to existing logic (termMapper → ICD-10 API)
+  // --------------------------------------------------------------------------
+  return searchWithFallback(trimmedQuery);
+}
+
+/**
+ * Fallback search using termMapper and ICD-10 API (Tier 2 & 3).
+ * This is the original search logic, now extracted as a separate function.
+ * 
+ * @param query - The search term
+ * @returns Search results with translation metadata
+ */
+async function searchWithFallback(query: string): Promise<SearchResultsWithTranslation> {
+  // Tier 2: Translate query if it's a common term (termMapper)
+  const translation = translateQuery(query);
   
-  // Step 3: Search for all terms and combine results
-  // ------------------------------------------------
+  console.log(`[Search] Using termMapper fallback for "${query}"${translation.wasTranslated ? ` → "${translation.medicalTerm}"` : ''}`);
+  
+  // Tier 3: Search ICD-10 API
   try {
     let allResults: ICD10Result[] = [];
     let maxTotalCount = 0;
     
     // Search for each term in searchTerms array
-    // (Usually 1 term, or 2 if translated: [medical, original])
     for (const searchTerm of translation.searchTerms) {
       const { results, totalCount } = await searchSingleTerm(searchTerm);
       allResults = allResults.concat(results);
       maxTotalCount = Math.max(maxTotalCount, totalCount);
     }
     
-    // Step 4: Deduplicate results by ICD code
-    // ---------------------------------------
-    // When searching both "myocardial infarction" and "heart attack",
-    // some codes might appear in both result sets
+    // Deduplicate results by ICD code
     const uniqueResults = deduplicateResults(allResults);
     
-    // Step 5: Apply relevance scoring
-    // -------------------------------
-    // Score against the ORIGINAL query for best keyword matching
-    // This ensures "heart attack" matches score well even when
-    // we searched "myocardial infarction"
+    // Apply relevance scoring
     const primarySearchTerm = translation.wasTranslated 
       ? translation.medicalTerm! 
-      : trimmedQuery;
+      : query;
     
     const scoredResults = scoreAndRankResults(uniqueResults, primarySearchTerm);
     
-    // Step 6: Return top results with metadata
-    // ----------------------------------------
+    // Return top results with metadata
     const displayResults = scoredResults.slice(0, DISPLAY_LIMIT);
     
     return {
