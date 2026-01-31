@@ -322,11 +322,11 @@ export async function validateDrugs(
     }
 
     // =========================================================================
-    // Step 2: Get drug candidates from curated mappings
+    // Step 2: Get drug candidates from curated mappings (or AI fallback)
     // =========================================================================
     console.log(`${logPrefix} Fetching drugs for: "${conditionName}"`);
     
-    const candidateDrugNames = getDrugsForCondition(conditionName);
+    const candidateDrugNames = await getDrugsForCondition(conditionName);
     
     if (candidateDrugNames.length === 0) {
       console.log(`${logPrefix} No drug mappings found for condition`);
@@ -634,8 +634,8 @@ export async function fetchDrugsWithoutValidation(
   const logPrefix = `[DrugPipeline:${icdCode}]`;
   
   try {
-    // Get candidate drugs from curated mappings
-    const candidateDrugNames = getDrugsForCondition(conditionName);
+    // Get candidate drugs from curated mappings (or AI fallback)
+    const candidateDrugNames = await getDrugsForCondition(conditionName);
     
     if (candidateDrugNames.length === 0) {
       console.log(`${logPrefix} No drug mappings found (no AI validation)`);
