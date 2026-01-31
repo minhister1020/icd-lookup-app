@@ -419,6 +419,28 @@ export const CONDITION_DRUG_MAPPINGS: Record<string, string[]> = {
   ],
   
   /**
+   * Psoriasis & Psoriatic Arthritis
+   * - Biologics (TNF/IL-17/IL-23 inhibitors) are most effective for moderate-severe
+   * - Methotrexate and cyclosporine for traditional systemic treatment
+   * - JAK inhibitors and PDE4 inhibitors are newer oral options
+   * - Topicals for mild cases (not included here - focus on systemic)
+   */
+  'psoriasis': [
+    'adalimumab',             // Humira - TNF inhibitor
+    'etanercept',             // Enbrel - TNF inhibitor
+    'ustekinumab',            // Stelara - IL-12/23 inhibitor
+    'secukinumab',            // Cosentyx - IL-17 inhibitor
+    'ixekizumab',             // Taltz - IL-17 inhibitor
+    'guselkumab',             // Tremfya - IL-23 inhibitor
+    'risankizumab',           // Skyrizi - IL-23 inhibitor
+    'methotrexate',           // Traditional systemic DMARD
+    'cyclosporine',           // Traditional systemic immunosuppressant
+    'apremilast',             // Otezla - PDE4 inhibitor (oral)
+    'deucravacitinib',        // Sotyktu - TYK2 inhibitor (oral)
+    'upadacitinib',           // Rinvoq - JAK inhibitor (oral)
+  ],
+  
+  /**
    * Migraine
    */
   'migraine': [
