@@ -441,6 +441,43 @@ export const CONDITION_DRUG_MAPPINGS: Record<string, string[]> = {
     'valsartan',
   ],
   
+  // Alias: "high blood pressure" - common lay term
+  'high blood pressure': [
+    'lisinopril',
+    'amlodipine',
+    'losartan',
+    'hydrochlorothiazide',
+    'metoprolol',
+  ],
+
+  /**
+   * Arrhythmias (General)
+   */
+  'arrhythmia': [
+    'metoprolol',
+    'amiodarone',
+    'flecainide',
+    'sotalol',
+    'diltiazem',
+    'digoxin',
+    'propafenone',
+    'dronedarone',
+  ],
+  
+  'tachycardia': [
+    'metoprolol',
+    'diltiazem',
+    'verapamil',
+    'adenosine',
+    'amiodarone',
+  ],
+  
+  'bradycardia': [
+    'atropine',
+    'isoproterenol',
+    'dopamine',
+  ],
+  
   /**
    * High Cholesterol / Hyperlipidemia
    * - Statins are cornerstone therapy
@@ -490,6 +527,212 @@ export const CONDITION_DRUG_MAPPINGS: Record<string, string[]> = {
     'metoprolol',             // Rate control
     'diltiazem',              // Rate control
     'amiodarone',             // Rhythm control
+  ],
+  
+  /**
+   * Myocardial Infarction (Heart Attack) - I21.x codes
+   * Standard MONA therapy + secondary prevention
+   * - Antiplatelet: Aspirin + P2Y12 inhibitor
+   * - Beta-blocker: Reduces mortality
+   * - ACE inhibitor: Cardioprotective
+   * - Statin: High-intensity for plaque stabilization
+   * - Anticoagulation: Acute phase
+   */
+  'myocardial infarction': [
+    'aspirin',                    // Antiplatelet - cornerstone therapy
+    'clopidogrel',                // P2Y12 inhibitor
+    'ticagrelor',                 // P2Y12 inhibitor (preferred in ACS)
+    'prasugrel',                  // P2Y12 inhibitor (PCI patients)
+    'metoprolol',                 // Beta-blocker - reduces mortality
+    'carvedilol',                 // Beta-blocker alternative
+    'atorvastatin',               // High-intensity statin
+    'rosuvastatin',               // High-intensity statin alternative
+    'lisinopril',                 // ACE inhibitor - cardioprotective
+    'ramipril',                   // ACE inhibitor alternative
+    'losartan',                   // ARB (if ACE intolerant)
+    'nitroglycerin',              // Nitrate - acute chest pain
+    'isosorbide mononitrate',     // Long-acting nitrate
+    'enoxaparin',                 // LMWH anticoagulant
+    'heparin',                    // Anticoagulant
+  ],
+
+  // Alias: "heart attack" - common lay term
+  'heart attack': [
+    'aspirin',
+    'clopidogrel',
+    'ticagrelor',
+    'metoprolol',
+    'atorvastatin',
+    'lisinopril',
+    'nitroglycerin',
+    'enoxaparin',
+  ],
+
+  /**
+   * Acute Coronary Syndrome (ACS) - umbrella term for MI and unstable angina
+   */
+  'acute coronary syndrome': [
+    'aspirin',
+    'clopidogrel',
+    'ticagrelor',
+    'prasugrel',
+    'metoprolol',
+    'atorvastatin',
+    'lisinopril',
+    'enoxaparin',
+    'heparin',
+    'nitroglycerin',
+  ],
+
+  // Shorter alias for ACS
+  'acute coronary': [
+    'aspirin',
+    'clopidogrel',
+    'ticagrelor',
+    'metoprolol',
+    'atorvastatin',
+    'lisinopril',
+    'enoxaparin',
+  ],
+
+  /**
+   * STEMI - ST Elevation Myocardial Infarction
+   * More aggressive anticoagulation, often PCI
+   */
+  'st elevation': [
+    'aspirin',
+    'clopidogrel',
+    'ticagrelor',
+    'prasugrel',
+    'metoprolol',
+    'atorvastatin',
+    'lisinopril',
+    'enoxaparin',
+    'heparin',
+    'bivalirudin',                // Direct thrombin inhibitor (PCI)
+  ],
+
+  // Alias for STEMI
+  'stemi': [
+    'aspirin',
+    'clopidogrel',
+    'ticagrelor',
+    'prasugrel',
+    'metoprolol',
+    'atorvastatin',
+    'lisinopril',
+    'enoxaparin',
+  ],
+
+  /**
+   * NSTEMI - Non-ST Elevation Myocardial Infarction
+   */
+  'nstemi': [
+    'aspirin',
+    'clopidogrel',
+    'ticagrelor',
+    'metoprolol',
+    'atorvastatin',
+    'lisinopril',
+    'enoxaparin',
+  ],
+
+  // Alias for NSTEMI conditions
+  'non-st elevation': [
+    'aspirin',
+    'clopidogrel',
+    'ticagrelor',
+    'metoprolol',
+    'atorvastatin',
+    'lisinopril',
+    'enoxaparin',
+  ],
+
+  /**
+   * Angina Pectoris - I20.x codes
+   * Stable angina: nitrates, beta-blockers, CCBs
+   * Unstable angina: same as ACS
+   */
+  'angina': [
+    'nitroglycerin',              // First-line acute relief
+    'isosorbide mononitrate',     // Long-acting nitrate
+    'isosorbide dinitrate',       // Nitrate
+    'metoprolol',                 // Beta-blocker - reduces episodes
+    'atenolol',                   // Beta-blocker
+    'amlodipine',                 // CCB - if beta-blocker contraindicated
+    'diltiazem',                  // CCB
+    'ranolazine',                 // Anti-anginal (refractory cases)
+    'aspirin',                    // Secondary prevention
+    'atorvastatin',               // Statin for underlying CAD
+  ],
+
+  // Alias for chest pain related to angina
+  'chest pain': [
+    'nitroglycerin',
+    'aspirin',
+    'metoprolol',
+    'atorvastatin',
+  ],
+
+  /**
+   * Coronary Artery Disease (CAD) - I25.x codes
+   * Chronic management: antiplatelet, statin, BP control
+   */
+  'coronary artery disease': [
+    'aspirin',                    // Antiplatelet
+    'clopidogrel',                // If aspirin intolerant or post-PCI
+    'atorvastatin',               // High-intensity statin
+    'rosuvastatin',               // Statin alternative
+    'metoprolol',                 // Beta-blocker
+    'lisinopril',                 // ACE inhibitor
+    'amlodipine',                 // CCB for angina/HTN
+    'nitroglycerin',              // PRN chest pain
+    'ezetimibe',                  // Add-on lipid lowering
+  ],
+
+  // Shorter alias for CAD
+  'coronary artery': [
+    'aspirin',
+    'clopidogrel',
+    'atorvastatin',
+    'metoprolol',
+    'lisinopril',
+    'amlodipine',
+  ],
+
+  /**
+   * Ischemic Heart Disease - general term
+   */
+  'ischemic heart': [
+    'aspirin',
+    'clopidogrel',
+    'atorvastatin',
+    'metoprolol',
+    'lisinopril',
+    'nitroglycerin',
+  ],
+
+  // Alias for cardiac ischemia
+  'cardiac ischemia': [
+    'aspirin',
+    'atorvastatin',
+    'metoprolol',
+    'lisinopril',
+    'nitroglycerin',
+  ],
+
+  /**
+   * Unstable Angina - treated same as NSTEMI
+   */
+  'unstable angina': [
+    'aspirin',
+    'clopidogrel',
+    'ticagrelor',
+    'metoprolol',
+    'atorvastatin',
+    'lisinopril',
+    'enoxaparin',
+    'nitroglycerin',
   ],
   
   // =========================================================================
@@ -618,6 +861,46 @@ export const CONDITION_DRUG_MAPPINGS: Record<string, string[]> = {
     'roflumilast',            // Daliresp - PDE4 inhibitor
   ],
   
+  // Alias for COPD full name
+  'chronic obstructive pulmonary': [
+    'albuterol',
+    'ipratropium',
+    'tiotropium',
+    'fluticasone',
+    'budesonide',
+    'salmeterol',
+    'formoterol',
+    'prednisone',
+    'roflumilast',
+  ],
+  
+  /**
+   * Pneumonia - J18.x
+   */
+  'pneumonia': [
+    'amoxicillin',
+    'azithromycin',
+    'levofloxacin',
+    'ceftriaxone',
+    'doxycycline',
+    'moxifloxacin',
+    'ampicillin',
+    'piperacillin',
+  ],
+  
+  /**
+   * Bronchitis
+   */
+  'bronchitis': [
+    'albuterol',
+    'guaifenesin',
+    'dextromethorphan',
+    'azithromycin',
+    'amoxicillin',
+    'prednisone',
+    'ipratropium',
+  ],
+  
   // =========================================================================
   // Gastrointestinal Conditions
   // =========================================================================
@@ -652,6 +935,83 @@ export const CONDITION_DRUG_MAPPINGS: Record<string, string[]> = {
     'famotidine',
   ],
   
+  // Full name alias
+  'gastroesophageal reflux': [
+    'omeprazole',
+    'pantoprazole',
+    'esomeprazole',
+    'lansoprazole',
+    'famotidine',
+    'sucralfate',
+    'metoclopramide',
+  ],
+  
+  'acid reflux': [
+    'omeprazole',
+    'pantoprazole',
+    'famotidine',
+    'calcium carbonate',
+  ],
+  
+  /**
+   * Peptic Ulcer - K27.x
+   */
+  'peptic ulcer': [
+    'omeprazole',
+    'pantoprazole',
+    'sucralfate',
+    'misoprostol',
+    'famotidine',
+    'amoxicillin',
+    'clarithromycin',
+    'metronidazole',
+    'bismuth subsalicylate',
+  ],
+  
+  'gastric ulcer': [
+    'omeprazole',
+    'pantoprazole',
+    'sucralfate',
+    'famotidine',
+  ],
+  
+  /**
+   * Inflammatory Bowel Disease
+   */
+  'crohn': [
+    'mesalamine',
+    'sulfasalazine',
+    'budesonide',
+    'prednisone',
+    'azathioprine',
+    'mercaptopurine',
+    'methotrexate',
+    'infliximab',
+    'adalimumab',
+    'vedolizumab',
+  ],
+  
+  'ulcerative colitis': [
+    'mesalamine',
+    'sulfasalazine',
+    'budesonide',
+    'prednisone',
+    'azathioprine',
+    'infliximab',
+    'adalimumab',
+    'vedolizumab',
+    'tofacitinib',
+  ],
+  
+  'inflammatory bowel': [
+    'mesalamine',
+    'sulfasalazine',
+    'budesonide',
+    'prednisone',
+    'infliximab',
+    'adalimumab',
+  ],
+  
   /**
    * Irritable Bowel Syndrome
    */
@@ -662,6 +1022,61 @@ export const CONDITION_DRUG_MAPPINGS: Record<string, string[]> = {
     'lubiprostone',           // Amitiza - IBS-C
     'rifaximin',              // Xifaxan - IBS-D
     'alosetron',              // Lotronex - IBS-D severe
+  ],
+  
+  // Full name alias
+  'irritable bowel': [
+    'dicyclomine',
+    'hyoscyamine',
+    'loperamide',
+    'rifaximin',
+    'lubiprostone',
+    'linaclotide',
+    'amitriptyline',
+  ],
+  
+  /**
+   * Nausea/Vomiting
+   */
+  'nausea': [
+    'ondansetron',
+    'promethazine',
+    'metoclopramide',
+    'prochlorperazine',
+    'granisetron',
+    'scopolamine',
+    'dronabinol',
+  ],
+  
+  'vomiting': [
+    'ondansetron',
+    'promethazine',
+    'metoclopramide',
+    'prochlorperazine',
+  ],
+  
+  /**
+   * Constipation
+   */
+  'constipation': [
+    'polyethylene glycol',
+    'lactulose',
+    'bisacodyl',
+    'senna',
+    'docusate',
+    'linaclotide',
+    'lubiprostone',
+    'prucalopride',
+  ],
+  
+  /**
+   * Diarrhea
+   */
+  'diarrhea': [
+    'loperamide',
+    'diphenoxylate',
+    'bismuth subsalicylate',
+    'rifaximin',
   ],
   
   // =========================================================================
@@ -686,7 +1101,111 @@ export const CONDITION_DRUG_MAPPINGS: Record<string, string[]> = {
   ],
   
   /**
-   * Arthritis
+   * Back Pain - M54.x
+   */
+  'back pain': [
+    'ibuprofen',
+    'naproxen',
+    'acetaminophen',
+    'cyclobenzaprine',
+    'methocarbamol',
+    'meloxicam',
+    'diclofenac',
+    'gabapentin',
+    'duloxetine',
+    'prednisone',
+  ],
+  
+  'low back pain': [
+    'ibuprofen',
+    'naproxen',
+    'acetaminophen',
+    'cyclobenzaprine',
+    'meloxicam',
+  ],
+  
+  'lumbar': [
+    'ibuprofen',
+    'naproxen',
+    'acetaminophen',
+    'cyclobenzaprine',
+    'gabapentin',
+  ],
+  
+  /**
+   * Headache
+   */
+  'headache': [
+    'acetaminophen',
+    'ibuprofen',
+    'naproxen',
+    'sumatriptan',
+    'aspirin',
+  ],
+  
+  /**
+   * Neuropathy - G62.x
+   */
+  'neuropathy': [
+    'gabapentin',
+    'pregabalin',
+    'duloxetine',
+    'amitriptyline',
+    'nortriptyline',
+    'capsaicin',
+    'lidocaine',
+    'carbamazepine',
+    'venlafaxine',
+  ],
+  
+  'diabetic neuropathy': [
+    'gabapentin',
+    'pregabalin',
+    'duloxetine',
+    'amitriptyline',
+    'capsaicin',
+  ],
+  
+  /**
+   * Osteoarthritis
+   */
+  'osteoarthritis': [
+    'acetaminophen',
+    'ibuprofen',
+    'naproxen',
+    'meloxicam',
+    'diclofenac',
+    'celecoxib',
+    'tramadol',
+    'duloxetine',
+  ],
+  
+  /**
+   * Rheumatoid Arthritis
+   */
+  'rheumatoid arthritis': [
+    'methotrexate',
+    'hydroxychloroquine',
+    'sulfasalazine',
+    'leflunomide',
+    'adalimumab',
+    'etanercept',
+    'infliximab',
+    'prednisone',
+    'tofacitinib',
+  ],
+  
+  'rheumatoid': [
+    'methotrexate',
+    'hydroxychloroquine',
+    'sulfasalazine',
+    'adalimumab',
+    'etanercept',
+    'prednisone',
+  ],
+  
+  /**
+   * Arthritis (General)
    */
   'arthritis': [
     'ibuprofen',
@@ -785,6 +1304,104 @@ export const CONDITION_DRUG_MAPPINGS: Record<string, string[]> = {
     'fosfomycin',             // Single dose
   ],
   
+  // Full name alias
+  'urinary tract infection': [
+    'nitrofurantoin',
+    'trimethoprim',
+    'sulfamethoxazole',
+    'ciprofloxacin',
+    'levofloxacin',
+    'cephalexin',
+    'amoxicillin',
+    'fosfomycin',
+  ],
+  
+  'uti': [
+    'nitrofurantoin',
+    'trimethoprim',
+    'sulfamethoxazole',
+    'ciprofloxacin',
+    'cephalexin',
+  ],
+  
+  'cystitis': [
+    'nitrofurantoin',
+    'trimethoprim',
+    'sulfamethoxazole',
+    'ciprofloxacin',
+    'fosfomycin',
+  ],
+  
+  'pyelonephritis': [
+    'ciprofloxacin',
+    'levofloxacin',
+    'ceftriaxone',
+    'trimethoprim',
+    'sulfamethoxazole',
+  ],
+  
+  /**
+   * Cellulitis - L03.x
+   */
+  'cellulitis': [
+    'cephalexin',
+    'dicloxacillin',
+    'clindamycin',
+    'trimethoprim',
+    'sulfamethoxazole',
+    'amoxicillin',
+    'doxycycline',
+    'vancomycin',
+  ],
+  
+  /**
+   * Sepsis - A41.x
+   */
+  'sepsis': [
+    'vancomycin',
+    'piperacillin',
+    'tazobactam',
+    'meropenem',
+    'ceftriaxone',
+    'norepinephrine',
+    'vasopressin',
+    'hydrocortisone',
+    'cefepime',
+  ],
+  
+  'septic shock': [
+    'norepinephrine',
+    'vasopressin',
+    'vancomycin',
+    'piperacillin',
+    'meropenem',
+    'hydrocortisone',
+    'epinephrine',
+  ],
+  
+  /**
+   * COVID-19 - U07.1
+   */
+  'covid': [
+    'paxlovid',
+    'nirmatrelvir',
+    'ritonavir',
+    'remdesivir',
+    'dexamethasone',
+    'baricitinib',
+    'tocilizumab',
+    'molnupiravir',
+    'enoxaparin',
+  ],
+  
+  'coronavirus': [
+    'paxlovid',
+    'remdesivir',
+    'dexamethasone',
+    'baricitinib',
+    'tocilizumab',
+  ],
+  
   // =========================================================================
   // Other Common Conditions
   // =========================================================================
@@ -838,7 +1455,335 @@ export const CONDITION_DRUG_MAPPINGS: Record<string, string[]> = {
     'lamotrigine',
     'valproate',
     'carbamazepine',
+    'lorazepam',
+    'diazepam',
     'phenytoin',
+  ],
+  
+  // =========================================================================
+  // Neurological Conditions
+  // =========================================================================
+  
+  /**
+   * Parkinson's Disease - G20
+   */
+  'parkinson': [
+    'levodopa',
+    'carbidopa',
+    'pramipexole',
+    'ropinirole',
+    'rasagiline',
+    'selegiline',
+    'entacapone',
+    'amantadine',
+    'trihexyphenidyl',
+    'apomorphine',
+  ],
+  
+  /**
+   * Alzheimer's Disease - G30.x
+   */
+  'alzheimer': [
+    'donepezil',
+    'rivastigmine',
+    'galantamine',
+    'memantine',
+    'aducanumab',
+    'lecanemab',
+  ],
+  
+  'dementia': [
+    'donepezil',
+    'rivastigmine',
+    'galantamine',
+    'memantine',
+  ],
+  
+  /**
+   * Stroke - I63.x
+   */
+  'stroke': [
+    'alteplase',
+    'aspirin',
+    'clopidogrel',
+    'warfarin',
+    'apixaban',
+    'rivaroxaban',
+    'atorvastatin',
+    'lisinopril',
+    'amlodipine',
+  ],
+  
+  'cerebrovascular': [
+    'aspirin',
+    'clopidogrel',
+    'warfarin',
+    'apixaban',
+    'atorvastatin',
+  ],
+  
+  /**
+   * Multiple Sclerosis - G35
+   */
+  'multiple sclerosis': [
+    'interferon beta',
+    'glatiramer',
+    'dimethyl fumarate',
+    'fingolimod',
+    'natalizumab',
+    'ocrelizumab',
+    'teriflunomide',
+    'siponimod',
+    'cladribine',
+  ],
+  
+  // =========================================================================
+  // Additional Psychiatric Conditions
+  // =========================================================================
+  
+  // Alias for depression
+  'major depressive': [
+    'sertraline',
+    'fluoxetine',
+    'escitalopram',
+    'venlafaxine',
+    'duloxetine',
+    'bupropion',
+  ],
+  
+  // Anxiety aliases
+  'generalized anxiety': [
+    'sertraline',
+    'escitalopram',
+    'venlafaxine',
+    'duloxetine',
+    'buspirone',
+  ],
+  
+  'panic': [
+    'sertraline',
+    'paroxetine',
+    'venlafaxine',
+    'alprazolam',
+    'clonazepam',
+  ],
+  
+  /**
+   * Schizophrenia - F20.x
+   */
+  'schizophrenia': [
+    'risperidone',
+    'olanzapine',
+    'quetiapine',
+    'aripiprazole',
+    'ziprasidone',
+    'paliperidone',
+    'clozapine',
+    'haloperidol',
+    'lurasidone',
+  ],
+  
+  'psychosis': [
+    'risperidone',
+    'olanzapine',
+    'quetiapine',
+    'aripiprazole',
+    'haloperidol',
+  ],
+  
+  // ADHD alias
+  'attention deficit': [
+    'methylphenidate',
+    'amphetamine',
+    'lisdexamfetamine',
+    'atomoxetine',
+    'guanfacine',
+  ],
+  
+  // Insomnia alias
+  'sleep disorder': [
+    'zolpidem',
+    'eszopiclone',
+    'trazodone',
+    'melatonin',
+    'suvorexant',
+  ],
+  
+  // =========================================================================
+  // Endocrine Conditions
+  // =========================================================================
+  
+  /**
+   * Hypothyroidism - E03.x
+   */
+  'hypothyroidism': [
+    'levothyroxine',
+    'liothyronine',
+  ],
+  
+  'thyroid': [
+    'levothyroxine',
+    'liothyronine',
+    'methimazole',
+    'propylthiouracil',
+  ],
+  
+  'hyperthyroidism': [
+    'methimazole',
+    'propylthiouracil',
+    'propranolol',
+    'atenolol',
+  ],
+  
+  // =========================================================================
+  // Dermatological Conditions
+  // =========================================================================
+  
+  /**
+   * Eczema / Atopic Dermatitis - L20.x
+   */
+  'eczema': [
+    'hydrocortisone',
+    'triamcinolone',
+    'tacrolimus',
+    'pimecrolimus',
+    'dupilumab',
+    'crisaborole',
+    'hydroxyzine',
+    'cetirizine',
+  ],
+  
+  'dermatitis': [
+    'hydrocortisone',
+    'triamcinolone',
+    'tacrolimus',
+    'pimecrolimus',
+    'dupilumab',
+  ],
+  
+  'atopic dermatitis': [
+    'tacrolimus',
+    'pimecrolimus',
+    'dupilumab',
+    'crisaborole',
+    'triamcinolone',
+  ],
+  
+  /**
+   * Acne - L70.x
+   */
+  'acne': [
+    'benzoyl peroxide',
+    'tretinoin',
+    'adapalene',
+    'clindamycin',
+    'doxycycline',
+    'isotretinoin',
+    'spironolactone',
+    'azelaic acid',
+  ],
+  
+  // =========================================================================
+  // Hematological / Other Conditions
+  // =========================================================================
+  
+  /**
+   * Anemia - D50.x, D64.x
+   */
+  'anemia': [
+    'ferrous sulfate',
+    'iron sucrose',
+    'ferric carboxymaltose',
+    'vitamin b12',
+    'cyanocobalamin',
+    'folic acid',
+    'epoetin alfa',
+    'darbepoetin',
+  ],
+  
+  'iron deficiency': [
+    'ferrous sulfate',
+    'ferrous gluconate',
+    'iron sucrose',
+    'ferric carboxymaltose',
+  ],
+  
+  /**
+   * Allergic Rhinitis
+   */
+  'allergic rhinitis': [
+    'cetirizine',
+    'loratadine',
+    'fexofenadine',
+    'fluticasone',
+    'mometasone',
+    'azelastine',
+    'montelukast',
+    'diphenhydramine',
+  ],
+  
+  /**
+   * Anaphylaxis
+   */
+  'anaphylaxis': [
+    'epinephrine',
+    'diphenhydramine',
+    'methylprednisolone',
+    'famotidine',
+  ],
+  
+  // Obesity alias
+  'weight loss': [
+    'semaglutide',
+    'liraglutide',
+    'tirzepatide',
+    'phentermine',
+    'orlistat',
+  ],
+  
+  /**
+   * DVT / PE - Thromboembolic conditions
+   */
+  'deep vein thrombosis': [
+    'enoxaparin',
+    'heparin',
+    'warfarin',
+    'rivaroxaban',
+    'apixaban',
+    'edoxaban',
+  ],
+  
+  'dvt': [
+    'enoxaparin',
+    'heparin',
+    'warfarin',
+    'rivaroxaban',
+    'apixaban',
+  ],
+  
+  'pulmonary embolism': [
+    'enoxaparin',
+    'heparin',
+    'warfarin',
+    'rivaroxaban',
+    'apixaban',
+    'alteplase',
+  ],
+  
+  'thrombosis': [
+    'enoxaparin',
+    'heparin',
+    'warfarin',
+    'rivaroxaban',
+    'apixaban',
+  ],
+  
+  'embolism': [
+    'enoxaparin',
+    'heparin',
+    'warfarin',
+    'rivaroxaban',
+    'apixaban',
   ],
 };
 
