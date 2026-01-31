@@ -21,7 +21,7 @@ Try it now — no installation required!
 
 ## 📋 Overview
 
-The **ICD Lookup Tool** is a modern web application that transforms medical code lookup into an intuitive, organized experience. Search for any medical condition and instantly discover related ICD-10 codes, FDA-approved drugs, and active clinical trials — all organized by body system/disease chapter for easy navigation.
+The **ICD Lookup Tool** is a modern web application that transforms medical code lookup into an intuitive, organized experience. Search for any medical condition and instantly discover related ICD-10 codes, FDA-approved drugs, and clinical trials across all stages — all organized by body system/disease chapter for easy navigation.
 
 ### ✨ What Makes It Unique
 
@@ -38,6 +38,7 @@ The **ICD Lookup Tool** is a modern web application that transforms medical code
 ### 🔍 ICD-10 Code Search
 - Search by condition name (e.g., "diabetes", "hypertension")
 - Search by ICD-10 code directly (e.g., "E11", "I10")
+- **🧠 NIH Smart Search** — Powered by NIH Medical Conditions API with 2,400+ conditions and automatic synonym expansion
 - **🗣️ Common Terms Translation** — Search with everyday language like "heart attack"
 - **🎯 Intelligent Relevance Ranking** — Most clinically useful codes appear first
 - Instant results from the National Library of Medicine
@@ -197,20 +198,33 @@ After creating/updating files:
 - Verify formatting is correct
 - Check all links work
 - Commit with: "docs: Add comprehensive drug validation system documentation"
-## 🗣️ Common Terms Translation (Phase 5)
+## 🗣️ Common Terms Translation (Phase 5 + 6)
 
-Search using **everyday language** and get professional medical results! The app automatically translates 85+ common terms to their medical equivalents.
+Search using **everyday language** and get professional medical results! The app uses the **NIH Medical Conditions API** (2,400+ conditions with built-in synonyms) plus 85+ curated term mappings for comprehensive coverage.
 
 ### How It Works
 
 ```
-User types: "heart attack"
+User types: "lung cancer"
      ↓
-Translates to: "myocardial infarction"
+Tier 1: NIH Conditions API (2,400+ conditions)
      ↓
-Returns: I21.9, I21.3, I21.4... (heart attack codes)
+Returns: "Lung cancer" + direct ICD codes (C34.90, C45.9, C78.00)
      ↓
-Shows badge: "💡 Showing results for 'myocardial infarction'"
+Tier 2: Expand with ICD-10 API search
+     ↓
+Shows: C34.90, C34.91, C34.92... (all lung cancer codes)
+     ↓
+Badge: "💡 Showing results for 'Lung cancer'"
+```
+
+**Fallback Chain:**
+```
+NIH Conditions API (2,400+ conditions)
+     ↓ (not found?)
+Curated termMapper (85+ terms)
+     ↓ (not found?)
+Direct ICD-10 API search
 ```
 
 ### Example Translations
@@ -465,6 +479,7 @@ Popularity scores are based on:
 ### APIs (No Keys Required!)
 | API | Purpose | Rate Limit |
 |-----|---------|------------|
+| [NIH Conditions API](https://clinicaltables.nlm.nih.gov/apidoc/conditions/v3/doc.html) | Medical term translation & synonyms | Unlimited |
 | [ClinicalTables](https://clinicaltables.nlm.nih.gov/) | ICD-10 code lookup | Unlimited |
 | [OpenFDA](https://open.fda.gov/) | Drug label data | 240/min, 120K/day |
 | [ClinicalTrials.gov](https://clinicaltrials.gov/) | Clinical trial data | Reasonable use |
@@ -578,6 +593,7 @@ icd-lookup-app/
 │   │   └── HistoryPanel.tsx     # History slide-in panel (Phase 6)
 │   ├── lib/
 │   │   ├── api.ts               # ClinicalTables API helper (with translation)
+│   │   ├── conditionsApi.ts     # NIH Conditions API client with caching (Phase 6)
 │   │   ├── chapterMapping.ts    # ICD-10 chapter lookup (21 chapters) (Phase 7A)
 │   │   ├── grouping.ts          # Grouping algorithm & helpers (Phase 7A)
 │   │   ├── openFdaApi.ts        # OpenFDA API helper
@@ -651,6 +667,7 @@ GET https://clinicaltrials.gov/api/v2/studies
 
 ### Completed Features
 
+- [x] **NIH Smart Search** — Integrated NIH Medical Conditions API for intelligent term translation (2,400+ conditions)
 - [x] **Clinical Trials Filtering** — Filter trials by status with interactive pills (Phase 9)
 - [x] **Category Grouping** — Results organized by ICD-10 chapter with collapsible sections (Phase 7A)
 - [x] **Favorites & History** — Save codes, track searches, export/import JSON (Phase 6)
