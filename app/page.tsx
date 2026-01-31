@@ -29,7 +29,10 @@ import FavoritesPanel from './components/FavoritesPanel';
 import HistoryPanel from './components/HistoryPanel';
 
 // Import our API helper function
-import { searchICD10, searchICD10More } from './lib/api';
+import { searchICD10, searchICD10More, getRelatedCodes, isSpecificCode } from './lib/api';
+
+// Import code detection from conditionsApi
+import { isICD10Code } from './lib/conditionsApi';
 
 // Import favorites storage utilities
 import { 
@@ -82,6 +85,11 @@ export default function Home() {
   // Phase 6: Favorites state
   const [favorites, setFavorites] = useState<FavoriteICD[]>([]);
   const [showFavoritesPanel, setShowFavoritesPanel] = useState(false);
+  
+  // Phase 10: Related codes state (for sibling ICD codes display)
+  const [relatedCodes, setRelatedCodes] = useState<ScoredICD10Result[]>([]);
+  const [isLoadingRelated, setIsLoadingRelated] = useState(false);
+  const [showRelatedSection, setShowRelatedSection] = useState(false);
   
   // Phase 6C: Enhanced search history state
   const [searchHistory, setSearchHistory] = useState<SearchHistoryEntry[]>([]);
@@ -298,6 +306,56 @@ export default function Home() {
   }, []);
   
   // ---------------------------------------------------------------------------
+  // Phase 10: Related Codes Function
+  // ---------------------------------------------------------------------------
+  
+  /**
+   * Fetches related/sibling ICD-10 codes when user searches for a specific code.
+   * Only triggers when BOTH conditions are met:
+   * - Search query is an ICD-10 code format (e.g., "I21.9")
+   * - Code is specific (has a dot), not just a category (e.g., "I21")
+   * 
+   * @param searchQuery - The user's search query
+   */
+  const fetchRelatedCodes = useCallback(async (searchQuery: string) => {
+    // Only fetch for specific ICD codes (with dot), not categories or text
+    if (!isICD10Code(searchQuery) || !isSpecificCode(searchQuery)) {
+      setRelatedCodes([]);
+      setShowRelatedSection(false);
+      return;
+    }
+    
+    console.log(`[RelatedCodes] Fetching siblings for specific code: "${searchQuery}"`);
+    
+    setIsLoadingRelated(true);
+    setShowRelatedSection(true);
+    
+    try {
+      const related = await getRelatedCodes(searchQuery);
+      
+      // Convert ICD10Result to ScoredICD10Result format for consistency
+      const scoredRelated: ScoredICD10Result[] = related.map((r: { code: string; name: string }, index: number) => ({
+        ...r,
+        score: 50 - index, // Give decreasing scores for sorting (optional)
+        scoreBreakdown: {
+          keyword: 0,
+          popularity: 0,
+          specificity: 10,
+          exactness: 0
+        }
+      }));
+      
+      setRelatedCodes(scoredRelated);
+      console.log(`[RelatedCodes] Found ${scoredRelated.length} sibling codes`);
+    } catch (error) {
+      console.error('[RelatedCodes] Failed to fetch:', error);
+      setRelatedCodes([]);
+    } finally {
+      setIsLoadingRelated(false);
+    }
+  }, []);
+  
+  // ---------------------------------------------------------------------------
   // Event Handlers
   // ---------------------------------------------------------------------------
   
@@ -310,6 +368,10 @@ export default function Home() {
     // Clear previous drugs/trials when new search starts
     setDrugsMap(new Map());
     setTrialsMap(new Map());
+    
+    // Phase 10: Clear related codes on new search
+    setRelatedCodes([]);
+    setShowRelatedSection(false);
     
     addToRecentSearches(query);
     
@@ -329,11 +391,18 @@ export default function Home() {
       
       // Phase 6C: Add to enhanced history with metadata
       addToEnhancedHistory(query, total, scoredResults[0]);
+      
+      // Phase 10: Fetch related codes if this is a specific ICD code search
+      // This runs in parallel/after main search completes
+      fetchRelatedCodes(query);
     } catch (err) {
       setResults([]);
       setTotalCount(0);
       setHasMore(false);
       setTranslation(undefined);
+      // Phase 10: Clear related codes on error
+      setRelatedCodes([]);
+      setShowRelatedSection(false);
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -555,6 +624,11 @@ export default function Home() {
           showFavoritesPanel={showFavoritesPanel}
           onToggleFavoritesPanel={() => setShowFavoritesPanel(!showFavoritesPanel)}
           onSearchFromFavorite={handleSearch}
+          // Phase 10: Related codes props
+          relatedCodes={relatedCodes}
+          isLoadingRelated={isLoadingRelated}
+          showRelatedSection={showRelatedSection}
+          searchedCode={currentQuery}
         />
       </main>
 

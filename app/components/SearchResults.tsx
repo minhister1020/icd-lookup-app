@@ -27,12 +27,15 @@ import {
   LayoutGrid,
   Layers,
   ChevronsUpDown,
-  ChevronsDownUp
+  ChevronsDownUp,
+  Target,
+  AlertTriangle
 } from 'lucide-react';
 import { ScoredICD10Result, DrugResult, ClinicalTrialResult, TranslationResult, FavoriteICD, GroupedSearchResults } from '../types/icd';
 import ResultCard from './ResultCard';
 import CategorySection from './CategorySection';
 import ChapterFilterDropdown from './ChapterFilterDropdown';
+import RelatedCodesSection from './RelatedCodesSection';
 import { groupByChapter, toggleCategoryExpansion, expandAllCategories, collapseAllCategories } from '../lib/grouping';
 
 // =============================================================================
@@ -162,6 +165,12 @@ interface SearchResultsProps {
   showFavoritesPanel?: boolean;
   onToggleFavoritesPanel?: () => void;
   onSearchFromFavorite?: (code: string) => void;
+  
+  // Phase 10: Related codes functionality
+  relatedCodes?: ScoredICD10Result[];
+  isLoadingRelated?: boolean;
+  showRelatedSection?: boolean;
+  searchedCode?: string;
 }
 
 // =============================================================================
@@ -198,6 +207,11 @@ export default function SearchResults({
   showFavoritesPanel = false,
   onToggleFavoritesPanel,
   onSearchFromFavorite,
+  // Phase 10: Related codes props
+  relatedCodes = [],
+  isLoadingRelated = false,
+  showRelatedSection = false,
+  searchedCode = '',
 }: SearchResultsProps) {
   
   // =========================================================================
@@ -388,10 +402,11 @@ export default function SearchResults({
   /**
    * Toggle favorite for a result in grouped view.
    */
-  const handleToggleFavoriteGrouped = useCallback((code: string, name: string) => {
+  const handleToggleFavoriteGrouped = useCallback((code: string, _name: string) => {
     if (!onToggleFavorite) return;
     
     // Find the result in results array to pass full object
+    // Note: _name is unused but required for callback signature compatibility
     const result = results.find(r => r.code === code);
     if (result) {
       onToggleFavorite(result);
@@ -527,6 +542,12 @@ export default function SearchResults({
   // Get the grouped data for display (use filtered results in grouped view)
   const grouped = filteredGroupedResults;
   
+  // Phase 10: Find exact match for specific code searches
+  // Don't assume results[0] is the match - search for it explicitly
+  const exactMatch = showRelatedSection 
+    ? results.find(r => r.code.toUpperCase() === searchedCode.toUpperCase())
+    : null;
+  
   return (
     <div>
       {/* Results Header */}
@@ -534,14 +555,30 @@ export default function SearchResults({
         <div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
             Search Results
-            {/* Phase 4: Show "ranked by relevance" indicator */}
-            <span className="ml-2 text-xs font-normal text-[#00D084] bg-[#00D084]/10 px-2 py-0.5 rounded-full">
-              Ranked by relevance
-            </span>
+            {/* Phase 4: Show "ranked by relevance" indicator - hide for specific code search */}
+            {!showRelatedSection && (
+              <span className="ml-2 text-xs font-normal text-[#00D084] bg-[#00D084]/10 px-2 py-0.5 rounded-full">
+                Ranked by relevance
+              </span>
+            )}
+            {/* Phase 10: Show "Code Lookup" indicator for specific code searches */}
+            {showRelatedSection && (
+              <span className="ml-2 text-xs font-normal text-indigo-600 bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 px-2 py-0.5 rounded-full">
+                Code Lookup
+              </span>
+            )}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {/* Phase 7: Show grouped info when in grouped mode */}
-            {viewMode === 'grouped' && grouped ? (
+            {/* Phase 10: Special message for specific code search */}
+            {showRelatedSection ? (
+              <>
+                Showing <span className="font-mono font-medium text-indigo-600 dark:text-indigo-400">{searchedCode}</span>
+                {relatedCodes.length > 0 && (
+                  <> and <span className="font-medium text-[#00D084]">{relatedCodes.length}</span> related codes</>
+                )}
+              </>
+            ) : viewMode === 'grouped' && grouped ? (
+              /* Phase 7: Show grouped info when in grouped mode */
               <>
                 <span className="font-medium text-gray-700 dark:text-gray-300">
                   {grouped.totalResults}
@@ -578,150 +615,241 @@ export default function SearchResults({
           </p>
         </div>
         
-        {/* View Controls */}
-        <div className="flex items-center gap-2">
-          {/* View Mode Toggle */}
-          <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-            <button
-              type="button"
-              onClick={() => setViewMode('flat')}
-              className={`
-                flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium
-                transition-all duration-150
-                ${viewMode === 'flat'
-                  ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }
-              `}
-              title="Flat view - show all results in a grid"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Flat</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('grouped')}
-              className={`
-                flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium
-                transition-all duration-150
-                ${viewMode === 'grouped'
-                  ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }
-              `}
-              title="Grouped view - organize by body system"
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Grouped</span>
-            </button>
-          </div>
-          
-          {/* Expand/Collapse All - Only show in grouped mode */}
-          {viewMode === 'grouped' && grouped && grouped.totalCategories > 1 && (
-            <div className="flex items-center gap-1">
+        {/* View Controls - HIDE when showing related codes view */}
+        {!showRelatedSection && (
+          <div className="flex items-center gap-2">
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
               <button
                 type="button"
-                onClick={handleExpandAll}
-                className="
-                  flex items-center gap-1 px-2 py-1.5
-                  text-xs text-gray-500 dark:text-gray-400
-                  hover:text-gray-700 dark:hover:text-gray-300
-                  hover:bg-gray-100 dark:hover:bg-gray-800
-                  rounded-md transition-colors
-                "
-                title="Expand all categories"
+                onClick={() => setViewMode('flat')}
+                className={`
+                  flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium
+                  transition-all duration-150
+                  ${viewMode === 'flat'
+                    ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 shadow-sm'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                  }
+                `}
+                title="Flat view - show all results in a grid"
               >
-                <ChevronsUpDown className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">Expand</span>
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Flat</span>
               </button>
               <button
                 type="button"
-                onClick={handleCollapseAll}
-                className="
-                  flex items-center gap-1 px-2 py-1.5
-                  text-xs text-gray-500 dark:text-gray-400
-                  hover:text-gray-700 dark:hover:text-gray-300
-                  hover:bg-gray-100 dark:hover:bg-gray-800
-                  rounded-md transition-colors
-                "
-                title="Collapse all categories"
+                onClick={() => setViewMode('grouped')}
+                className={`
+                  flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium
+                  transition-all duration-150
+                  ${viewMode === 'grouped'
+                    ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 shadow-sm'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                  }
+                `}
+                title="Grouped view - organize by body system"
               >
-                <ChevronsDownUp className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">Collapse</span>
+                <Layers className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Grouped</span>
               </button>
             </div>
-          )}
-          
-          {/* Phase 8: Chapter Filter Dropdown - Only show in grouped mode with multiple chapters */}
-          {viewMode === 'grouped' && displayedGroupedResults && displayedGroupedResults.totalCategories > 1 && (
-            <ChapterFilterDropdown
-              availableChapters={availableChapters}
-              selectedChapters={selectedChapters}
-              onToggleChapter={toggleChapterFilter}
-              onClearFilter={clearChapterFilter}
-              chapterResultCounts={chapterResultCounts}
-            />
-          )}
-        </div>
+            
+            {/* Expand/Collapse All - Only show in grouped mode */}
+            {viewMode === 'grouped' && grouped && grouped.totalCategories > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={handleExpandAll}
+                  className="
+                    flex items-center gap-1 px-2 py-1.5
+                    text-xs text-gray-500 dark:text-gray-400
+                    hover:text-gray-700 dark:hover:text-gray-300
+                    hover:bg-gray-100 dark:hover:bg-gray-800
+                    rounded-md transition-colors
+                  "
+                  title="Expand all categories"
+                >
+                  <ChevronsUpDown className="w-3.5 h-3.5" />
+                  <span className="hidden lg:inline">Expand</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCollapseAll}
+                  className="
+                    flex items-center gap-1 px-2 py-1.5
+                    text-xs text-gray-500 dark:text-gray-400
+                    hover:text-gray-700 dark:hover:text-gray-300
+                    hover:bg-gray-100 dark:hover:bg-gray-800
+                    rounded-md transition-colors
+                  "
+                  title="Collapse all categories"
+                >
+                  <ChevronsDownUp className="w-3.5 h-3.5" />
+                  <span className="hidden lg:inline">Collapse</span>
+                </button>
+              </div>
+            )}
+            
+            {/* Phase 8: Chapter Filter Dropdown - Only show in grouped mode with multiple chapters */}
+            {viewMode === 'grouped' && displayedGroupedResults && displayedGroupedResults.totalCategories > 1 && (
+              <ChapterFilterDropdown
+                availableChapters={availableChapters}
+                selectedChapters={selectedChapters}
+                onToggleChapter={toggleChapterFilter}
+                onClearFilter={clearChapterFilter}
+                chapterResultCounts={chapterResultCounts}
+              />
+            )}
+          </div>
+        )}
       </div>
       
-      {/* Phase 5: Translation Badge - Show when query was translated */}
-      {translation?.wasTranslated && (
+      {/* Phase 5: Translation Badge - Show when query was translated (not for specific code searches) */}
+      {translation?.wasTranslated && !showRelatedSection && (
         <TranslationBadge translation={translation} />
       )}
       
-      {/* Phase 7: Grouped View - Category Sections */}
-      {viewMode === 'grouped' && grouped ? (
-        <div className="space-y-4">
-          {grouped.categories.map((category, index) => (
-            <div
-              key={category.chapter.id}
-              className="animate-in fade-in slide-in-from-bottom-2"
-              style={{ 
-                animationDelay: `${Math.min(index, 5) * 75}ms`, 
-                animationFillMode: 'backwards' 
-              }}
-            >
-              <CategorySection
-                category={category}
-                onToggle={handleCategoryToggle}
-                isFirstCategory={index === 0}
-                onToggleFavorite={handleToggleFavoriteGrouped}
-                isFavorite={checkIsFavorite}
-                onDrugsLoaded={onDrugsLoaded}
-                onTrialsLoaded={onTrialsLoaded}
-              />
+      {/* ================================================================= */}
+      {/* Phase 10: Specific Code Search View (Related Codes) */}
+      {/* ================================================================= */}
+      {showRelatedSection ? (
+        <div className="space-y-6">
+          {/* Your Search - Exact Match Section */}
+          {exactMatch ? (
+            <div className="animate-in fade-in slide-in-from-bottom-2">
+              {/* Header Label */}
+              <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2">
+                  <Target className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Your Search
+                  </span>
+                </div>
+                <span className="
+                  px-2 py-0.5 
+                  bg-emerald-100 dark:bg-emerald-900/30 
+                  text-emerald-700 dark:text-emerald-400 
+                  text-xs rounded-full font-medium
+                  flex items-center gap-1
+                ">
+                  <Sparkles className="w-3 h-3" />
+                  Exact Match
+                </span>
+              </div>
+              
+              {/* Exact Match Card - Full Width, Highlighted */}
+              <div className="
+                p-1
+                rounded-2xl
+                bg-gradient-to-r from-emerald-100/50 to-teal-100/50
+                dark:from-emerald-900/20 dark:to-teal-900/20
+                border border-emerald-200 dark:border-emerald-800/50
+              ">
+                <ResultCard
+                  code={exactMatch.code}
+                  name={exactMatch.name}
+                  onDrugsLoaded={onDrugsLoaded}
+                  onTrialsLoaded={onTrialsLoaded}
+                  score={exactMatch.score}
+                  rank={1}
+                  isFavorite={isFavorited ? isFavorited(exactMatch.code) : favoritesMap.has(exactMatch.code)}
+                  onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(exactMatch) : undefined}
+                />
+              </div>
             </div>
-          ))}
+          ) : (
+            /* Code Not Found Warning */
+            <div className="
+              animate-in fade-in slide-in-from-bottom-2
+              p-4
+              bg-amber-50 dark:bg-amber-900/20
+              border border-amber-200 dark:border-amber-800/50
+              rounded-xl
+            ">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-amber-800 dark:text-amber-300">
+                    Code &ldquo;{searchedCode}&rdquo; not found in database
+                  </p>
+                  <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
+                    This code may not exist or may have been deprecated. Showing related codes that may help:
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Related Codes Section */}
+          <RelatedCodesSection
+            searchedCode={searchedCode}
+            relatedCodes={relatedCodes}
+            isLoading={isLoadingRelated}
+            isFavorite={checkIsFavorite}
+            onToggleFavorite={handleToggleFavoriteGrouped}
+            onDrugsLoaded={onDrugsLoaded}
+            onTrialsLoaded={onTrialsLoaded}
+          />
         </div>
       ) : (
-        /* Flat View - Card Grid */
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {results.map((result, index) => (
-            <div 
-              key={result.code}
-              className="animate-in fade-in slide-in-from-bottom-2"
-              style={{ animationDelay: `${Math.min(index, 10) * 50}ms`, animationFillMode: 'backwards' }}
-            >
-              <ResultCard
-                code={result.code}
-                name={result.name}
-                onDrugsLoaded={onDrugsLoaded}
-                onTrialsLoaded={onTrialsLoaded}
-                // Phase 4C: Pass relevance data for badges
-                score={result.score}
-                rank={index + 1}
-                // Phase 6: Favorites props
-                isFavorite={isFavorited ? isFavorited(result.code) : favoritesMap.has(result.code)}
-                onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(result) : undefined}
-              />
+        /* ================================================================= */
+        /* Normal Search View (Grouped or Flat) */
+        /* ================================================================= */
+        <>
+          {/* Phase 7: Grouped View - Category Sections */}
+          {viewMode === 'grouped' && grouped ? (
+            <div className="space-y-4">
+              {grouped.categories.map((category, index) => (
+                <div
+                  key={category.chapter.id}
+                  className="animate-in fade-in slide-in-from-bottom-2"
+                  style={{ 
+                    animationDelay: `${Math.min(index, 5) * 75}ms`, 
+                    animationFillMode: 'backwards' 
+                  }}
+                >
+                  <CategorySection
+                    category={category}
+                    onToggle={handleCategoryToggle}
+                    isFirstCategory={index === 0}
+                    onToggleFavorite={handleToggleFavoriteGrouped}
+                    isFavorite={checkIsFavorite}
+                    onDrugsLoaded={onDrugsLoaded}
+                    onTrialsLoaded={onTrialsLoaded}
+                  />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          ) : (
+            /* Flat View - Card Grid */
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {results.map((result, index) => (
+                <div 
+                  key={result.code}
+                  className="animate-in fade-in slide-in-from-bottom-2"
+                  style={{ animationDelay: `${Math.min(index, 10) * 50}ms`, animationFillMode: 'backwards' }}
+                >
+                  <ResultCard
+                    code={result.code}
+                    name={result.name}
+                    onDrugsLoaded={onDrugsLoaded}
+                    onTrialsLoaded={onTrialsLoaded}
+                    // Phase 4C: Pass relevance data for badges
+                    score={result.score}
+                    rank={index + 1}
+                    // Phase 6: Favorites props
+                    isFavorite={isFavorited ? isFavorited(result.code) : favoritesMap.has(result.code)}
+                    onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(result) : undefined}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
       
-      {/* Phase 4C: Load More Button */}
-      {hasMore && onLoadMore && (
+      {/* Phase 4C: Load More Button - Hide for specific code searches */}
+      {hasMore && onLoadMore && !showRelatedSection && (
         <div className="mt-8 text-center">
           <button
             onClick={onLoadMore}

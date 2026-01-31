@@ -18,18 +18,11 @@
  * - "heart attack" → searches "myocardial infarction"
  * - Combines results from both original and translated terms
  * - Returns translation metadata for UI display
- * 
- * Phase 6 Update: Added NIH Conditions API integration
- * - Tier 1: Try Conditions API for direct ICD code lookup (2,400+ conditions)
- * - Tier 2: Fall back to termMapper for curated synonyms
- * - Tier 3: ICD-10 API search for comprehensive results
- * - Caches Conditions API results for 24 hours
  */
 
 import { ICD10Result, SearchResponse, SearchResultsWithTranslation, ScoredICD10Result } from '../types/icd';
 import { scoreAndRankResults } from './scoring';
 import { translateQuery } from './termMapper';
-import { searchConditionsAPI, isICD10Code } from './conditionsApi';
 
 // =============================================================================
 // Configuration
@@ -75,11 +68,6 @@ const DISPLAY_LIMIT = 100;
  * - Combines results from both terms for best coverage
  * - Returns translation metadata for UI display
  * 
- * Phase 6 Enhancement:
- * - NEW TIER 1: NIH Conditions API provides direct ICD codes for 2,400+ conditions
- * - Falls back to termMapper (Tier 2) and ICD-10 API (Tier 3) seamlessly
- * - Search flow: Conditions API → termMapper → ICD-10 API
- * 
  * @param query - The search term (e.g., "diabetes", "heart attack", or "E11.9")
  * @returns Promise that resolves to SearchResultsWithTranslation containing:
  *          - results: Top 100 scored results
@@ -90,14 +78,15 @@ const DISPLAY_LIMIT = 100;
  * @throws Error if the network request fails or response is invalid
  * 
  * @example
- * // Search with common term - Conditions API finds "Myocardial infarction"
+ * // Search with common term - gets translated
  * const { results, translation } = await searchICD10('heart attack');
- * // Results include I21.9, I21.3, etc. with proper scoring
+ * // translation.medicalTerm = "myocardial infarction"
+ * // Results include I21.9, I21.3, etc.
  * 
  * @example
- * // Direct ICD code search - skips Conditions API
- * const { results } = await searchICD10('E11.9');
- * // Goes directly to ICD-10 API
+ * // Search with medical term - no translation
+ * const { results, translation } = await searchICD10('diabetes mellitus');
+ * // translation.wasTranslated = false
  */
 export async function searchICD10(query: string): Promise<SearchResultsWithTranslation> {
   // Step 1: Validate the input
@@ -113,122 +102,45 @@ export async function searchICD10(query: string): Promise<SearchResultsWithTrans
     };
   }
 
-  // Step 2: Check if query is a direct ICD-10 code
-  // ----------------------------------------------
-  // If user enters "E11.9" or "I21", skip Conditions API and search directly
-  if (isICD10Code(trimmedQuery)) {
-    console.log(`[Search] Direct ICD code detected: "${trimmedQuery}" → skipping Conditions API`);
-    return searchWithFallback(trimmedQuery);
-  }
-
-  // Step 3: TIER 1 - Try NIH Conditions API first (Phase 6)
+  // Step 2: Translate query if it's a common term (Phase 5)
   // -------------------------------------------------------
-  // This API provides direct ICD codes for 2,400+ conditions
-  // with built-in synonym handling
-  try {
-    const conditionsResult = await searchConditionsAPI(trimmedQuery);
-    
-    if (conditionsResult.found && conditionsResult.icdCodes.length > 0) {
-      console.log(`[Search] ✅ Conditions API HIT: "${trimmedQuery}" → "${conditionsResult.primaryName}" (${conditionsResult.icdCodes.length} direct codes)`);
-      
-      // Start with direct ICD codes from Conditions API
-      let allResults: ICD10Result[] = conditionsResult.icdCodes.map(c => ({
-        code: c.code,
-        name: c.name,
-      }));
-      
-      // Expand results using the medical term for more comprehensive results
-      const searchTerm = conditionsResult.primaryName || trimmedQuery;
-      const { results: expandedResults, totalCount } = await searchSingleTerm(searchTerm);
-      
-      // Also search original query if different from primary name
-      if (conditionsResult.primaryName?.toLowerCase() !== trimmedQuery.toLowerCase()) {
-        const { results: originalResults } = await searchSingleTerm(trimmedQuery);
-        allResults = allResults.concat(originalResults);
-      }
-      
-      // Combine: Conditions API codes first (priority), then expanded results
-      allResults = allResults.concat(expandedResults);
-      
-      // Deduplicate (preserves order, Conditions API codes take priority)
-      const uniqueResults = deduplicateResults(allResults);
-      
-      // Score and rank results
-      const scoredResults = scoreAndRankResults(uniqueResults, searchTerm);
-      
-      // Build translation metadata for UI
-      const translationInfo = conditionsResult.primaryName && 
-        conditionsResult.primaryName.toLowerCase() !== trimmedQuery.toLowerCase()
-        ? {
-            wasTranslated: true,
-            originalTerm: trimmedQuery,
-            medicalTerm: conditionsResult.primaryName,
-            searchTerms: [conditionsResult.primaryName, trimmedQuery],
-            source: 'conditions-api' as const,
-          }
-        : undefined;
-      
-      const displayResults = scoredResults.slice(0, DISPLAY_LIMIT);
-      
-      return {
-        results: displayResults,
-        totalCount: Math.max(totalCount, uniqueResults.length),
-        displayedCount: displayResults.length,
-        hasMore: totalCount > displayResults.length,
-        translation: translationInfo,
-      };
-    }
-    
-    // Conditions API found nothing useful
-    console.log(`[Search] ⚠️ Conditions API MISS: "${trimmedQuery}" → falling back to termMapper`);
-    
-  } catch (error) {
-    // Conditions API failed - continue to fallback (don't throw)
-    console.error(`[Search] ❌ Conditions API error for "${trimmedQuery}":`, error);
-    console.log(`[Search] Continuing with fallback search...`);
-  }
-
-  // Step 4: TIER 2 & 3 - Fall back to existing logic (termMapper → ICD-10 API)
-  // --------------------------------------------------------------------------
-  return searchWithFallback(trimmedQuery);
-}
-
-/**
- * Fallback search using termMapper and ICD-10 API (Tier 2 & 3).
- * This is the original search logic, now extracted as a separate function.
- * 
- * @param query - The search term
- * @returns Search results with translation metadata
- */
-async function searchWithFallback(query: string): Promise<SearchResultsWithTranslation> {
-  // Tier 2: Translate query if it's a common term (termMapper)
-  const translation = translateQuery(query);
+  // This converts lay terms like "heart attack" to medical terms
+  // like "myocardial infarction" for better API results
+  const translation = translateQuery(trimmedQuery);
   
-  console.log(`[Search] Using termMapper fallback for "${query}"${translation.wasTranslated ? ` → "${translation.medicalTerm}"` : ''}`);
-  
-  // Tier 3: Search ICD-10 API
+  // Step 3: Search for all terms and combine results
+  // ------------------------------------------------
   try {
     let allResults: ICD10Result[] = [];
     let maxTotalCount = 0;
     
     // Search for each term in searchTerms array
+    // (Usually 1 term, or 2 if translated: [medical, original])
     for (const searchTerm of translation.searchTerms) {
       const { results, totalCount } = await searchSingleTerm(searchTerm);
       allResults = allResults.concat(results);
       maxTotalCount = Math.max(maxTotalCount, totalCount);
     }
     
-    // Deduplicate results by ICD code
+    // Step 4: Deduplicate results by ICD code
+    // ---------------------------------------
+    // When searching both "myocardial infarction" and "heart attack",
+    // some codes might appear in both result sets
     const uniqueResults = deduplicateResults(allResults);
     
-    // Apply relevance scoring
+    // Step 5: Apply relevance scoring
+    // -------------------------------
+    // Score against the ORIGINAL query for best keyword matching
+    // This ensures "heart attack" matches score well even when
+    // we searched "myocardial infarction"
     const primarySearchTerm = translation.wasTranslated 
       ? translation.medicalTerm! 
-      : query;
+      : trimmedQuery;
     
     const scoredResults = scoreAndRankResults(uniqueResults, primarySearchTerm);
     
-    // Return top results with metadata
+    // Step 6: Return top results with metadata
+    // ----------------------------------------
     const displayResults = scoredResults.slice(0, DISPLAY_LIMIT);
     
     return {
@@ -433,4 +345,152 @@ function parseSearchResponse(response: SearchResponse): ICD10Result[] {
   });
   
   return results;
+}
+
+// =============================================================================
+// Related Codes Functions (Phase 10)
+// =============================================================================
+
+/**
+ * Maximum results to fetch when looking for related codes.
+ */
+const RELATED_CODES_LIMIT = 100;
+
+/**
+ * Cache entry for related codes lookup.
+ */
+interface RelatedCodesCacheEntry {
+  data: ICD10Result[];
+  timestamp: number;
+}
+
+/**
+ * In-memory cache for related codes by parent category.
+ */
+const relatedCodesCache = new Map<string, RelatedCodesCacheEntry>();
+
+/**
+ * Cache TTL for related codes: 24 hours.
+ */
+const RELATED_CACHE_TTL = 24 * 60 * 60 * 1000;
+
+/**
+ * Extracts the parent category (first 3 characters) from an ICD-10 code.
+ * 
+ * @param code - Any ICD-10 code
+ * @returns The 3-character category prefix
+ * 
+ * @example
+ * extractParentCode("I21.9")    // → "I21"
+ * extractParentCode("S72.001A") // → "S72"
+ */
+export function extractParentCode(code: string): string {
+  return code.trim().substring(0, 3).toUpperCase();
+}
+
+/**
+ * Checks if an ICD-10 code is specific (has a decimal) vs category-only.
+ * 
+ * @param code - Any ICD-10 code
+ * @returns True if code has a decimal (specific), false if category-only
+ * 
+ * @example
+ * isSpecificCode("I21.9")    // → true
+ * isSpecificCode("I21")      // → false
+ */
+export function isSpecificCode(code: string): boolean {
+  return code.includes('.');
+}
+
+/**
+ * Fetches related/sibling ICD-10 codes for a given code.
+ * 
+ * When a user searches for a specific code like "I21.9", this function
+ * returns all other codes in the same family (I21.0, I21.1, etc.)
+ * 
+ * @param code - The ICD-10 code user searched for (e.g., "I21.9")
+ * @returns Promise resolving to array of related codes (excluding searched code)
+ */
+export async function getRelatedCodes(code: string): Promise<ICD10Result[]> {
+  const logPrefix = '[RelatedCodes]';
+  const trimmedCode = code.trim().toUpperCase();
+  
+  if (!trimmedCode || trimmedCode.length < 3) {
+    console.warn(`${logPrefix} Invalid code provided: "${code}"`);
+    return [];
+  }
+  
+  const parentCode = extractParentCode(trimmedCode);
+  
+  console.log(`${logPrefix} Finding siblings for "${trimmedCode}" (parent: ${parentCode})`);
+  
+  // Check cache first
+  const cached = relatedCodesCache.get(parentCode);
+  if (cached && Date.now() - cached.timestamp < RELATED_CACHE_TTL) {
+    console.log(`${logPrefix} ✅ Cache hit for parent "${parentCode}"`);
+    return cached.data.filter(r => r.code.toUpperCase() !== trimmedCode);
+  }
+  
+  try {
+    console.log(`${logPrefix} 🔍 Fetching from API for parent "${parentCode}"...`);
+    
+    const params = new URLSearchParams({
+      sf: 'code,name',
+      terms: parentCode,
+      maxList: String(RELATED_CODES_LIMIT)
+    });
+    
+    const url = `${API_BASE_URL}?${params.toString()}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      console.error(`${logPrefix} API request failed with status: ${response.status}`);
+      return [];
+    }
+    
+    const data: SearchResponse = await response.json();
+    const allCodes = parseSearchResponse(data);
+    
+    // Filter to only codes that start with the parent category
+    const familyCodes = allCodes.filter(r => 
+      r.code.toUpperCase().startsWith(parentCode)
+    );
+    
+    // Sort by code
+    familyCodes.sort((a, b) => a.code.localeCompare(b.code));
+    
+    // Cache the full family
+    relatedCodesCache.set(parentCode, {
+      data: familyCodes,
+      timestamp: Date.now(),
+    });
+    
+    console.log(`${logPrefix} ✅ Found ${familyCodes.length} codes in family "${parentCode}"`);
+    
+    // Return excluding the searched code
+    return familyCodes.filter(r => r.code.toUpperCase() !== trimmedCode);
+    
+  } catch (error) {
+    console.error(`${logPrefix} ❌ Error fetching related codes:`, error);
+    return [];
+  }
+}
+
+/**
+ * Clears the related codes cache.
+ */
+export function clearRelatedCodesCache(): void {
+  const size = relatedCodesCache.size;
+  relatedCodesCache.clear();
+  console.log(`[RelatedCodes:Cache] Cleared ${size} entries`);
+}
+
+/**
+ * Returns cache statistics for related codes.
+ */
+export function getRelatedCodesCacheStats(): { size: number; entries: string[] } {
+  return {
+    size: relatedCodesCache.size,
+    entries: Array.from(relatedCodesCache.keys()),
+  };
 }

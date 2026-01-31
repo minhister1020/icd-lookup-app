@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Related ICD-10 Codes Display** - When searching for a specific ICD-10 code, shows related codes in the same family
+  - "Your Search" section displays the exact match prominently with "Exact Match" badge
+  - Collapsible "Related Codes" section shows all sibling codes (e.g., searching I21.9 shows all I21.x codes)
+  - Preview pills display first 6 related codes when collapsed for quick overview
+  - Supports all ICD-10 formats: standard (I21.9), alpha-numeric (I21.A1), 7th character extensions (S72.001A), X placeholders (T36.0X1A)
+  - "Standalone Code" message displays when a code has no related codes in its category
+  - Related codes cached by parent category for 24 hours to improve performance
+  - Helper functions: `extractParentCode()`, `isSpecificCode()`, `getRelatedCodes()`, `getRelatedCodesCacheStats()`
+  - New component: `RelatedCodesSection.tsx` with collapsible UI, loading states, and accessibility support
+
 - **NIH Medical Conditions API Integration** - Intelligent medical term translation
   - Tier 1: NIH Conditions API provides ICD codes for 2,400+ medical conditions
   - Tier 2: Curated termMapper synonyms (85+ manual mappings)
@@ -30,10 +40,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `FallbackStats` interface for monitoring cache performance
 - Input validation for empty condition names in drug lookup functions
 
+### Changed
+- `SearchResults.tsx` now conditionally renders "Related Codes" view for specific ICD code searches
+- View toggle (Flat/Grouped) hidden during specific code searches (not applicable to single-code lookup)
+- Load More button hidden during specific code searches
+- Header shows "Code Lookup" badge instead of "Ranked by relevance" for specific code searches
+
 ### Improved
 - Search now handles 2,400+ medical conditions with built-in synonyms (previously 85 manual mappings)
 - Better user experience: lay terms automatically translate to clinical terminology
 - Reduced maintenance burden: NIH maintains the synonym database
+- Medical coders can now quickly find related codes when searching for a specific ICD-10 code
 
 ### Fixed
 - Drug search now works for ALL conditions, not just curated ones

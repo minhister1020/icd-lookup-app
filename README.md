@@ -38,6 +38,7 @@ The **ICD Lookup Tool** is a modern web application that transforms medical code
 ### 🔍 ICD-10 Code Search
 - Search by condition name (e.g., "diabetes", "hypertension")
 - Search by ICD-10 code directly (e.g., "E11", "I10")
+- **🔀 Related Codes Display** — Search "I21.9" to see all sibling codes in the I21.x family
 - **🧠 NIH Smart Search** — Powered by NIH Medical Conditions API with 2,400+ conditions and automatic synonym expansion
 - **🗣️ Common Terms Translation** — Search with everyday language like "heart attack"
 - **🎯 Intelligent Relevance Ranking** — Most clinically useful codes appear first
