@@ -257,9 +257,17 @@ interface OpenFdaResult {
     brand_name?: string[];
     generic_name?: string[];
     manufacturer_name?: string[];
+    substance_name?: string[];
+    spl_set_id?: string[];
   };
+  // Alternative locations for drug names
+  spl_product_data_elements?: string[];
+  package_label_principal_display_panel?: string[];
   indications_and_usage?: string[];
   warnings?: string[];
+  // Raw ID that might contain drug name
+  id?: string;
+  set_id?: string;
 }
 
 /**
@@ -274,17 +282,42 @@ interface OpenFdaResult {
 function parseOpenFdaResponse(response: OpenFdaApiResponse): DrugResult[] {
   // If no results array, return empty
   if (!response.results || !Array.isArray(response.results)) {
+    console.log('[OpenFDA] No results array in response');
     return [];
   }
   
+  console.log(`[OpenFDA] Parsing ${response.results.length} results from API`);
+  
+  // DEBUG: Log the structure of the first result to understand the data
+  if (response.results.length > 0) {
+    const firstResult = response.results[0];
+    console.log('[OpenFDA] DEBUG - First result structure:');
+    console.log('  openfda exists:', !!firstResult.openfda);
+    if (firstResult.openfda) {
+      console.log('  openfda.brand_name:', firstResult.openfda.brand_name);
+      console.log('  openfda.generic_name:', firstResult.openfda.generic_name);
+      console.log('  openfda.substance_name:', firstResult.openfda.substance_name);
+      console.log('  openfda.manufacturer_name:', firstResult.openfda.manufacturer_name);
+    }
+    console.log('  spl_product_data_elements:', firstResult.spl_product_data_elements?.[0]?.substring(0, 100));
+    console.log('  package_label_principal_display_panel:', firstResult.package_label_principal_display_panel?.[0]?.substring(0, 100));
+  }
+  
   // Transform each result
-  return response.results.map((result): DrugResult => {
-    // Safely extract each field with fallbacks
-    // The ?. (optional chaining) prevents errors if fields are missing
-    // The ?? (nullish coalescing) provides default values
+  const drugs = response.results.map((result, index): DrugResult => {
+    // Try multiple sources for brand name
+    const brandName = 
+      result.openfda?.brand_name?.[0] ||
+      extractNameFromDisplayPanel(result.package_label_principal_display_panel?.[0]) ||
+      extractNameFromProductData(result.spl_product_data_elements?.[0]) ||
+      'Unknown Brand';
     
-    const brandName = result.openfda?.brand_name?.[0] ?? 'Unknown Brand';
-    const genericName = result.openfda?.generic_name?.[0] ?? 'Unknown Generic';
+    // Try multiple sources for generic name
+    const genericName = 
+      result.openfda?.generic_name?.[0] ||
+      result.openfda?.substance_name?.[0] ||
+      'Unknown Generic';
+    
     const manufacturer = result.openfda?.manufacturer_name?.[0] ?? 'Unknown Manufacturer';
     
     // Truncate indication to reasonable length for display
@@ -295,6 +328,9 @@ function parseOpenFdaResponse(response: OpenFdaApiResponse): DrugResult[] {
     const fullWarnings = result.warnings?.[0];
     const warnings = fullWarnings ? truncateText(fullWarnings, 150) : undefined;
     
+    // DEBUG: Log each drug being parsed
+    console.log(`[OpenFDA] Drug ${index + 1}: ${brandName} (${genericName})`);
+    
     return {
       brandName: formatDrugName(brandName),
       genericName: formatDrugName(genericName),
@@ -303,6 +339,53 @@ function parseOpenFdaResponse(response: OpenFdaApiResponse): DrugResult[] {
       warnings,
     };
   });
+  
+  // Filter out drugs with unknown names (they won't be useful)
+  const validDrugs = drugs.filter(d => 
+    d.brandName !== 'Unknown Brand' || d.genericName !== 'Unknown Generic'
+  );
+  
+  console.log(`[OpenFDA] Valid drugs with names: ${validDrugs.length}/${drugs.length}`);
+  
+  return validDrugs;
+}
+
+/**
+ * Extracts drug name from package label display panel text.
+ * The display panel often contains the drug name at the start.
+ */
+function extractNameFromDisplayPanel(text?: string): string | null {
+  if (!text) return null;
+  
+  // The display panel often starts with the drug name
+  // Look for patterns like "WEGOVY" or "Wegovy (semaglutide)"
+  const match = text.match(/^([A-Za-z][A-Za-z0-9\s\-]+?)(?:\s*[\(\[]|®|™|\s+\d|\s+injection|\s+tablet|\s+capsule)/i);
+  if (match) {
+    return match[1].trim();
+  }
+  
+  // Take first word/phrase if no pattern match
+  const firstWord = text.split(/[\s\(\[]/)[0];
+  if (firstWord && firstWord.length > 2 && firstWord.length < 50) {
+    return firstWord;
+  }
+  
+  return null;
+}
+
+/**
+ * Extracts drug name from SPL product data elements.
+ */
+function extractNameFromProductData(text?: string): string | null {
+  if (!text) return null;
+  
+  // Product data often contains the drug name
+  const match = text.match(/^([A-Za-z][A-Za-z0-9\s\-]+?)(?:\s*[\(\[]|®|™|\s+\d)/i);
+  if (match) {
+    return match[1].trim();
+  }
+  
+  return null;
 }
 
 // =============================================================================
