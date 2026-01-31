@@ -17,7 +17,7 @@
  * - Generic name (e.g., "semaglutide")
  * - FDA approval status badge
  * - Manufacturer
- * - What it treats (indication)
+ * - Dosage form (e.g., "Oral Tablet - 1 MG")
  * - Optional warnings on hover/expand
  */
 
@@ -153,10 +153,10 @@ export default function DrugCard({ drug, badgeType }: DrugCardProps) {
         </span>
       </div>
       
-      {/* Indication (What it treats) */}
+      {/* Dosage Form */}
       <div className="mb-2">
         <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
-          Used for:
+          Dosage:
         </p>
         <p 
           className={`
