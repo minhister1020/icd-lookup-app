@@ -10,6 +10,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Query Phrase Normalizer** - Intelligent pattern-based search transformation for cancer/tumor queries
+  - New file: `app/lib/queryNormalizer.ts` with pattern matching engine
+  - Supports 5 transformation patterns:
+    - `[organ] cancer` → "malignant neoplasm of [organ]" (e.g., "pancreas cancer")
+    - `cancer of [the] [organ]` → "malignant neoplasm of [organ]" (e.g., "cancer of the liver")
+    - `[organ] tumor` → "neoplasm of [organ]" (e.g., "brain tumor")
+    - `[organ] carcinoma` → "malignant neoplasm of [organ]" (e.g., "lung carcinoma")
+    - `[adjective] [organ] cancer` → "malignant neoplasm of [organ]" (e.g., "metastatic liver cancer")
+  - ~70 organ names across 10 body systems (digestive, respiratory, reproductive, urinary, nervous, etc.)
+  - British spelling support ("tumour" alongside "tumor")
+  - 16 medical adjectives recognized (metastatic, advanced, invasive, localized, etc.)
+  - Organ validation prevents false positives (e.g., "car cancer" won't match)
+  - Integrated into search flow: runs BEFORE termMapper translation
+  - Original query always included as fallback for broader matching
+  - Debug logging: `[Normalizer]` and `[Search]` prefixes for tracing
+
 - **Related ICD-10 Codes Display** - When searching for a specific ICD-10 code, shows related codes in the same family
   - "Your Search" section displays the exact match prominently with "Exact Match" badge
   - Collapsible "Related Codes" section shows all sibling codes (e.g., searching I21.9 shows all I21.x codes)
@@ -47,6 +63,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Header shows "Code Lookup" badge instead of "Ranked by relevance" for specific code searches
 
 ### Improved
+- **Cancer Search Results** - Previously problematic searches now return results:
+  - "pancreas cancer" → finds C25.x codes (was: 0 results)
+  - "cancer of the liver" → finds C22.x codes (was: limited results)
+  - "brain tumor" → finds D33.x/C71.x codes (was: inconsistent)
+  - Pattern-based approach scales to all ~70 organs without manual mapping
 - Search now handles 2,400+ medical conditions with built-in synonyms (previously 85 manual mappings)
 - Better user experience: lay terms automatically translate to clinical terminology
 - Reduced maintenance burden: NIH maintains the synonym database
