@@ -8,6 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## [Unreleased]
+
+### Added
+- **AI-Powered Drug Fallback System** - 3-tier drug lookup for universal coverage
+  - Tier 1: Curated mappings (fastest, most accurate)
+  - Tier 2: Fallback cache (AI-generated lists cached for 24 hours)
+  - Tier 3: AI generation via Claude Haiku for unmapped conditions
+- Telemetry tracking for drug lookup hit rates (curated vs cached vs AI-generated)
+- `FallbackStats` interface for monitoring cache performance
+- Input validation for empty condition names in drug lookup functions
+
+### Fixed
+- Drug search now works for ALL conditions, not just curated ones
+- Model compatibility: using stable `claude-3-haiku-20240307` for drug generation
+- Explicit TypeScript return types for `getFallbackStats()`
+- Debug logging for JSON parse failures in drug list generation
+- MAX_DRUGS limit enforcement after parsing AI responses
+
+---
+
 ## [1.2.0] - 2026-01-31
 
 ### Added

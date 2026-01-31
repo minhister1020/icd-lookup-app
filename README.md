@@ -89,9 +89,11 @@ The ICD Mind Map includes an intelligent drug validation system that filters tre
 ### Features
 
 #### 🎯 Smart Drug Discovery
+- **3-Tier Lookup**: Curated mappings → Fallback cache → AI generation (Claude Haiku)
+- **Universal Coverage**: Works for ANY condition, not just curated ones
 - **Curated Mappings**: 80+ drugs across 25+ conditions (obesity, diabetes, hypertension, etc.)
 - **Real-Time Data**: Integrates with NLM's RxNorm API for accurate drug information
-- **AI Validation**: Claude AI scores each drug 0-10 based on clinical relevance
+- **AI Validation**: Claude Sonnet scores each drug 0-10 based on clinical relevance
 
 #### 🏥 FDA Approval Awareness
 - **FDA-Approved Section**: Green badges (score ≥7) for on-label treatments
@@ -123,13 +125,16 @@ The ICD Mind Map includes an intelligent drug validation system that filters tre
 ```
 User Search (E66.9 - Obesity)
         ↓
-1. Curated Mappings
+1. 3-Tier Drug Lookup
+   ├── Tier 1: Curated Mappings (25+ conditions)
+   ├── Tier 2: Fallback Cache (24hr AI-generated)
+   └── Tier 3: AI Generation (Claude Haiku for any condition)
    → Returns: [Wegovy, Saxenda, Ozempic, ...]
         ↓
 2. RxNorm API (with 24hr cache)
    → Fetches: Brand names, generic names, dosage forms
         ↓
-3. Claude AI Validation
+3. Claude AI Validation (Sonnet)
    → Scores: 0-10 with clinical reasoning
         ↓
 4. Pipeline Filtering (with 24hr cache)
@@ -139,12 +144,15 @@ User Search (E66.9 - Obesity)
    → Shows: Tiered sections with color-coded badges
 ```
 
+**Universal Coverage**: Even conditions without curated mappings get drug results via AI fallback.
+
 ### Technical Implementation
 
 **Key Files:**
-- `app/lib/conditionDrugMappings.ts` - Curated condition → drug mappings
+- `app/lib/conditionDrugMappings.ts` - 3-tier drug lookup (curated + cache + AI)
+- `app/lib/drugListGenerator.ts` - Claude Haiku AI drug generation
 - `app/lib/rxNormApi.ts` - RxNorm REST API integration
-- `app/lib/drugRelevanceAgent.ts` - Claude AI scoring logic
+- `app/lib/drugRelevanceAgent.ts` - Claude Sonnet AI scoring logic
 - `app/lib/drugValidationPipeline.ts` - Orchestration & caching
 - `app/api/validate-drugs/route.ts` - Server-side API endpoint
 
