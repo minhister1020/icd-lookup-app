@@ -29,7 +29,7 @@ import {
   Star
 } from 'lucide-react';
 import { DrugResult, ClinicalTrialResult, TrialStatus } from '../types/icd';
-import { validateDrugs, ValidatedDrugResult } from '../lib/drugValidationPipeline';
+import { ValidatedDrugResult } from '../lib/drugValidationPipeline';
 import { searchTrialsByCondition } from '../lib/clinicalTrialsApi';
 import DrugCard from './DrugCard';
 import TrialCard from './TrialCard';
@@ -161,8 +161,11 @@ export default function ResultCard({
   
   /**
    * Handles loading drugs for this condition with AI validation.
-   * - First click: Fetches from OpenFDA, scores with AI, returns validated drugs
-   * - Subsequent clicks: Just toggles expand/collapse (uses pipeline cache)
+   * - First click: Calls server-side API for AI-powered drug validation
+   * - Subsequent clicks: Just toggles expand/collapse (uses local cache)
+   * 
+   * Note: We call /api/validate-drugs instead of importing validateDrugs directly
+   * because the ANTHROPIC_API_KEY is only available server-side.
    */
   const handleToggleDrugs = async () => {
     // Prevent multiple simultaneous requests
@@ -174,14 +177,34 @@ export default function ResultCard({
       return;
     }
     
-    // First time: fetch and validate with AI pipeline
+    // First time: fetch and validate via server-side API
     setDrugsLoading(true);
     setDrugsError(null);
     setDrugsExpanded(true);
     
     try {
-      // Use AI validation pipeline: fetches from OpenFDA, scores relevance, filters
-      const validatedResults = await validateDrugs(name, code);
+      // Call server-side API for AI validation (has access to ANTHROPIC_API_KEY)
+      const response = await fetch('/api/validate-drugs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          conditionName: name,
+          icdCode: code,
+        }),
+      });
+
+      // Handle HTTP errors
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+
+      // Parse response
+      const data = await response.json();
+      const validatedResults: ValidatedDrugResult[] = data.drugs || [];
+      
       setDrugs(validatedResults);
       setHasFetchedDrugs(true);
       
