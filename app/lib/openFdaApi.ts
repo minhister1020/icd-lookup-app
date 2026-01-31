@@ -42,12 +42,113 @@ const OPENFDA_BASE_URL = 'https://api.fda.gov/drug/label.json';
  */
 const DEFAULT_LIMIT = 15;
 
+/**
+ * Condition-specific synonyms for better drug discovery.
+ * 
+ * FDA drug labels often use different terminology than ICD-10 condition names.
+ * For example, obesity drugs are labeled for "weight management" not "obesity".
+ * 
+ * This dictionary maps common condition keywords to arrays of synonyms that
+ * are used in FDA drug labeling, improving search results significantly.
+ */
+const CONDITION_SYNONYMS: Record<string, string[]> = {
+  // Metabolic conditions
+  'obesity': ['obesity', 'weight management', 'overweight', 'weight loss', 'weight reduction', 'BMI', 'body mass'],
+  'diabetes': ['diabetes', 'glycemic control', 'blood sugar', 'hyperglycemia', 'glucose', 'insulin'],
+  'cholesterol': ['cholesterol', 'lipid', 'hyperlipidemia', 'hypercholesterolemia', 'triglyceride'],
+  
+  // Cardiovascular
+  'hypertension': ['hypertension', 'high blood pressure', 'blood pressure', 'hypertensive', 'antihypertensive'],
+  'heart': ['heart', 'cardiac', 'cardiovascular', 'myocardial', 'coronary'],
+  
+  // Mental health
+  'depression': ['depression', 'depressive', 'major depressive disorder', 'MDD', 'antidepressant'],
+  'anxiety': ['anxiety', 'anxiolytic', 'generalized anxiety', 'GAD', 'panic'],
+  'bipolar': ['bipolar', 'manic', 'mood stabilizer'],
+  
+  // Respiratory
+  'asthma': ['asthma', 'bronchodilator', 'bronchospasm', 'airway'],
+  'copd': ['COPD', 'chronic obstructive', 'bronchitis', 'emphysema'],
+  
+  // Pain and inflammation
+  'pain': ['pain', 'analgesic', 'analgesia', 'painful'],
+  'arthritis': ['arthritis', 'rheumatoid', 'inflammatory', 'joint'],
+  'migraine': ['migraine', 'headache', 'cephalalgia'],
+  
+  // Infections
+  'infection': ['infection', 'antibiotic', 'antimicrobial', 'bacterial'],
+  
+  // Other common conditions
+  'epilepsy': ['epilepsy', 'seizure', 'anticonvulsant', 'convulsion'],
+  'insomnia': ['insomnia', 'sleep', 'sedative', 'hypnotic'],
+  'allergy': ['allergy', 'allergic', 'antihistamine', 'histamine'],
+  'acid': ['acid reflux', 'GERD', 'heartburn', 'gastric', 'proton pump'],
+};
+
+// =============================================================================
+// Synonym Expansion
+// =============================================================================
+
+/**
+ * Expands a search term into an array of synonyms for better drug discovery.
+ * 
+ * FDA drug labels often use different terminology than ICD-10 condition names.
+ * For example:
+ * - "obesity" → also search "weight management", "overweight", etc.
+ * - "diabetes" → also search "glycemic control", "blood sugar", etc.
+ * 
+ * @param searchTerm - The base search term extracted from condition name
+ * @returns Array of synonyms to search (includes original term)
+ * 
+ * @example
+ * expandSearchTerms("obesity")
+ * // Returns: ["obesity", "weight management", "overweight", "weight loss", ...]
+ */
+function expandSearchTerms(searchTerm: string): string[] {
+  const normalized = searchTerm.toLowerCase().trim();
+  
+  // Check if any synonym key is contained in the search term
+  for (const [key, synonyms] of Object.entries(CONDITION_SYNONYMS)) {
+    if (normalized.includes(key)) {
+      console.log(`[OpenFDA] Synonym match: "${key}" found in "${normalized}"`);
+      return synonyms;
+    }
+  }
+  
+  // No synonym match - return original term as single-item array
+  return [searchTerm];
+}
+
+/**
+ * Builds an OpenFDA boolean OR query from an array of terms.
+ * 
+ * @param terms - Array of search terms to combine with OR
+ * @returns Encoded query string for OpenFDA API
+ * 
+ * @example
+ * buildOrQuery(["obesity", "weight management", "overweight"])
+ * // Returns: "(obesity+OR+weight+management+OR+overweight)"
+ */
+function buildOrQuery(terms: string[]): string {
+  // Encode each term and join with +OR+
+  const encodedTerms = terms.map(term => {
+    // Replace spaces with + for multi-word terms
+    return encodeURIComponent(term).replace(/%20/g, '+');
+  });
+  
+  // Wrap in parentheses for proper grouping
+  return `(${encodedTerms.join('+OR+')})`;
+}
+
 // =============================================================================
 // Main Search Function
 // =============================================================================
 
 /**
  * Searches OpenFDA for drugs that treat a specific medical condition.
+ * 
+ * Uses synonym expansion to find drugs even when FDA labeling uses
+ * different terminology than the ICD-10 condition name.
  * 
  * Returns up to 15 drug candidates by default for AI relevance scoring.
  * The validation pipeline filters these to the top 5 clinically relevant drugs.
@@ -58,12 +159,9 @@ const DEFAULT_LIMIT = 15;
  * @throws Error if API request fails or rate limit is exceeded
  * 
  * @example
- * const drugs = await searchDrugsByCondition("diabetes");
- * console.log(drugs);
- * // [
- * //   { brandName: "METFORMIN", genericName: "Metformin...", ... },
- * //   { brandName: "INSULIN LISPRO", genericName: "Insulin...", ... }
- * // ]
+ * const drugs = await searchDrugsByCondition("Obesity, unspecified");
+ * // Expands to search: obesity OR weight management OR overweight OR ...
+ * // Returns: [{ brandName: "Wegovy", ... }, { brandName: "Saxenda", ... }]
  */
 export async function searchDrugsByCondition(
   conditionName: string,
@@ -73,18 +171,28 @@ export async function searchDrugsByCondition(
   // ---------------------------------------------------------
   // Medical condition names often have qualifiers like "without complications"
   // that don't help find drugs. extractSearchTerms removes these.
-  const searchTerms = extractSearchTerms(conditionName);
+  const baseTerms = extractSearchTerms(conditionName);
   
-  if (!searchTerms) {
+  if (!baseTerms) {
     return [];
   }
   
-  // Step 2: Build the API URL
-  // -------------------------
+  // Step 2: Expand search terms with synonyms
+  // -----------------------------------------
+  // FDA labels often use different terminology than ICD codes.
+  // E.g., obesity drugs are labeled for "weight management" not "obesity"
+  const expandedTerms = expandSearchTerms(baseTerms);
+  
+  console.log(`[OpenFDA] Search expansion: "${baseTerms}" → [${expandedTerms.join(', ')}]`);
+  
+  // Step 3: Build the API URL with boolean OR query
+  // -----------------------------------------------
   // We search the "indications_and_usage" field which contains
   // information about what conditions the drug is used to treat.
-  const encodedTerms = encodeURIComponent(searchTerms);
-  const url = `${OPENFDA_BASE_URL}?search=indications_and_usage:${encodedTerms}&limit=${limit}`;
+  const orQuery = buildOrQuery(expandedTerms);
+  const url = `${OPENFDA_BASE_URL}?search=indications_and_usage:${orQuery}&limit=${limit}`;
+  
+  console.log(`[OpenFDA] Query URL: ${url.substring(0, 150)}...`);
   
   // Step 3: Make the API request
   // ----------------------------
