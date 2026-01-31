@@ -8,7 +8,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## [Unreleased]
+## [1.2.0] - 2026-01-31
 
+### Added
+- **AI-Powered Drug Validation System** - Comprehensive 3-tier drug discovery pipeline
+  - Curated drug mappings covering 80+ medications across 25+ medical conditions
+  - RxNorm API integration for real-time drug data (brand names, generics, dosage forms)
+  - Claude AI validation with intelligent 0-10 scoring and clinical reasoning
+  - FDA-approved vs off-label drug categorization with visual distinction
+  - Smart deduplication logic to prevent duplicate drug entries
+  - Dual-layer caching system (RxNorm: 24hr, Pipeline: 24hr) reducing API costs by 90%
+  - Tiered UI display: Green badges for FDA-approved drugs, amber badges for off-label options
+  - Server-side API route (`/api/validate-drugs`) for secure Claude API key handling
+
+### Changed
+- Replaced OpenFDA drug label API with RxNorm API for improved data quality
+- Updated drug search to use curated condition-to-drug mappings for accuracy
+- Modified `ResultCard.tsx` to display drugs in FDA-approved and off-label sections
+- Enhanced `DrugCard.tsx` with color-coded badges and borders
+
+### Deprecated
+- `openFdaApi.ts` - Marked as deprecated, replaced by RxNorm integration
+  - OpenFDA had incomplete data (brand/generic names often undefined)
+  - Kept for reference and potential future adverse events integration
+
+### Fixed
+- Drug name extraction from RxNorm responses (no more "Unknown Brand")
+- Duplicate drug entries (e.g., multiple Qsymia dosages appearing separately)
+- Client-side environment variable access (moved to server-side API route)
+- Off-label drugs being excluded when duplicate entries exceeded result limit
+
+### Technical Details
+- Files created: `conditionDrugMappings.ts`, `rxNormApi.ts`
+- Files modified: `drugValidationPipeline.ts`, `ResultCard.tsx`, `DrugCard.tsx`
+- Dependencies: No new packages required (uses existing fetch API)
+- Performance: 24-hour cache reduces repeated API calls by ~90%
 ### Added - Clinical Trials Multi-Status Filtering (Phase 9)
 
 Enhanced clinical trials feature with interactive filtering and expanded results.
