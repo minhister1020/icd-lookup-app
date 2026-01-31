@@ -34,10 +34,13 @@ import { DrugResult, extractSearchTerms } from '../types/icd';
 const OPENFDA_BASE_URL = 'https://api.fda.gov/drug/label.json';
 
 /**
- * Default number of drug results to fetch.
- * Keep this low to avoid rate limits and improve performance.
+ * Default number of drug results to fetch from OpenFDA.
+ * 
+ * Fetch 15 candidates to provide the AI validation pipeline with enough
+ * options to score, filter, and return only clinically relevant drugs.
+ * The pipeline will filter to top 5 high-relevance drugs.
  */
-const DEFAULT_LIMIT = 5;
+const DEFAULT_LIMIT = 15;
 
 // =============================================================================
 // Main Search Function
@@ -46,8 +49,11 @@ const DEFAULT_LIMIT = 5;
 /**
  * Searches OpenFDA for drugs that treat a specific medical condition.
  * 
+ * Returns up to 15 drug candidates by default for AI relevance scoring.
+ * The validation pipeline filters these to the top 5 clinically relevant drugs.
+ * 
  * @param conditionName - The condition name (e.g., "Type 2 diabetes mellitus")
- * @param limit - Maximum number of results to return (default: 5)
+ * @param limit - Maximum number of results to return (default: 15)
  * @returns Promise resolving to array of DrugResult objects
  * @throws Error if API request fails or rate limit is exceeded
  * 

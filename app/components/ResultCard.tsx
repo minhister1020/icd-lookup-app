@@ -29,7 +29,7 @@ import {
   Star
 } from 'lucide-react';
 import { DrugResult, ClinicalTrialResult, TrialStatus } from '../types/icd';
-import { searchDrugsByCondition } from '../lib/openFdaApi';
+import { validateDrugs, ValidatedDrugResult } from '../lib/drugValidationPipeline';
 import { searchTrialsByCondition } from '../lib/clinicalTrialsApi';
 import DrugCard from './DrugCard';
 import TrialCard from './TrialCard';
@@ -79,9 +79,9 @@ export default function ResultCard({
   onToggleFavorite,
 }: ResultCardProps) {
   // =========================================================================
-  // Drug State (Phase 3A)
+  // Drug State (Phase 3A) - Updated for AI Validation Pipeline
   // =========================================================================
-  const [drugs, setDrugs] = useState<DrugResult[]>([]);
+  const [drugs, setDrugs] = useState<ValidatedDrugResult[]>([]);
   const [drugsLoading, setDrugsLoading] = useState(false);
   const [drugsError, setDrugsError] = useState<string | null>(null);
   const [drugsExpanded, setDrugsExpanded] = useState(false);
@@ -160,9 +160,9 @@ export default function ResultCard({
   // =========================================================================
   
   /**
-   * Handles loading drugs for this condition.
-   * - First click: Fetches from API and expands
-   * - Subsequent clicks: Just toggles expand/collapse (uses cache)
+   * Handles loading drugs for this condition with AI validation.
+   * - First click: Fetches from OpenFDA, scores with AI, returns validated drugs
+   * - Subsequent clicks: Just toggles expand/collapse (uses pipeline cache)
    */
   const handleToggleDrugs = async () => {
     // Prevent multiple simultaneous requests
@@ -174,22 +174,23 @@ export default function ResultCard({
       return;
     }
     
-    // First time: fetch from API
+    // First time: fetch and validate with AI pipeline
     setDrugsLoading(true);
     setDrugsError(null);
     setDrugsExpanded(true);
     
     try {
-      const results = await searchDrugsByCondition(name);
-      setDrugs(results);
+      // Use AI validation pipeline: fetches from OpenFDA, scores relevance, filters
+      const validatedResults = await validateDrugs(name, code);
+      setDrugs(validatedResults);
       setHasFetchedDrugs(true);
       
       // Phase 3C: Notify parent for Mind Map sync
       if (onDrugsLoaded) {
-        onDrugsLoaded(code, results);
+        onDrugsLoaded(code, validatedResults);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to load drugs';
+      const message = error instanceof Error ? error.message : 'Failed to validate drugs';
       setDrugsError(message);
     } finally {
       setDrugsLoading(false);
@@ -599,7 +600,10 @@ export default function ResultCard({
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Searching drug database...
+                    Validating drug relevance...
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
+                    Finding clinically relevant treatments
                   </p>
                 </div>
               </div>
@@ -625,10 +629,10 @@ export default function ResultCard({
               <div className="text-center py-4">
                 <Pill className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  No drugs found for this condition
+                  No high-confidence drug matches found
                 </p>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                  The OpenFDA database may not have drugs listed for this specific condition
+                  This may mean no FDA-approved treatments exist, or this condition is typically managed non-pharmacologically
                 </p>
               </div>
             )}
@@ -636,10 +640,20 @@ export default function ResultCard({
             {/* Drugs List */}
             {!drugsLoading && !drugsError && drugs.length > 0 && (
               <div className="space-y-3">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
-                  <Pill className="w-3 h-3" />
-                  Related Drugs ({drugs.length})
-                </p>
+                {/* Header with AI validation notice */}
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
+                    <Pill className="w-3 h-3" />
+                    Validated Treatments ({drugs.length})
+                  </p>
+                  {/* Show notice if AI was unavailable */}
+                  {drugs.some(d => d.relevanceScore === -1) && (
+                    <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      AI validation unavailable
+                    </span>
+                  )}
+                </div>
                 <div className="grid gap-3 sm:grid-cols-1">
                   {drugs.map((drug, index) => (
                     <DrugCard key={`${drug.brandName}-${index}`} drug={drug} />
