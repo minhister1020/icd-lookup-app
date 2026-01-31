@@ -114,6 +114,14 @@ export async function scoreDrugRelevance(
       .map((d, i) => `${i + 1}. ${d.brandName} (${d.genericName})`)
       .join('\n');
 
+    // DEBUG: Log what drugs are being sent to Claude
+    console.log(`[DrugRelevanceAgent] Sending ${drugs.length} drugs to Claude for scoring:`);
+    console.log(`[DrugRelevanceAgent] Condition: "${conditionName}"`);
+    console.log('[DrugRelevanceAgent] Drugs from OpenFDA:');
+    drugs.forEach((d, i) => {
+      console.log(`  ${i + 1}. ${d.brandName} (${d.genericName})`);
+    });
+
     // Build user prompt with chain-of-thought guidance
     const userPrompt = `Medical Condition: ${conditionName}
 
@@ -171,8 +179,21 @@ Now evaluate the drugs listed above for "${conditionName}":`;
     // Parse JSON response
     const scores = parseJsonResponse(rawResponse);
 
+    // DEBUG: Log each drug's score and reasoning
     if (scores.length > 0) {
-      console.log(`[DrugRelevanceAgent] Scored ${scores.length} drugs for "${conditionName}"`);
+      console.log(`[DrugRelevanceAgent] Scored ${scores.length} drugs for "${conditionName}":`);
+      console.log('[DrugRelevanceAgent] DEBUG - Individual drug scores:');
+      scores.forEach((score, index) => {
+        const emoji = score.score >= 7 ? '✅' : score.score >= 5 ? '⚠️' : '❌';
+        console.log(`  ${index + 1}. ${emoji} ${score.drugName}: ${score.score}/10`);
+        console.log(`     Reasoning: ${score.reasoning}`);
+      });
+      
+      // Summary stats
+      const highConfidence = scores.filter(s => s.score >= 7).length;
+      const mediumConfidence = scores.filter(s => s.score >= 5 && s.score < 7).length;
+      const lowConfidence = scores.filter(s => s.score < 5).length;
+      console.log(`[DrugRelevanceAgent] Score distribution: ${highConfidence} high (≥7), ${mediumConfidence} medium (5-6), ${lowConfidence} low (<5)`);
     }
 
     return scores;
