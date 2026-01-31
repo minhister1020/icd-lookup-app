@@ -1,6 +1,22 @@
 /**
- * OpenFDA API Helper Functions
- * ============================
+ * @deprecated This file is no longer used in the main drug validation pipeline.
+ * 
+ * REPLACED BY: RxNorm API + curated drug mappings
+ * - conditionDrugMappings.ts: Curated condition → drug mappings
+ * - rxNormApi.ts: RxNorm API for drug details (brand names, generics)
+ * 
+ * REASON FOR DEPRECATION:
+ * OpenFDA drug label API has incomplete data - brand/generic names are often
+ * undefined or return "Unknown Brand (Unknown Generic)". The API returns
+ * packaging labels rather than actual drug products, making it unreliable
+ * for drug discovery.
+ * 
+ * This file is kept for reference and potential future use (e.g., adverse events).
+ * 
+ * ============================================================================
+ * 
+ * OpenFDA API Helper Functions (DEPRECATED)
+ * =========================================
  * 
  * This file handles communication with the OpenFDA Drug Labels API.
  * 
@@ -14,9 +30,6 @@
  * RATE LIMITS:
  * - Without API key: 240 requests/minute, 1,000 requests/day
  * - With API key (free): 240 requests/minute, 120,000 requests/day
- * 
- * We use the "indications_and_usage" field to find drugs that treat
- * specific medical conditions.
  */
 
 import { DrugResult, extractSearchTerms } from '../types/icd';

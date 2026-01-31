@@ -4,19 +4,24 @@
  * 
  * Orchestrates the full drug validation flow:
  * 1. Check in-memory cache for existing results
- * 2. Fetch drug candidates from OpenFDA
- * 3. Score relevance with Claude AI
- * 4. Filter by confidence threshold
- * 5. Cache and return validated results
+ * 2. Get candidate drugs from curated condition-drug mappings
+ * 3. Fetch drug details from RxNorm API
+ * 4. Score relevance with Claude AI
+ * 5. Filter by confidence threshold
+ * 6. Cache and return validated results
  * 
  * Design Principles:
+ * - Curated accuracy: Drug mappings ensure relevant drugs for each condition
+ * - RxNorm integration: Complete drug names (brand + generic)
+ * - AI validation: Claude scores clinical relevance
  * - Graceful degradation: If AI fails, return unfiltered results
  * - Never throw: UI should never break due to validation failures
  * - Comprehensive logging: Debug issues in production
  * - Caching: Avoid redundant API calls (24-hour TTL)
  */
 
-import { searchDrugsByCondition } from './openFdaApi';
+import { getDrugsForCondition } from './conditionDrugMappings';
+import { searchMultipleRxNormDrugs, RxNormDrug } from './rxNormApi';
 import { scoreDrugRelevance, DrugScore } from './drugRelevanceAgent';
 import { DrugResult } from '../types/icd';
 
@@ -42,10 +47,10 @@ const MEDIUM_CONFIDENCE_THRESHOLD = 5;
 const MAX_RESULTS = 5;
 
 /**
- * Number of drugs to fetch from OpenFDA for scoring.
- * Fetch more than we need so filtering has options.
+ * Maximum number of drugs to fetch from curated mappings.
+ * The mappings already have the most relevant drugs first.
  */
-const FETCH_LIMIT = 15;
+const FETCH_LIMIT = 10;
 
 // =============================================================================
 // Cache Configuration
@@ -305,26 +310,50 @@ export async function validateDrugs(
     }
 
     // =========================================================================
-    // Step 2: Fetch drug candidates from OpenFDA
+    // Step 2: Get drug candidates from curated mappings
     // =========================================================================
     console.log(`${logPrefix} Fetching drugs for: "${conditionName}"`);
     
-    let rawDrugs: DrugResult[];
-    try {
-      rawDrugs = await searchDrugsByCondition(conditionName, FETCH_LIMIT);
-    } catch (fetchError) {
-      console.error(`${logPrefix} OpenFDA fetch failed:`, fetchError);
-      return [];
-    }
-
-    if (rawDrugs.length === 0) {
-      console.log(`${logPrefix} No drugs found in OpenFDA`);
+    const candidateDrugNames = getDrugsForCondition(conditionName);
+    
+    if (candidateDrugNames.length === 0) {
+      console.log(`${logPrefix} No drug mappings found for condition`);
       // Cache empty result to avoid repeated lookups
       storeInCache(cacheKey, [], conditionName, logPrefix);
       return [];
     }
-
-    console.log(`${logPrefix} Fetched ${rawDrugs.length} drugs from OpenFDA`);
+    
+    // Limit to FETCH_LIMIT drugs
+    const drugsToFetch = candidateDrugNames.slice(0, FETCH_LIMIT);
+    console.log(`${logPrefix} Found ${drugsToFetch.length} candidate drugs from mappings`);
+    
+    // =========================================================================
+    // Step 3: Fetch drug details from RxNorm
+    // =========================================================================
+    let rxNormDrugs: RxNormDrug[];
+    try {
+      rxNormDrugs = await searchMultipleRxNormDrugs(drugsToFetch);
+    } catch (fetchError) {
+      console.error(`${logPrefix} RxNorm fetch failed:`, fetchError);
+      return [];
+    }
+    
+    if (rxNormDrugs.length === 0) {
+      console.log(`${logPrefix} No drugs found in RxNorm`);
+      storeInCache(cacheKey, [], conditionName, logPrefix);
+      return [];
+    }
+    
+    console.log(`${logPrefix} Fetched ${rxNormDrugs.length} drugs from RxNorm`);
+    
+    // Convert RxNorm drugs to DrugResult format
+    const rawDrugs: DrugResult[] = rxNormDrugs.map(rxDrug => ({
+      brandName: rxDrug.brandName,
+      genericName: rxDrug.genericName,
+      manufacturer: 'Various', // RxNorm doesn't provide manufacturer
+      indication: rxDrug.dosageForm ? `${rxDrug.dosageForm}${rxDrug.strength ? ` - ${rxDrug.strength}` : ''}` : 'Prescription medication',
+      warnings: undefined,
+    }));
 
     // =========================================================================
     // Step 3: Prepare drugs for AI scoring
@@ -550,7 +579,7 @@ function findMatchingScore(
 
 /**
  * Validates drugs without AI (for testing or when AI is disabled).
- * Simply returns OpenFDA results with placeholder scores.
+ * Returns drugs from curated mappings + RxNorm without AI scoring.
  * 
  * @param conditionName - The medical condition
  * @param icdCode - The ICD-10 code
@@ -563,11 +592,26 @@ export async function fetchDrugsWithoutValidation(
   const logPrefix = `[DrugPipeline:${icdCode}]`;
   
   try {
-    const rawDrugs = await searchDrugsByCondition(conditionName, MAX_RESULTS);
-    console.log(`${logPrefix} Fetched ${rawDrugs.length} drugs (no AI validation)`);
+    // Get candidate drugs from curated mappings
+    const candidateDrugNames = getDrugsForCondition(conditionName);
     
-    return rawDrugs.map(drug => ({
-      ...drug,
+    if (candidateDrugNames.length === 0) {
+      console.log(`${logPrefix} No drug mappings found (no AI validation)`);
+      return [];
+    }
+    
+    // Fetch from RxNorm
+    const drugsToFetch = candidateDrugNames.slice(0, MAX_RESULTS);
+    const rxNormDrugs = await searchMultipleRxNormDrugs(drugsToFetch);
+    
+    console.log(`${logPrefix} Fetched ${rxNormDrugs.length} drugs (no AI validation)`);
+    
+    return rxNormDrugs.map(rxDrug => ({
+      brandName: rxDrug.brandName,
+      genericName: rxDrug.genericName,
+      manufacturer: 'Various',
+      indication: rxDrug.dosageForm ? `${rxDrug.dosageForm}${rxDrug.strength ? ` - ${rxDrug.strength}` : ''}` : 'Prescription medication',
+      warnings: undefined,
       relevanceScore: -1, // Indicate no AI scoring
     }));
   } catch (error) {
