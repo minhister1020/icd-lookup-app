@@ -1,30 +1,42 @@
 @import "tailwindcss";
 
 /* =============================================================================
+   Typography - Clinical Clarity
+   =============================================================================
+
+   Fonts are loaded via Next.js in layout.tsx for optimal performance.
+   We define the CSS custom properties here for use throughout the app.
+
+   DM Sans: Clean, modern geometric sans-serif for headings
+   Source Sans 3: Optimized for UI and body text
+   JetBrains Mono: Developer-friendly monospace for code
+*/
+
+/* =============================================================================
    React Flow Styles (Phase 2: Mind Map)
    =============================================================================
-   
+
    React Flow styles are imported directly in the MindMapView component.
    This ensures the styles are loaded when the component is used.
-   
+
    See: app/components/MindMapView.tsx
 */
 
 /* =============================================================================
    CSS Custom Properties (Variables)
    =============================================================================
-   
+
    CSS custom properties (also called CSS variables) let us define reusable values.
    They start with -- and are accessed using var(--name).
-   
+
    :root means these variables are available everywhere in the document.
 */
 
 :root {
   /* Base colors for light mode */
-  --background: #ffffff;
-  --foreground: #171717;
-  
+  --background: #fafbfc;
+  --foreground: #1a1a2e;
+
   /* HealthVerity Brand Colors
      -------------------------
      These are the official HealthVerity brand colors.
@@ -33,19 +45,37 @@
   */
   --hv-primary: #00D084;    /* Bright green - main brand color */
   --hv-secondary: #00A66C;  /* Darker green - for hover/accents */
-  
+
   /* Additional UI Colors
      --------------------
      These help create a cohesive medical/professional look
   */
   --hv-light: #E6FBF3;      /* Very light green - for backgrounds */
   --hv-dark: #007A4D;       /* Dark green - for text on light backgrounds */
+
+  /* Typography Scale - These are set by Next.js font loader */
+  /* --font-display, --font-body, --font-mono are injected via layout.tsx */
+
+  /* Enhanced Shadows - Clinical Clarity */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+  --shadow-glow: 0 0 20px rgba(0, 208, 132, 0.15), 0 0 40px rgba(0, 208, 132, 0.1);
+  --shadow-card-hover: 0 20px 40px -12px rgba(0, 208, 132, 0.2), 0 8px 16px -8px rgba(0, 0, 0, 0.1);
+
+  /* Refined Border Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
 }
 
 /* =============================================================================
    Tailwind Theme Extension
    =============================================================================
-   
+
    @theme inline tells Tailwind CSS to make these CSS variables available
    as utility classes. After this, you can use classes like:
    - bg-hv-primary     → background-color: #00D084
@@ -57,37 +87,46 @@
   /* Map CSS variables to Tailwind color utilities */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  
+
   /* HealthVerity colors as Tailwind utilities */
   --color-hv-primary: var(--hv-primary);
   --color-hv-secondary: var(--hv-secondary);
   --color-hv-light: var(--hv-light);
   --color-hv-dark: var(--hv-dark);
-  
-  /* Font families */
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  /* Font families - Clinical Clarity */
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
 }
 
 /* =============================================================================
    Dark Mode Support
    =============================================================================
-   
+
    @media (prefers-color-scheme: dark) applies styles when the user's
    operating system is set to dark mode.
 */
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    
+    --background: #0d1117;
+    --foreground: #e6edf3;
+
     /* Slightly adjust HealthVerity colors for dark mode
        Making them a bit brighter for better visibility on dark backgrounds */
     --hv-primary: #00E590;    /* Brighter green for dark mode */
     --hv-secondary: #00D084;  /* Original primary becomes secondary */
     --hv-light: #0D2E23;      /* Dark green background for cards */
     --hv-dark: #00E590;       /* Bright for text on dark backgrounds */
+
+    /* Dark mode shadows */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.35), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+    --shadow-glow: 0 0 30px rgba(0, 229, 144, 0.2), 0 0 60px rgba(0, 229, 144, 0.1);
+    --shadow-card-hover: 0 20px 40px -12px rgba(0, 229, 144, 0.15), 0 8px 16px -8px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -99,7 +138,23 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-feature-settings: 'kern' 1, 'liga' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Display headings use DM Sans */
+h1, h2, h3 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Monospace elements use JetBrains Mono */
+code, pre, .font-mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
 }
 
 /* =============================================================================
@@ -186,4 +241,216 @@ html {
 *:focus-visible {
   outline: 2px solid var(--hv-primary);
   outline-offset: 2px;
+}
+
+/* =============================================================================
+   Clinical Clarity - Enhanced UI Components
+   =============================================================================
+*/
+
+/* Card hover effects */
+.card-clinical {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-md);
+}
+
+.card-clinical:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* Glass effect for premium panels */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+@media (prefers-color-scheme: dark) {
+  .glass-panel {
+    background: rgba(13, 17, 23, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* Gradient text utility */
+.text-gradient-primary {
+  background: linear-gradient(135deg, var(--hv-primary) 0%, var(--hv-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Subtle grid pattern background */
+.bg-grid-pattern {
+  background-image:
+    linear-gradient(rgba(0, 208, 132, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 208, 132, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .bg-grid-pattern {
+    background-image:
+      linear-gradient(rgba(0, 229, 144, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 229, 144, 0.04) 1px, transparent 1px);
+  }
+}
+
+/* Subtle noise texture overlay */
+.noise-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.02;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+/* Smooth scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 208, 132, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 208, 132, 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 229, 144, 0.3);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 229, 144, 0.5);
+  }
+}
+
+/* Enhanced button styles */
+.btn-primary {
+  background: linear-gradient(135deg, var(--hv-primary) 0%, var(--hv-secondary) 100%);
+  box-shadow: 0 4px 14px rgba(0, 208, 132, 0.35);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 6px 20px rgba(0, 208, 132, 0.45);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 208, 132, 0.3);
+}
+
+/* Code badge styling */
+.code-badge {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: linear-gradient(135deg, rgba(0, 208, 132, 0.15) 0%, rgba(0, 166, 108, 0.1) 100%);
+  border: 1px solid rgba(0, 208, 132, 0.2);
+}
+
+/* Status indicator pulse */
+@keyframes status-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
+
+.status-indicator {
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+/* Staggered list animation */
+@keyframes list-item-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.list-animate > * {
+  animation: list-item-enter 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+.list-animate > *:nth-child(1) { animation-delay: 0.05s; }
+.list-animate > *:nth-child(2) { animation-delay: 0.1s; }
+.list-animate > *:nth-child(3) { animation-delay: 0.15s; }
+.list-animate > *:nth-child(4) { animation-delay: 0.2s; }
+.list-animate > *:nth-child(5) { animation-delay: 0.25s; }
+.list-animate > *:nth-child(6) { animation-delay: 0.3s; }
+.list-animate > *:nth-child(7) { animation-delay: 0.35s; }
+.list-animate > *:nth-child(8) { animation-delay: 0.4s; }
+.list-animate > *:nth-child(9) { animation-delay: 0.45s; }
+.list-animate > *:nth-child(10) { animation-delay: 0.5s; }
+
+/* Shimmer loading effect */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 208, 132, 0.05) 25%,
+    rgba(0, 208, 132, 0.12) 50%,
+    rgba(0, 208, 132, 0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Enhanced input focus ring */
+.input-clinical {
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  background: linear-gradient(white, white) padding-box,
+              linear-gradient(135deg, rgba(0, 208, 132, 0.2), rgba(0, 166, 108, 0.1)) border-box;
+}
+
+.input-clinical:focus {
+  background: linear-gradient(white, white) padding-box,
+              linear-gradient(135deg, var(--hv-primary), var(--hv-secondary)) border-box;
+  box-shadow: 0 0 0 4px rgba(0, 208, 132, 0.15);
+}
+
+@media (prefers-color-scheme: dark) {
+  .input-clinical {
+    background: linear-gradient(#1a1f2e, #1a1f2e) padding-box,
+                linear-gradient(135deg, rgba(0, 229, 144, 0.3), rgba(0, 208, 132, 0.2)) border-box;
+  }
+
+  .input-clinical:focus {
+    background: linear-gradient(#1a1f2e, #1a1f2e) padding-box,
+                linear-gradient(135deg, var(--hv-primary), var(--hv-secondary)) border-box;
+    box-shadow: 0 0 0 4px rgba(0, 229, 144, 0.2);
+  }
 }

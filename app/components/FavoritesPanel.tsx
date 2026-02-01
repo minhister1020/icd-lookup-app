@@ -242,13 +242,16 @@ export default function FavoritesPanel({
       />
       
       {/* Panel */}
-      <div 
+      <div
         className="
           fixed right-0 top-0 bottom-0 z-50
           w-full sm:w-96 sm:max-w-md
-          bg-white dark:bg-gray-900
+          bg-white/95 dark:bg-gray-900/95
+          backdrop-blur-xl
           shadow-2xl
-          border-l border-gray-200 dark:border-gray-700
+          shadow-gray-900/20
+          dark:shadow-black/40
+          border-l border-gray-200/60 dark:border-gray-700/50
           animate-in slide-in-from-right duration-300
           flex flex-col
         "
@@ -256,23 +259,25 @@ export default function FavoritesPanel({
         {/* Header */}
         <div className="
           flex items-center justify-between
-          px-6 py-4
-          border-b border-gray-200 dark:border-gray-700
-          bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20
+          px-6 py-5
+          border-b border-gray-200/60 dark:border-gray-700/50
+          bg-gradient-to-r from-yellow-50/80 via-amber-50/60 to-orange-50/40 dark:from-yellow-900/20 dark:via-amber-900/15 dark:to-orange-900/10
         ">
           <div className="flex items-center gap-3">
             <div className="
-              w-10 h-10 rounded-xl
-              bg-yellow-100 dark:bg-yellow-900/30
+              w-11 h-11 rounded-xl
+              bg-gradient-to-br from-yellow-400 to-amber-500
               flex items-center justify-center
+              shadow-lg shadow-amber-300/40
+              dark:shadow-amber-900/30
             ">
-              <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+              <Star className="w-5 h-5 text-white fill-white drop-shadow-sm" />
             </div>
             <div>
-              <h2 className="font-bold text-gray-900 dark:text-white text-lg">
+              <h2 style={{ fontFamily: 'var(--font-display)' }} className="font-bold text-gray-900 dark:text-white text-lg tracking-tight">
                 Favorites
               </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                 {favorites.length} saved {favorites.length === 1 ? 'code' : 'codes'}
               </p>
             </div>
@@ -295,20 +300,24 @@ export default function FavoritesPanel({
         
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
-          {/* Empty State */}
+          {/* Empty State - Enhanced */}
           {favorites.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full px-6 py-12">
               <div className="
-                w-16 h-16 rounded-full
-                bg-gray-100 dark:bg-gray-800
-                flex items-center justify-center mb-4
+                relative
+                w-20 h-20 rounded-2xl
+                bg-gradient-to-br from-gray-100 to-gray-50
+                dark:from-gray-800 dark:to-gray-900
+                flex items-center justify-center mb-5
+                shadow-inner
               ">
-                <Star className="w-8 h-8 text-gray-300 dark:text-gray-600" />
+                <Star className="w-10 h-10 text-gray-300 dark:text-gray-600" />
+                <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-yellow-400/30 animate-pulse" />
               </div>
-              <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <h3 style={{ fontFamily: 'var(--font-display)' }} className="font-bold text-gray-700 dark:text-gray-300 mb-2 text-lg">
                 No favorites yet
               </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-xs">
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-xs leading-relaxed">
                 Click the star icon on any search result to save it to your favorites.
               </p>
             </div>

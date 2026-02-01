@@ -23,6 +23,7 @@
 import { ICD10Result, SearchResponse, SearchResultsWithTranslation, ScoredICD10Result } from '../types/icd';
 import { scoreAndRankResults } from './scoring';
 import { translateQuery } from './termMapper';
+import { normalizeQuery } from './queryNormalizer';
 
 // =============================================================================
 // Configuration
@@ -102,44 +103,78 @@ export async function searchICD10(query: string): Promise<SearchResultsWithTrans
     };
   }
 
-  // Step 2: Translate query if it's a common term (Phase 5)
+  // Step 2: Normalize common phrases (e.g., "pancreas cancer" → "malignant neoplasm of pancreas")
+  // -------------------------------------------------------------------------------------------
+  // This pattern-based transformation handles cancer/tumor phrases that don't match well
+  // in standard ICD-10 searches. Must run BEFORE termMapper translation.
+  const normalization = normalizeQuery(trimmedQuery);
+  
+  // Step 3: Translate query if it's a common term (Phase 5)
   // -------------------------------------------------------
   // This converts lay terms like "heart attack" to medical terms
-  // like "myocardial infarction" for better API results
-  const translation = translateQuery(trimmedQuery);
+  // like "myocardial infarction" for better API results.
+  // Use normalized query if available, otherwise use original.
+  const queryToTranslate = normalization.normalizedQuery || trimmedQuery;
+  const translation = translateQuery(queryToTranslate);
   
-  // Step 3: Search for all terms and combine results
+  // Step 4: Build comprehensive search terms array
+  // ----------------------------------------------
+  // Include: normalized query (if exists) + translated terms + original query
+  // This ensures maximum coverage while prioritizing medical terminology
+  const searchTerms: string[] = [];
+  
+  // Add normalized query first (highest priority for cancer searches)
+  if (normalization.wasNormalized && normalization.normalizedQuery) {
+    searchTerms.push(normalization.normalizedQuery);
+  }
+  
+  // Add translated terms from termMapper
+  if (translation.searchTerms) {
+    for (const term of translation.searchTerms) {
+      if (!searchTerms.includes(term.toLowerCase()) && 
+          !searchTerms.some(t => t.toLowerCase() === term.toLowerCase())) {
+        searchTerms.push(term);
+      }
+    }
+  }
+  
+  // Always include original query for broader matching (lowest priority)
+  if (!searchTerms.some(t => t.toLowerCase() === trimmedQuery.toLowerCase())) {
+    searchTerms.push(trimmedQuery);
+  }
+  
+  // Log for debugging
+  console.log(`[Search] Query: "${trimmedQuery}" → Normalized: ${normalization.wasNormalized ? `"${normalization.normalizedQuery}"` : 'none'} → Search terms: [${searchTerms.join(', ')}]`);
+  
+  // Step 5: Search for all terms and combine results
   // ------------------------------------------------
   try {
     let allResults: ICD10Result[] = [];
     let maxTotalCount = 0;
     
     // Search for each term in searchTerms array
-    // (Usually 1 term, or 2 if translated: [medical, original])
-    for (const searchTerm of translation.searchTerms) {
+    for (const searchTerm of searchTerms) {
       const { results, totalCount } = await searchSingleTerm(searchTerm);
       allResults = allResults.concat(results);
       maxTotalCount = Math.max(maxTotalCount, totalCount);
     }
     
-    // Step 4: Deduplicate results by ICD code
+    // Step 6: Deduplicate results by ICD code
     // ---------------------------------------
-    // When searching both "myocardial infarction" and "heart attack",
-    // some codes might appear in both result sets
+    // When searching multiple terms (normalized, translated, original),
+    // some codes might appear in multiple result sets
     const uniqueResults = deduplicateResults(allResults);
     
-    // Step 5: Apply relevance scoring
+    // Step 7: Apply relevance scoring
     // -------------------------------
-    // Score against the ORIGINAL query for best keyword matching
-    // This ensures "heart attack" matches score well even when
-    // we searched "myocardial infarction"
-    const primarySearchTerm = translation.wasTranslated 
-      ? translation.medicalTerm! 
-      : trimmedQuery;
+    // Score against the best available term for keyword matching
+    // Priority: normalized term > translated medical term > original query
+    const primarySearchTerm = normalization.normalizedQuery 
+      || (translation.wasTranslated ? translation.medicalTerm! : trimmedQuery);
     
     const scoredResults = scoreAndRankResults(uniqueResults, primarySearchTerm);
     
-    // Step 6: Return top results with metadata
+    // Step 8: Return top results with metadata
     // ----------------------------------------
     const displayResults = scoredResults.slice(0, DISPLAY_LIMIT);
     

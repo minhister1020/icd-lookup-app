@@ -292,22 +292,24 @@ export default function ResultCard({
   // =========================================================================
   
   return (
-    <div 
+    <div
       className="
         group
         relative
-        bg-white
-        dark:bg-gray-800
+        bg-white/90
+        dark:bg-gray-800/90
+        backdrop-blur-sm
         rounded-2xl
         border
-        border-gray-100
-        dark:border-gray-700
+        border-gray-200/60
+        dark:border-gray-700/50
         shadow-sm
         hover:shadow-xl
-        hover:shadow-gray-200/50
-        dark:hover:shadow-none
-        hover:border-[#00D084]/30
-        dark:hover:border-[#00D084]/40
+        hover:shadow-[#00D084]/10
+        dark:hover:shadow-[#00D084]/5
+        hover:border-[#00D084]/40
+        dark:hover:border-[#00D084]/50
+        hover:-translate-y-1
         transition-all
         duration-300
         ease-out
@@ -331,26 +333,31 @@ export default function ResultCard({
           <div className="flex-1 min-w-0">
             {/* ICD-10 Code Badge + Relevance Badge */}
             <div className="flex items-center gap-2 mb-3 flex-wrap">
-              {/* ICD-10 Code Badge */}
-              <div 
+              {/* ICD-10 Code Badge - Enhanced */}
+              <div
                 className="
                   inline-flex
                   items-center
                   px-3
                   py-1.5
                   rounded-lg
-                  bg-[#00D084]/10
-                  dark:bg-[#00D084]/20
+                  bg-gradient-to-r
+                  from-[#00D084]/15
+                  to-[#00A66C]/10
+                  border
+                  border-[#00D084]/20
+                  shadow-sm
+                  shadow-[#00D084]/10
                 "
               >
-                <span 
+                <span
+                  style={{ fontFamily: 'var(--font-mono)' }}
                   className="
                     text-[#00A66C]
                     dark:text-[#00D084]
                     font-bold
                     text-sm
-                    font-mono
-                    tracking-wide
+                    tracking-wider
                   "
                 >
                   {code}
@@ -359,24 +366,29 @@ export default function ResultCard({
               
               {/* Phase 4C: Relevance Badge - Show for top 3 or high scores */}
               {rank && rank <= 3 && (
-                <div 
+                <div
                   className="
                     inline-flex
                     items-center
-                    gap-1
-                    px-2
+                    gap-1.5
+                    px-2.5
                     py-1
                     rounded-full
-                    bg-amber-50
-                    dark:bg-amber-900/20
+                    bg-gradient-to-r
+                    from-amber-50
+                    to-orange-50
+                    dark:from-amber-900/30
+                    dark:to-orange-900/20
                     border
-                    border-amber-200
+                    border-amber-200/80
                     dark:border-amber-700/50
+                    shadow-sm
+                    shadow-amber-200/50
                   "
                   title={score ? `Relevance score: ${score}/100` : undefined}
                 >
                   <span className="text-amber-500 text-xs">🔥</span>
-                  <span className="text-amber-700 dark:text-amber-400 text-xs font-medium">
+                  <span className="text-amber-700 dark:text-amber-400 text-xs font-bold tracking-wide">
                     Top Match
                   </span>
                 </div>
@@ -409,11 +421,12 @@ export default function ResultCard({
             </div>
             
             {/* Condition Name */}
-            <h3 
+            <h3
+              style={{ fontFamily: 'var(--font-body)' }}
               className="
                 text-gray-800
                 dark:text-gray-200
-                font-medium
+                font-semibold
                 text-base
                 leading-snug
                 group-hover:text-[#00A66C]
@@ -946,22 +959,25 @@ export default function ResultCard({
         </div>
       )}
       
-      {/* Subtle Bottom Accent Line (appears on hover) */}
-      <div 
+      {/* Subtle Bottom Accent Line (appears on hover) - Enhanced */}
+      <div
         className="
           absolute
           bottom-0
-          left-4
-          right-4
-          h-0.5
+          left-0
+          right-0
+          h-1
           bg-gradient-to-r
-          from-[#00D084]
-          to-[#00A66C]
-          rounded-full
+          from-transparent
+          via-[#00D084]
+          to-transparent
           opacity-0
           group-hover:opacity-100
-          transition-opacity
-          duration-300
+          transition-all
+          duration-500
+          transform
+          scale-x-0
+          group-hover:scale-x-100
         "
       />
     </div>

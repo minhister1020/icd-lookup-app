@@ -77,13 +77,14 @@ export default function SearchBar({
             <Search className="w-5 h-5 text-gray-400" />
           </div>
           
-          {/* Input Field */}
+          {/* Input Field - Enhanced with Clinical Clarity style */}
           <input
             type="text"
             value={query}
             onChange={handleInputChange}
             placeholder="Search (e.g., heart attack, diabetes, I21.9)"
             disabled={isLoading}
+            style={{ fontFamily: 'var(--font-body)' }}
             className="
               w-full
               pl-12
@@ -91,12 +92,13 @@ export default function SearchBar({
               py-4
               text-base
               sm:text-lg
+              font-medium
               border-2
-              border-gray-200
-              dark:border-gray-600
+              border-gray-200/80
+              dark:border-gray-600/60
               rounded-xl
-              bg-white
-              dark:bg-gray-800
+              bg-white/80
+              dark:bg-gray-800/80
               text-gray-900
               dark:text-gray-100
               placeholder-gray-400
@@ -104,12 +106,18 @@ export default function SearchBar({
               focus:outline-none
               focus:border-[#00D084]
               focus:ring-4
-              focus:ring-[#00D084]/10
+              focus:ring-[#00D084]/15
+              focus:bg-white
+              dark:focus:bg-gray-800
               disabled:bg-gray-100
               dark:disabled:bg-gray-700
               disabled:cursor-not-allowed
               transition-all
-              duration-200
+              duration-300
+              shadow-sm
+              hover:shadow-md
+              hover:border-gray-300
+              dark:hover:border-gray-500
             "
           />
           
@@ -188,40 +196,49 @@ export default function SearchBar({
           </div>
         </div>
         
-        {/* Search Button */}
+        {/* Search Button - Enhanced with Clinical Clarity style */}
         <button
           type="submit"
           disabled={isLoading || !query.trim()}
+          style={{ fontFamily: 'var(--font-display)' }}
           className="
             flex
             items-center
             justify-center
-            gap-2
+            gap-2.5
             px-8
             py-4
             bg-gradient-to-r
             from-[#00D084]
+            via-[#00C077]
             to-[#00A66C]
-            hover:from-[#00C077]
-            hover:to-[#009660]
+            hover:from-[#00E590]
+            hover:via-[#00D084]
+            hover:to-[#00A66C]
             text-white
-            font-semibold
+            font-bold
             text-base
             sm:text-lg
+            tracking-wide
             rounded-xl
             shadow-lg
-            shadow-[#00D084]/25
+            shadow-[#00D084]/30
             hover:shadow-xl
-            hover:shadow-[#00D084]/30
+            hover:shadow-[#00D084]/40
+            hover:-translate-y-0.5
             disabled:from-gray-300
             disabled:to-gray-400
             disabled:shadow-none
             disabled:cursor-not-allowed
+            disabled:hover:translate-y-0
             dark:disabled:from-gray-600
             dark:disabled:to-gray-700
-            active:scale-95
+            active:scale-[0.98]
+            active:shadow-md
             transition-all
             duration-200
+            ring-2
+            ring-white/20
           "
         >
           {isLoading ? (
@@ -243,33 +260,39 @@ export default function SearchBar({
         {/* Recent Searches - Only show if there are recent searches */}
         {recentSearches.length > 0 && (
           <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
-            <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+            <span className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 font-medium">
               <Clock className="w-3.5 h-3.5" />
               Recent:
             </span>
             {recentSearches.map((term) => (
-              <button 
+              <button
                 key={term}
                 type="button"
-                onClick={() => { 
+                onClick={() => {
                   setQuery(term);
                   onSearch(term);  // Immediately search when clicking recent
                 }}
                 className="
-                  px-3 
-                  py-1 
-                  rounded-full 
-                  bg-[#00D084]/10 
-                  text-[#00A66C] 
+                  px-3.5
+                  py-1.5
+                  rounded-full
+                  bg-gradient-to-r
+                  from-[#00D084]/10
+                  to-[#00A66C]/5
+                  text-[#00A66C]
                   dark:text-[#00D084]
-                  hover:bg-[#00D084]/20 
+                  hover:from-[#00D084]/20
+                  hover:to-[#00A66C]/15
                   border
-                  border-[#00D084]/20
+                  border-[#00D084]/25
                   transition-all
                   duration-200
                   hover:scale-105
+                  hover:shadow-sm
+                  hover:shadow-[#00D084]/20
+                  active:scale-[0.98]
                   text-sm
-                  font-medium
+                  font-semibold
                 "
               >
                 {term}
