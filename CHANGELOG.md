@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Updated production domain from icd-lookup-app.vercel.app to medcodemap.com
+- Configured custom domain with Namecheap DNS and Vercel hosting
+- Both www and non-www variants now redirect correctly to production application
+
 ### Added
 - **Query Phrase Normalizer** - Intelligent pattern-based search transformation for cancer/tumor queries
   - New file: `app/lib/queryNormalizer.ts` with pattern matching engine

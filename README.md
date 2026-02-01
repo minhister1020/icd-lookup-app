@@ -6,11 +6,11 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?logo=vercel)](https://icd-lookup-app.vercel.app/)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?logo=vercel)](https://medcodemap.com)
 
 ## 🌐 Live Demo
 
-**👉 [https://icd-lookup-app.vercel.app/](https://icd-lookup-app.vercel.app/)**
+**👉 [https://medcodemap.com](https://medcodemap.com)**
 
 Try it now — no installation required!
 
