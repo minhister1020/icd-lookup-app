@@ -137,10 +137,10 @@ export default function ChapterFilterDropdown({
           border
           transition-all duration-150
           ${isFiltering
-            ? 'bg-[#00D084]/10 border-[#00D084]/30 text-[#00A66C] dark:text-[#00D084]'
+            ? 'bg-[#1976D2]/10 border-[#1976D2]/30 text-[#0D47A1] dark:text-[#42A5F5]'
             : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
           }
-          hover:border-[#00D084]/50
+          hover:border-[#1976D2]/50
           hover:shadow-sm
         `}
         aria-expanded={isOpen}
@@ -233,7 +233,7 @@ export default function ChapterFilterDropdown({
                     text-left
                     transition-colors duration-100
                     ${isSelected
-                      ? 'bg-[#00D084]/5 dark:bg-[#00D084]/10'
+                      ? 'bg-[#1976D2]/5 dark:bg-[#1976D2]/10'
                       : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
                     }
                     border-b border-gray-100 dark:border-gray-700/50
@@ -251,7 +251,7 @@ export default function ChapterFilterDropdown({
                     flex items-center justify-center
                     transition-all duration-150
                     ${isSelected
-                      ? 'bg-[#00D084] border-[#00D084]'
+                      ? 'bg-[#1976D2] border-[#1976D2]'
                       : 'border-gray-300 dark:border-gray-600'
                     }
                   `}>
@@ -266,7 +266,7 @@ export default function ChapterFilterDropdown({
                       <span className={`
                         text-sm font-medium
                         ${isSelected
-                          ? 'text-[#00A66C] dark:text-[#00D084]'
+                          ? 'text-[#0D47A1] dark:text-[#42A5F5]'
                           : 'text-gray-800 dark:text-gray-200'
                         }
                       `}>

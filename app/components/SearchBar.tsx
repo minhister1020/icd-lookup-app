@@ -104,9 +104,9 @@ export default function SearchBar({
               placeholder-gray-400
               dark:placeholder-gray-500
               focus:outline-none
-              focus:border-[#00D084]
+              focus:border-[#1976D2]
               focus:ring-4
-              focus:ring-[#00D084]/15
+              focus:ring-[#1976D2]/15
               focus:bg-white
               dark:focus:bg-gray-800
               disabled:bg-gray-100
@@ -130,8 +130,8 @@ export default function SearchBar({
                 p-1.5
                 rounded-full
                 text-gray-400
-                hover:text-[#00D084]
-                hover:bg-[#00D084]/10
+                hover:text-[#1976D2]
+                hover:bg-[#1976D2]/10
                 transition-colors
                 duration-200
               "
@@ -165,21 +165,21 @@ export default function SearchBar({
                 </h4>
                 <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-2">
                   <li className="flex items-start gap-2">
-                    <span className="text-[#00D084] font-bold">•</span>
+                    <span className="text-[#1976D2] font-bold">•</span>
                     <span>
                       <strong className="text-gray-700 dark:text-gray-300">Common terms:</strong>{' '}
                       Use everyday language like &ldquo;heart attack&rdquo; or &ldquo;broken bone&rdquo;
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-[#00D084] font-bold">•</span>
+                    <span className="text-[#1976D2] font-bold">•</span>
                     <span>
                       <strong className="text-gray-700 dark:text-gray-300">Medical terms:</strong>{' '}
                       Search directly with &ldquo;myocardial infarction&rdquo; or &ldquo;fracture&rdquo;
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-[#00D084] font-bold">•</span>
+                    <span className="text-[#1976D2] font-bold">•</span>
                     <span>
                       <strong className="text-gray-700 dark:text-gray-300">ICD codes:</strong>{' '}
                       Enter codes like &ldquo;E11.9&rdquo; or &ldquo;I21&rdquo;
@@ -209,12 +209,12 @@ export default function SearchBar({
             px-8
             py-4
             bg-gradient-to-r
-            from-[#00D084]
-            via-[#00C077]
-            to-[#00A66C]
-            hover:from-[#00E590]
-            hover:via-[#00D084]
-            hover:to-[#00A66C]
+            from-[#1976D2]
+            via-[#1565C0]
+            to-[#0D47A1]
+            hover:from-[#42A5F5]
+            hover:via-[#1976D2]
+            hover:to-[#0D47A1]
             text-white
             font-bold
             text-base
@@ -222,9 +222,9 @@ export default function SearchBar({
             tracking-wide
             rounded-xl
             shadow-lg
-            shadow-[#00D084]/30
+            shadow-[#1976D2]/30
             hover:shadow-xl
-            hover:shadow-[#00D084]/40
+            hover:shadow-[#1976D2]/40
             hover:-translate-y-0.5
             disabled:from-gray-300
             disabled:to-gray-400
@@ -277,19 +277,19 @@ export default function SearchBar({
                   py-1.5
                   rounded-full
                   bg-gradient-to-r
-                  from-[#00D084]/10
-                  to-[#00A66C]/5
-                  text-[#00A66C]
-                  dark:text-[#00D084]
-                  hover:from-[#00D084]/20
-                  hover:to-[#00A66C]/15
+                  from-[#1976D2]/10
+                  to-[#0D47A1]/5
+                  text-[#0D47A1]
+                  dark:text-[#42A5F5]
+                  hover:from-[#1976D2]/20
+                  hover:to-[#0D47A1]/15
                   border
-                  border-[#00D084]/25
+                  border-[#1976D2]/25
                   transition-all
                   duration-200
                   hover:scale-105
                   hover:shadow-sm
-                  hover:shadow-[#00D084]/20
+                  hover:shadow-[#1976D2]/20
                   active:scale-[0.98]
                   text-sm
                   font-semibold
@@ -325,14 +325,14 @@ export default function SearchBar({
           <button 
             type="button"
             onClick={() => { setQuery('diabetes'); onSearch('diabetes'); }}
-            className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-[#00D084]/10 hover:text-[#00A66C] dark:hover:text-[#00D084] transition-colors"
+            className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-[#1976D2]/10 hover:text-[#0D47A1] dark:hover:text-[#42A5F5] transition-colors"
           >
             diabetes
           </button>
           <button 
             type="button"
             onClick={() => { setQuery('I21.9'); onSearch('I21.9'); }}
-            className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-[#00D084]/10 hover:text-[#00A66C] dark:hover:text-[#00D084] transition-colors font-mono"
+            className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-[#1976D2]/10 hover:text-[#0D47A1] dark:hover:text-[#42A5F5] transition-colors font-mono"
             title="ICD-10 code for acute myocardial infarction"
           >
             I21.9

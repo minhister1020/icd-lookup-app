@@ -1,0 +1,16 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- MedCodeMap favicon - icon circles only -->
+  <!-- Center node -->
+  <circle cx="16" cy="14" r="5" fill="#1976D2"/>
+  <!-- Top node -->
+  <circle cx="16" cy="4" r="3" fill="#1976D2"/>
+  <!-- Left node -->
+  <circle cx="6" cy="14" r="3.5" fill="#1976D2"/>
+  <!-- Right node -->
+  <circle cx="26" cy="14" r="3.5" fill="#1976D2"/>
+  <!-- Bottom node -->
+  <circle cx="16" cy="24" r="3" fill="#1976D2"/>
+  <!-- Accent nodes -->
+  <circle cx="10" cy="8" r="1.8" fill="#80DEEA"/>
+  <circle cx="22" cy="20" r="1.8" fill="#90CAF9"/>
+</svg>

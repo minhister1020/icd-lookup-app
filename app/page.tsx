@@ -1,5 +1,5 @@
 /**
- * Home Page - ICD Mind Map Lookup Tool
+ * Home Page - MedCodeMap
  * =====================================
  * 
  * This is the main page of our application with a professional, 
@@ -455,15 +455,15 @@ export default function Home() {
           <div className="flex items-center justify-between h-16">
             {/* Logo & Brand */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00D084] to-[#00A66C] flex items-center justify-center shadow-lg shadow-[#00D084]/25 ring-2 ring-white/50 dark:ring-black/20">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1976D2] to-[#0D47A1] flex items-center justify-center shadow-lg shadow-[#1976D2]/25 ring-2 ring-white/50 dark:ring-black/20">
                 <Activity className="w-6 h-6 text-white drop-shadow-sm" />
               </div>
               <div>
                 <h1 className="font-bold text-gray-900 dark:text-white text-lg tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>
-                  ICD Mind Map
+                  MedCodeMap
                 </h1>
                 <p className="text-xs text-gray-500 dark:text-gray-400 -mt-0.5 font-medium">
-                  by Bobby
+                  ICD-10 Lookup
                 </p>
               </div>
             </div>
@@ -548,10 +548,10 @@ export default function Home() {
             </button>
             
             {/* Status Badge */}
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#00D084]/10 to-[#00A66C]/5 border border-[#00D084]/25 shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-[#00D084] status-indicator" />
-              <span className="text-xs font-semibold text-[#00A66C] dark:text-[#00D084]">
-                Phase 7 - Complete
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#1976D2]/10 to-[#0D47A1]/5 border border-[#1976D2]/25 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-[#1976D2] status-indicator" />
+              <span className="text-xs font-semibold text-[#0D47A1] dark:text-[#42A5F5]">
+                Live
               </span>
             </div>
           </div>
@@ -564,9 +564,9 @@ export default function Home() {
       <section className="relative overflow-hidden">
         {/* Background Gradient Glow - Enhanced */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-[#00D084]/15 via-[#00D084]/8 to-transparent rounded-full blur-3xl" />
-          <div className="absolute top-20 left-1/4 w-[400px] h-[300px] bg-gradient-to-br from-cyan-400/10 to-transparent rounded-full blur-3xl" />
-          <div className="absolute top-20 right-1/4 w-[400px] h-[300px] bg-gradient-to-bl from-emerald-400/10 to-transparent rounded-full blur-3xl" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-[#1976D2]/15 via-[#1976D2]/8 to-transparent rounded-full blur-3xl" />
+          <div className="absolute top-20 left-1/4 w-[400px] h-[300px] bg-gradient-to-br from-[#80DEEA]/10 to-transparent rounded-full blur-3xl" />
+          <div className="absolute top-20 right-1/4 w-[400px] h-[300px] bg-gradient-to-bl from-[#90CAF9]/10 to-transparent rounded-full blur-3xl" />
         </div>
 
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8">
@@ -579,7 +579,7 @@ export default function Home() {
               Search{' '}
               <span className="text-gradient-primary relative">
                 ICD-10 Codes
-                <svg className="absolute -bottom-2 left-0 w-full h-3 text-[#00D084]/30" viewBox="0 0 200 12" preserveAspectRatio="none">
+                <svg className="absolute -bottom-2 left-0 w-full h-3 text-[#1976D2]/30" viewBox="0 0 200 12" preserveAspectRatio="none">
                   <path d="M0,8 Q50,0 100,8 T200,8" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
                 </svg>
               </span>
@@ -592,8 +592,8 @@ export default function Home() {
           {/* Search Card with Enhanced Glow Effect */}
           <div className="relative">
             {/* Multi-layer glow effect */}
-            <div className="absolute -inset-2 bg-gradient-to-r from-[#00D084]/25 via-cyan-400/15 to-[#00D084]/25 rounded-3xl blur-2xl opacity-70" />
-            <div className="absolute -inset-1 bg-gradient-to-r from-[#00D084]/20 via-[#00A66C]/10 to-[#00D084]/20 rounded-3xl blur-xl opacity-60" />
+            <div className="absolute -inset-2 bg-gradient-to-r from-[#1976D2]/25 via-[#80DEEA]/15 to-[#1976D2]/25 rounded-3xl blur-2xl opacity-70" />
+            <div className="absolute -inset-1 bg-gradient-to-r from-[#1976D2]/20 via-[#0D47A1]/10 to-[#1976D2]/20 rounded-3xl blur-xl opacity-60" />
 
             <div className="relative glass-panel rounded-2xl shadow-xl p-6 sm:p-8 border border-white/60 dark:border-gray-700/50">
               <SearchBar
@@ -654,7 +654,7 @@ export default function Home() {
                 href="https://clinicaltables.nlm.nih.gov/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#00D084] hover:text-[#00A66C] font-semibold transition-colors hover:underline decoration-2 underline-offset-2"
+                className="text-[#1976D2] hover:text-[#0D47A1] font-semibold transition-colors hover:underline decoration-2 underline-offset-2"
               >
                 ClinicalTables
               </a>

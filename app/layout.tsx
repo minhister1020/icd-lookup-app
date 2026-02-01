@@ -47,8 +47,8 @@ const jetbrainsMono = JetBrains_Mono({
  * - twitter: { card: 'summary_large_image' }
  */
 export const metadata: Metadata = {
-  title: "Bobby's ICD Mind Map Tool",
-  description: "Search and explore ICD-10 medical condition codes. A learning project for understanding medical coding systems and React development.",
+  title: "MedCodeMap - ICD-10 Code Lookup",
+  description: "Search and explore ICD-10 medical diagnosis codes, related drugs, and clinical trials. A professional clinical dashboard for healthcare coding.",
 };
 
 export default function RootLayout({

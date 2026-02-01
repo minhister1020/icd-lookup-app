@@ -508,9 +508,9 @@ export default function SearchResults({
   if (!hasSearched) {
     return (
       <div className="max-w-lg mx-auto">
-        <div className="bg-gradient-to-br from-[#00D084]/5 to-[#00A66C]/5 border border-[#00D084]/20 rounded-2xl p-8 text-center">
-          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#00D084]/20 to-[#00A66C]/20 flex items-center justify-center mx-auto mb-4">
-            <Sparkles className="w-7 h-7 text-[#00D084]" />
+        <div className="bg-gradient-to-br from-[#1976D2]/5 to-[#0D47A1]/5 border border-[#1976D2]/20 rounded-2xl p-8 text-center">
+          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#1976D2]/20 to-[#0D47A1]/20 flex items-center justify-center mx-auto mb-4">
+            <Sparkles className="w-7 h-7 text-[#1976D2]" />
           </div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
             Ready to Search
@@ -557,7 +557,7 @@ export default function SearchResults({
             Search Results
             {/* Phase 4: Show "ranked by relevance" indicator - hide for specific code search */}
             {!showRelatedSection && (
-              <span className="ml-2 text-xs font-normal text-[#00D084] bg-[#00D084]/10 px-2 py-0.5 rounded-full">
+              <span className="ml-2 text-xs font-normal text-[#1976D2] bg-[#1976D2]/10 px-2 py-0.5 rounded-full">
                 Ranked by relevance
               </span>
             )}
@@ -574,7 +574,7 @@ export default function SearchResults({
               <>
                 Showing <span className="font-mono font-medium text-indigo-600 dark:text-indigo-400">{searchedCode}</span>
                 {relatedCodes.length > 0 && (
-                  <> and <span className="font-medium text-[#00D084]">{relatedCodes.length}</span> related codes</>
+                  <> and <span className="font-medium text-[#1976D2]">{relatedCodes.length}</span> related codes</>
                 )}
               </>
             ) : viewMode === 'grouped' && grouped ? (
@@ -584,7 +584,7 @@ export default function SearchResults({
                   {grouped.totalResults}
                 </span>
                 {' results in '}
-                <span className="font-medium text-[#00D084]">
+                <span className="font-medium text-[#1976D2]">
                   {grouped.totalCategories}
                 </span>
                 {' '}
@@ -607,7 +607,7 @@ export default function SearchResults({
                   {totalCount.toLocaleString()}
                 </span>
                 {' results found, showing top '}
-                <span className="font-medium text-[#00D084]">{results.length}</span>
+                <span className="font-medium text-[#1976D2]">{results.length}</span>
               </>
             ) : (
               <>{results.length} ICD codes</>
@@ -864,8 +864,8 @@ export default function SearchResults({
               font-medium
               shadow-sm
               hover:shadow-md
-              hover:border-[#00D084]/50
-              hover:text-[#00A66C] dark:hover:text-[#00D084]
+              hover:border-[#1976D2]/50
+              hover:text-[#0D47A1] dark:hover:text-[#42A5F5]
               disabled:opacity-50
               disabled:cursor-not-allowed
               transition-all duration-200

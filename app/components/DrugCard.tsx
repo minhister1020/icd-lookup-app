@@ -6,7 +6,7 @@
  * Uses a BLUE color theme to distinguish from ICD codes (green).
  * 
  * COLOR SCHEME:
- * - ICD-10 Codes: Green (#00D084)
+ * - ICD-10 Codes: Blue (#1976D2)
  * - Drugs: Blue (#3B82F6)
  * - FDA-Approved Badge: Green
  * - Off-Label Badge: Amber/Orange

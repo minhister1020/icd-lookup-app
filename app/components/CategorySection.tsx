@@ -363,7 +363,7 @@ export default function CategorySection({
           duration-150
           focus:outline-none
           focus:ring-2
-          focus:ring-[#00D084]
+          focus:ring-[#1976D2]
           focus:ring-inset
         `}
       >

@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the ICD Lookup Tool will be documented in this file.
+All notable changes to MedCodeMap will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Rebranding to MedCodeMap** - Complete brand refresh with new identity
+  - Renamed application from "ICD Mind Map" to "MedCodeMap"
+  - New logo and favicon with medical blue color scheme
+  - Updated color palette: green (#00D084) → medical blue (#1976D2)
+  - New accent colors: teal (#80DEEA) and light blue (#90CAF9)
+  - Updated metadata, documentation, and UI components
 - Updated production domain from icd-lookup-app.vercel.app to medcodemap.com
 - Configured custom domain with Namecheap DNS and Vercel hosting
 - Both www and non-www variants now redirect correctly to production application

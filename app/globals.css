@@ -37,21 +37,23 @@
   --background: #fafbfc;
   --foreground: #1a1a2e;
 
-  /* HealthVerity Brand Colors
+  /* MedCodeMap Brand Colors
      -------------------------
-     These are the official HealthVerity brand colors.
+     These are the official MedCodeMap brand colors (medical blue).
      Primary: Used for main buttons, links, and key UI elements
      Secondary: Used for hover states and accents
   */
-  --hv-primary: #00D084;    /* Bright green - main brand color */
-  --hv-secondary: #00A66C;  /* Darker green - for hover/accents */
+  --mcm-primary: #1976D2;    /* Medical blue - main brand color */
+  --mcm-secondary: #0D47A1;  /* Darker blue - for hover/accents */
 
   /* Additional UI Colors
      --------------------
      These help create a cohesive medical/professional look
   */
-  --hv-light: #E6FBF3;      /* Very light green - for backgrounds */
-  --hv-dark: #007A4D;       /* Dark green - for text on light backgrounds */
+  --mcm-light: #E3F2FD;      /* Very light blue - for backgrounds */
+  --mcm-dark: #1565C0;       /* Dark blue - for text on light backgrounds */
+  --mcm-accent-teal: #80DEEA; /* Accent teal - for decorative elements */
+  --mcm-accent-blue: #90CAF9; /* Accent blue - for decorative elements */
 
   /* Typography Scale - These are set by Next.js font loader */
   /* --font-display, --font-body, --font-mono are injected via layout.tsx */
@@ -61,8 +63,8 @@
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
-  --shadow-glow: 0 0 20px rgba(0, 208, 132, 0.15), 0 0 40px rgba(0, 208, 132, 0.1);
-  --shadow-card-hover: 0 20px 40px -12px rgba(0, 208, 132, 0.2), 0 8px 16px -8px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 0 20px rgba(25, 118, 210, 0.15), 0 0 40px rgba(25, 118, 210, 0.1);
+  --shadow-card-hover: 0 20px 40px -12px rgba(25, 118, 210, 0.2), 0 8px 16px -8px rgba(0, 0, 0, 0.1);
 
   /* Refined Border Radius */
   --radius-sm: 8px;
@@ -78,9 +80,9 @@
 
    @theme inline tells Tailwind CSS to make these CSS variables available
    as utility classes. After this, you can use classes like:
-   - bg-hv-primary     → background-color: #00D084
-   - text-hv-secondary → color: #00A66C
-   - border-hv-dark    → border-color: #007A4D
+   - bg-mcm-primary     → background-color: #1976D2
+   - text-mcm-secondary → color: #0D47A1
+   - border-mcm-dark    → border-color: #1565C0
 */
 
 @theme inline {
@@ -88,11 +90,13 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  /* HealthVerity colors as Tailwind utilities */
-  --color-hv-primary: var(--hv-primary);
-  --color-hv-secondary: var(--hv-secondary);
-  --color-hv-light: var(--hv-light);
-  --color-hv-dark: var(--hv-dark);
+  /* MedCodeMap colors as Tailwind utilities */
+  --color-mcm-primary: var(--mcm-primary);
+  --color-mcm-secondary: var(--mcm-secondary);
+  --color-mcm-light: var(--mcm-light);
+  --color-mcm-dark: var(--mcm-dark);
+  --color-mcm-accent-teal: var(--mcm-accent-teal);
+  --color-mcm-accent-blue: var(--mcm-accent-blue);
 
   /* Font families - Clinical Clarity */
   --font-sans: var(--font-body);
@@ -113,20 +117,22 @@
     --background: #0d1117;
     --foreground: #e6edf3;
 
-    /* Slightly adjust HealthVerity colors for dark mode
+    /* Slightly adjust MedCodeMap colors for dark mode
        Making them a bit brighter for better visibility on dark backgrounds */
-    --hv-primary: #00E590;    /* Brighter green for dark mode */
-    --hv-secondary: #00D084;  /* Original primary becomes secondary */
-    --hv-light: #0D2E23;      /* Dark green background for cards */
-    --hv-dark: #00E590;       /* Bright for text on dark backgrounds */
+    --mcm-primary: #42A5F5;    /* Brighter blue for dark mode */
+    --mcm-secondary: #1976D2;  /* Original primary becomes secondary */
+    --mcm-light: #0D1929;      /* Dark blue background for cards */
+    --mcm-dark: #42A5F5;       /* Bright for text on dark backgrounds */
+    --mcm-accent-teal: #80DEEA;
+    --mcm-accent-blue: #90CAF9;
 
     /* Dark mode shadows */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.35), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
-    --shadow-glow: 0 0 30px rgba(0, 229, 144, 0.2), 0 0 60px rgba(0, 229, 144, 0.1);
-    --shadow-card-hover: 0 20px 40px -12px rgba(0, 229, 144, 0.15), 0 8px 16px -8px rgba(0, 0, 0, 0.4);
+    --shadow-glow: 0 0 30px rgba(66, 165, 245, 0.2), 0 0 60px rgba(66, 165, 245, 0.1);
+    --shadow-card-hover: 0 20px 40px -12px rgba(66, 165, 245, 0.15), 0 8px 16px -8px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -198,10 +204,10 @@ code, pre, .font-mono {
 
 @keyframes glow-pulse {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(0, 208, 132, 0.3);
+    box-shadow: 0 0 20px rgba(25, 118, 210, 0.3);
   }
   50% {
-    box-shadow: 0 0 40px rgba(0, 208, 132, 0.6);
+    box-shadow: 0 0 40px rgba(25, 118, 210, 0.6);
   }
 }
 
@@ -239,7 +245,7 @@ html {
 
 /* Better focus visible styles */
 *:focus-visible {
-  outline: 2px solid var(--hv-primary);
+  outline: 2px solid var(--mcm-primary);
   outline-offset: 2px;
 }
 
@@ -276,7 +282,7 @@ html {
 
 /* Gradient text utility */
 .text-gradient-primary {
-  background: linear-gradient(135deg, var(--hv-primary) 0%, var(--hv-secondary) 100%);
+  background: linear-gradient(135deg, var(--mcm-primary) 0%, var(--mcm-secondary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -285,16 +291,16 @@ html {
 /* Subtle grid pattern background */
 .bg-grid-pattern {
   background-image:
-    linear-gradient(rgba(0, 208, 132, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 208, 132, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(25, 118, 210, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(25, 118, 210, 0.03) 1px, transparent 1px);
   background-size: 40px 40px;
 }
 
 @media (prefers-color-scheme: dark) {
   .bg-grid-pattern {
     background-image:
-      linear-gradient(rgba(0, 229, 144, 0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 229, 144, 0.04) 1px, transparent 1px);
+      linear-gradient(rgba(66, 165, 245, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(66, 165, 245, 0.04) 1px, transparent 1px);
   }
 }
 
@@ -320,39 +326,39 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 208, 132, 0.3);
+  background: rgba(25, 118, 210, 0.3);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 208, 132, 0.5);
+  background: rgba(25, 118, 210, 0.5);
 }
 
 @media (prefers-color-scheme: dark) {
   ::-webkit-scrollbar-thumb {
-    background: rgba(0, 229, 144, 0.3);
+    background: rgba(66, 165, 245, 0.3);
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 229, 144, 0.5);
+    background: rgba(66, 165, 245, 0.5);
   }
 }
 
 /* Enhanced button styles */
 .btn-primary {
-  background: linear-gradient(135deg, var(--hv-primary) 0%, var(--hv-secondary) 100%);
-  box-shadow: 0 4px 14px rgba(0, 208, 132, 0.35);
+  background: linear-gradient(135deg, var(--mcm-primary) 0%, var(--mcm-secondary) 100%);
+  box-shadow: 0 4px 14px rgba(25, 118, 210, 0.35);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-primary:hover {
-  box-shadow: 0 6px 20px rgba(0, 208, 132, 0.45);
+  box-shadow: 0 6px 20px rgba(25, 118, 210, 0.45);
   transform: translateY(-1px);
 }
 
 .btn-primary:active {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(0, 208, 132, 0.3);
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
 }
 
 /* Code badge styling */
@@ -360,8 +366,8 @@ html {
   font-family: var(--font-mono);
   font-weight: 600;
   letter-spacing: 0.02em;
-  background: linear-gradient(135deg, rgba(0, 208, 132, 0.15) 0%, rgba(0, 166, 108, 0.1) 100%);
-  border: 1px solid rgba(0, 208, 132, 0.2);
+  background: linear-gradient(135deg, rgba(25, 118, 210, 0.15) 0%, rgba(13, 71, 161, 0.1) 100%);
+  border: 1px solid rgba(25, 118, 210, 0.2);
 }
 
 /* Status indicator pulse */
@@ -420,9 +426,9 @@ html {
 .skeleton-shimmer {
   background: linear-gradient(
     90deg,
-    rgba(0, 208, 132, 0.05) 25%,
-    rgba(0, 208, 132, 0.12) 50%,
-    rgba(0, 208, 132, 0.05) 75%
+    rgba(25, 118, 210, 0.05) 25%,
+    rgba(25, 118, 210, 0.12) 50%,
+    rgba(25, 118, 210, 0.05) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
@@ -433,24 +439,24 @@ html {
   transition: all 0.2s ease;
   border: 2px solid transparent;
   background: linear-gradient(white, white) padding-box,
-              linear-gradient(135deg, rgba(0, 208, 132, 0.2), rgba(0, 166, 108, 0.1)) border-box;
+              linear-gradient(135deg, rgba(25, 118, 210, 0.2), rgba(13, 71, 161, 0.1)) border-box;
 }
 
 .input-clinical:focus {
   background: linear-gradient(white, white) padding-box,
-              linear-gradient(135deg, var(--hv-primary), var(--hv-secondary)) border-box;
-  box-shadow: 0 0 0 4px rgba(0, 208, 132, 0.15);
+              linear-gradient(135deg, var(--mcm-primary), var(--mcm-secondary)) border-box;
+  box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.15);
 }
 
 @media (prefers-color-scheme: dark) {
   .input-clinical {
     background: linear-gradient(#1a1f2e, #1a1f2e) padding-box,
-                linear-gradient(135deg, rgba(0, 229, 144, 0.3), rgba(0, 208, 132, 0.2)) border-box;
+                linear-gradient(135deg, rgba(66, 165, 245, 0.3), rgba(25, 118, 210, 0.2)) border-box;
   }
 
   .input-clinical:focus {
     background: linear-gradient(#1a1f2e, #1a1f2e) padding-box,
-                linear-gradient(135deg, var(--hv-primary), var(--hv-secondary)) border-box;
-    box-shadow: 0 0 0 4px rgba(0, 229, 144, 0.2);
+                linear-gradient(135deg, var(--mcm-primary), var(--mcm-secondary)) border-box;
+    box-shadow: 0 0 0 4px rgba(66, 165, 245, 0.2);
   }
 }

@@ -1,6 +1,6 @@
-# 🏥 ICD Lookup Tool
+# 🏥 MedCodeMap
 
-> **Find medical diagnosis codes, related drugs, and clinical trials — organized by body system**
+> **Find ICD-10 medical diagnosis codes, related drugs, and clinical trials — organized by body system**
 
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
@@ -21,7 +21,7 @@ Try it now — no installation required!
 
 ## 📋 Overview
 
-The **ICD Lookup Tool** is a modern web application that transforms medical code lookup into an intuitive, organized experience. Search for any medical condition and instantly discover related ICD-10 codes, FDA-approved drugs, and clinical trials across all stages — all organized by body system/disease chapter for easy navigation.
+**MedCodeMap** is a modern web application that transforms medical code lookup into an intuitive, organized experience. Search for any medical condition and instantly discover related ICD-10 codes, FDA-approved drugs, and clinical trials across all stages — all organized by body system/disease chapter for easy navigation.
 
 ### ✨ What Makes It Unique
 
@@ -80,13 +80,13 @@ The **ICD Lookup Tool** is a modern web application that transforms medical code
 - Dark mode support
 - Mobile-responsive design
 - Loading skeletons and smooth transitions
-- HealthVerity-inspired color palette (#00D084 green)
+- Medical blue color palette (#1976D2)
 - Full keyboard accessibility (Enter/Space to toggle categories)
 
 ---
 ## 🤖 AI-Powered Drug Validation
 
-The ICD Mind Map includes an intelligent drug validation system that filters treatment options by clinical relevance.
+MedCodeMap includes an intelligent drug validation system that filters treatment options by clinical relevance.
 
 ### Features
 
@@ -379,7 +379,7 @@ Back up your favorites or share with colleagues!
 {
   "version": "1.0",
   "exportDate": "2026-01-26T10:30:00.000Z",
-  "appName": "ICD Mind Map Lookup Tool",
+  "appName": "MedCodeMap",
   "count": 5,
   "favorites": [
     { "code": "E11.9", "name": "Type 2 diabetes...", ... }
@@ -412,7 +412,7 @@ Track what you've searched with rich metadata:
 
 ## 🎯 Intelligent Search Ranking (Phase 4)
 
-Unlike traditional medical code databases that return results alphabetically, ICD Mind Map uses a **multi-factor relevance algorithm** to show the most clinically useful codes first.
+Unlike traditional medical code databases that return results alphabetically, MedCodeMap uses a **multi-factor relevance algorithm** to show the most clinically useful codes first.
 
 ### How It Works
 
@@ -763,7 +763,7 @@ copies or substantial portions of the Software.
 - [Vercel](https://vercel.com/) — Deployment platform
 
 ### Inspiration
-- HealthVerity's commitment to healthcare data innovation
+- Healthcare data innovation and clinical clarity
 - Modern medical dashboards and organized data visualization
 - ICD-10 chapter organization for clinical clarity
 

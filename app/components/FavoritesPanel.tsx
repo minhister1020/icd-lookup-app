@@ -92,7 +92,7 @@ export default function FavoritesPanel({
       const exportData: FavoritesExport = {
         version: '1.0',
         exportDate: new Date().toISOString(),
-        appName: 'ICD Mind Map Lookup Tool',
+        appName: 'MedCodeMap',
         count: favorites.length,
         favorites: favorites
       };
@@ -390,9 +390,9 @@ export default function FavoritesPanel({
                           }}
                           className="
                             w-9 h-9 sm:w-8 sm:h-8 rounded-xl sm:rounded-full
-                            bg-[#00D084]/10 hover:bg-[#00D084]/20
-                            active:bg-[#00D084]/30
-                            text-[#00A66C] dark:text-[#00D084]
+                            bg-[#1976D2]/10 hover:bg-[#1976D2]/20
+                            active:bg-[#1976D2]/30
+                            text-[#0D47A1] dark:text-[#42A5F5]
                             flex items-center justify-center
                             transition-all duration-200
                             hover:scale-110 active:scale-95

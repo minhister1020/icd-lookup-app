@@ -6,7 +6,7 @@
  * Uses a PURPLE color theme to distinguish from ICD (green) and drugs (blue).
  * 
  * COLOR SCHEME:
- * - ICD-10 Codes: Green (#00D084)
+ * - ICD-10 Codes: Blue (#1976D2)
  * - Drugs: Blue (#3B82F6)
  * - Clinical Trials: Purple (#9333EA)
  * 

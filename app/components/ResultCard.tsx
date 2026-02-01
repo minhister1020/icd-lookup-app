@@ -305,10 +305,10 @@ export default function ResultCard({
         dark:border-gray-700/50
         shadow-sm
         hover:shadow-xl
-        hover:shadow-[#00D084]/10
-        dark:hover:shadow-[#00D084]/5
-        hover:border-[#00D084]/40
-        dark:hover:border-[#00D084]/50
+        hover:shadow-[#1976D2]/10
+        dark:hover:shadow-[#1976D2]/5
+        hover:border-[#1976D2]/40
+        dark:hover:border-[#1976D2]/50
         hover:-translate-y-1
         transition-all
         duration-300
@@ -342,19 +342,19 @@ export default function ResultCard({
                   py-1.5
                   rounded-lg
                   bg-gradient-to-r
-                  from-[#00D084]/15
-                  to-[#00A66C]/10
+                  from-[#1976D2]/15
+                  to-[#0D47A1]/10
                   border
-                  border-[#00D084]/20
+                  border-[#1976D2]/20
                   shadow-sm
-                  shadow-[#00D084]/10
+                  shadow-[#1976D2]/10
                 "
               >
                 <span
                   style={{ fontFamily: 'var(--font-mono)' }}
                   className="
-                    text-[#00A66C]
-                    dark:text-[#00D084]
+                    text-[#0D47A1]
+                    dark:text-[#42A5F5]
                     font-bold
                     text-sm
                     tracking-wider
@@ -429,8 +429,8 @@ export default function ResultCard({
                 font-semibold
                 text-base
                 leading-snug
-                group-hover:text-[#00A66C]
-                dark:group-hover:text-[#00D084]
+                group-hover:text-[#0D47A1]
+                dark:group-hover:text-[#42A5F5]
                 transition-colors
                 duration-200
               "
@@ -493,7 +493,7 @@ export default function ResultCard({
                 className="
                   w-4
                   h-4
-                  text-[#00D084]
+                  text-[#1976D2]
                 " 
               />
             </div>
@@ -969,7 +969,7 @@ export default function ResultCard({
           h-1
           bg-gradient-to-r
           from-transparent
-          via-[#00D084]
+          via-[#1976D2]
           to-transparent
           opacity-0
           group-hover:opacity-100
