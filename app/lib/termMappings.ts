@@ -155,6 +155,30 @@ export const TERM_MAPPINGS: Map<string, TermMapping> = new Map([
     medical: 'congestive heart failure',
     icdHint: 'I50'
   }],
+  ['cad', { 
+    medical: 'coronary artery disease',
+    alternatives: ['ischemic heart disease', 'atherosclerotic heart disease'],
+    icdHint: 'I25'
+  }],
+  ['htn', { 
+    medical: 'hypertension',
+    alternatives: ['high blood pressure'],
+    icdHint: 'I10'
+  }],
+  ['dvt', { 
+    medical: 'deep vein thrombosis',
+    alternatives: ['deep venous thrombosis'],
+    icdHint: 'I82'
+  }],
+  ['pe', { 
+    medical: 'pulmonary embolism',
+    icdHint: 'I26'
+  }],
+  ['pvd', { 
+    medical: 'peripheral vascular disease',
+    alternatives: ['peripheral artery disease', 'PAD'],
+    icdHint: 'I73'
+  }],
   ['high cholesterol', { 
     medical: 'hyperlipidemia',
     alternatives: ['hypercholesterolemia', 'dyslipidemia'],
@@ -235,6 +259,21 @@ export const TERM_MAPPINGS: Map<string, TermMapping> = new Map([
     medical: 'allergic rhinitis',
     alternatives: ['allergy'],
     icdHint: 'J30'
+  }],
+  ['copd', { 
+    medical: 'chronic obstructive pulmonary disease',
+    alternatives: ['COPD', 'emphysema'],
+    icdHint: 'J44'
+  }],
+  ['emphysema', { 
+    medical: 'pulmonary emphysema',
+    alternatives: ['emphysema'],
+    icdHint: 'J43'
+  }],
+  ['asthma', { 
+    medical: 'asthma',
+    alternatives: ['bronchial asthma'],
+    icdHint: 'J45'
   }],
   
   // ===========================================================================
@@ -368,6 +407,36 @@ export const TERM_MAPPINGS: Map<string, TermMapping> = new Map([
     alternatives: ['neck pain'],
     icdHint: 'M54'
   }],
+  ['ra', { 
+    medical: 'rheumatoid arthritis',
+    alternatives: ['RA'],
+    icdHint: 'M06'
+  }],
+  ['sle', { 
+    medical: 'systemic lupus erythematosus',
+    alternatives: ['lupus'],
+    icdHint: 'M32'
+  }],
+  ['lupus', { 
+    medical: 'systemic lupus erythematosus',
+    alternatives: ['SLE'],
+    icdHint: 'M32'
+  }],
+  ['fibromyalgia', { 
+    medical: 'fibromyalgia',
+    alternatives: ['fibromyalgia syndrome'],
+    icdHint: 'M79'
+  }],
+  ['gout', { 
+    medical: 'gout',
+    alternatives: ['gouty arthritis'],
+    icdHint: 'M10'
+  }],
+  ['oa', { 
+    medical: 'osteoarthritis',
+    alternatives: ['degenerative joint disease'],
+    icdHint: 'M19'
+  }],
   
   // ===========================================================================
   // MENTAL HEALTH (10 mappings)
@@ -467,6 +536,35 @@ export const TERM_MAPPINGS: Map<string, TermMapping> = new Map([
     alternatives: ['tingling sensation'],
     icdHint: 'R20'
   }],
+  ['ms', { 
+    medical: 'multiple sclerosis',
+    alternatives: ['MS'],
+    icdHint: 'G35'
+  }],
+  ['als', { 
+    medical: 'amyotrophic lateral sclerosis',
+    alternatives: ['Lou Gehrig disease', 'motor neuron disease'],
+    icdHint: 'G12'
+  }],
+  ['parkinsons', { 
+    medical: 'Parkinson disease',
+    alternatives: ['parkinsonism'],
+    icdHint: 'G20'
+  }],
+  ['pd', { 
+    medical: 'Parkinson disease',
+    icdHint: 'G20'
+  }],
+  ['dementia', { 
+    medical: 'dementia',
+    alternatives: ['cognitive impairment'],
+    icdHint: 'F03'
+  }],
+  ['alzheimers', { 
+    medical: 'Alzheimer disease',
+    alternatives: ['Alzheimer dementia'],
+    icdHint: 'G30'
+  }],
   
   // ===========================================================================
   // ENDOCRINE / METABOLIC (6 mappings)
@@ -500,6 +598,29 @@ export const TERM_MAPPINGS: Map<string, TermMapping> = new Map([
     medical: 'obesity',
     alternatives: ['morbid obesity'],
     icdHint: 'E66'
+  }],
+  ['dm', { 
+    medical: 'diabetes mellitus',
+    alternatives: ['diabetes'],
+    icdHint: 'E11'
+  }],
+  ['dm2', { 
+    medical: 'type 2 diabetes mellitus',
+    alternatives: ['diabetes mellitus type 2', 'T2DM'],
+    icdHint: 'E11'
+  }],
+  ['dm1', { 
+    medical: 'type 1 diabetes mellitus',
+    alternatives: ['diabetes mellitus type 1', 'T1DM'],
+    icdHint: 'E10'
+  }],
+  ['t2dm', { 
+    medical: 'type 2 diabetes mellitus',
+    icdHint: 'E11'
+  }],
+  ['t1dm', { 
+    medical: 'type 1 diabetes mellitus',
+    icdHint: 'E10'
   }],
   
   // ===========================================================================
@@ -564,6 +685,84 @@ export const TERM_MAPPINGS: Map<string, TermMapping> = new Map([
     alternatives: ['renal insufficiency'],
     icdHint: 'N18'
   }],
+  ['esrd', { 
+    medical: 'end stage renal disease',
+    alternatives: ['end stage kidney disease', 'ESKD'],
+    icdHint: 'N18'
+  }],
+  ['ckd', { 
+    medical: 'chronic kidney disease',
+    alternatives: ['chronic renal disease'],
+    icdHint: 'N18'
+  }],
+  ['aki', { 
+    medical: 'acute kidney injury',
+    alternatives: ['acute renal injury'],
+    icdHint: 'N17'
+  }],
+  ['arf', { 
+    medical: 'acute renal failure',
+    alternatives: ['acute kidney failure'],
+    icdHint: 'N17'
+  }],
+  ['crf', { 
+    medical: 'chronic renal failure',
+    alternatives: ['chronic kidney failure'],
+    icdHint: 'N18'
+  }],
+  ['bph', { 
+    medical: 'benign prostatic hyperplasia',
+    alternatives: ['enlarged prostate', 'prostatic hypertrophy'],
+    icdHint: 'N40'
+  }],
+  
+  // NIH Autocomplete Phrases (API-friendly translations)
+  // These handle phrases that come from NIH suggestions but timeout on ClinicalTables API
+  ['renal insufficiency', { 
+    medical: 'chronic kidney disease',
+    alternatives: ['kidney failure', 'renal failure'],
+    icdHint: 'N18'
+  }],
+  ['renal insufficiency chronic', { 
+    medical: 'chronic kidney disease',
+    alternatives: ['chronic renal failure'],
+    icdHint: 'N18'
+  }],
+  ['renal insufficiency - chronic', { 
+    medical: 'chronic kidney disease',
+    alternatives: ['chronic renal failure'],
+    icdHint: 'N18'
+  }],
+  ['chronic renal insufficiency', { 
+    medical: 'chronic kidney disease',
+    alternatives: ['chronic renal failure'],
+    icdHint: 'N18'
+  }],
+  ['kidney insufficiency', { 
+    medical: 'chronic kidney disease',
+    alternatives: ['renal insufficiency'],
+    icdHint: 'N18'
+  }],
+  ['renal failure', { 
+    medical: 'kidney failure',
+    alternatives: ['renal insufficiency'],
+    icdHint: 'N19'
+  }],
+  ['chronic renal failure', { 
+    medical: 'chronic kidney disease',
+    alternatives: ['CKD', 'chronic renal disease'],
+    icdHint: 'N18'
+  }],
+  ['end stage renal disease', { 
+    medical: 'end stage renal disease',
+    alternatives: ['ESRD', 'end stage kidney disease'],
+    icdHint: 'N18.6'
+  }],
+  ['end-stage renal disease', { 
+    medical: 'end stage renal disease',
+    alternatives: ['ESRD'],
+    icdHint: 'N18.6'
+  }],
   
   // ===========================================================================
   // SLEEP DISORDERS (4 mappings)
@@ -572,6 +771,11 @@ export const TERM_MAPPINGS: Map<string, TermMapping> = new Map([
   ['sleep apnea', { 
     medical: 'obstructive sleep apnea',
     alternatives: ['sleep apnea'],
+    icdHint: 'G47'
+  }],
+  ['osa', { 
+    medical: 'obstructive sleep apnea',
+    alternatives: ['sleep apnea syndrome'],
     icdHint: 'G47'
   }],
   ['insomnia', { 
@@ -633,6 +837,65 @@ export const TERM_MAPPINGS: Map<string, TermMapping> = new Map([
     alternatives: ['fainting', 'loss of consciousness'],
     icdHint: 'R55'
   }],
+  
+  // ===========================================================================
+  // ADDITIONAL COMMON ACRONYMS & CONDITIONS
+  // ===========================================================================
+  
+  ['cf', { 
+    medical: 'cystic fibrosis',
+    icdHint: 'E84'
+  }],
+  ['hiv', { 
+    medical: 'human immunodeficiency virus infection',
+    alternatives: ['HIV disease'],
+    icdHint: 'B20'
+  }],
+  ['aids', { 
+    medical: 'acquired immunodeficiency syndrome',
+    alternatives: ['AIDS'],
+    icdHint: 'B20'
+  }],
+  ['std', { 
+    medical: 'sexually transmitted disease',
+    alternatives: ['sexually transmitted infection', 'STI'],
+    icdHint: 'A64'
+  }],
+  ['sti', { 
+    medical: 'sexually transmitted infection',
+    alternatives: ['sexually transmitted disease'],
+    icdHint: 'A64'
+  }],
+  ['tb', { 
+    medical: 'tuberculosis',
+    alternatives: ['pulmonary tuberculosis'],
+    icdHint: 'A15'
+  }],
+  ['mrsa', { 
+    medical: 'methicillin resistant staphylococcus aureus infection',
+    alternatives: ['MRSA infection'],
+    icdHint: 'A49'
+  }],
+  ['c diff', { 
+    medical: 'clostridioides difficile infection',
+    alternatives: ['C. difficile', 'CDI'],
+    icdHint: 'A04'
+  }],
+  ['sepsis', { 
+    medical: 'sepsis',
+    alternatives: ['septicemia', 'blood poisoning'],
+    icdHint: 'A41'
+  }],
+  ['anemia', { 
+    medical: 'anemia',
+    alternatives: ['anaemia'],
+    icdHint: 'D64'
+  }],
+  ['iron deficiency', { 
+    medical: 'iron deficiency anemia',
+    alternatives: ['low iron'],
+    icdHint: 'D50'
+  }],
 ]);
 
 // =============================================================================
@@ -676,4 +939,129 @@ export function hasMapping(term: string): boolean {
  */
 export function getMapping(term: string): TermMapping | undefined {
   return TERM_MAPPINGS.get(term.toLowerCase().trim());
+}
+
+// =============================================================================
+// Autocomplete Helper Functions
+// =============================================================================
+
+/**
+ * Result structure for autocomplete suggestions.
+ */
+export interface AutocompleteSuggestion {
+  /** The common/lay term (what user might type) */
+  term: string;
+  /** The medical terminology equivalent */
+  medical: string;
+  /** ICD-10 code family hint (if available) */
+  icdHint?: string;
+  /** Match score for sorting (higher = better match) */
+  score: number;
+}
+
+/**
+ * Filters term mappings for autocomplete suggestions.
+ * 
+ * Matching logic (in order of priority):
+ * 1. Exact match on term (score: 100)
+ * 2. Term starts with query (score: 80)
+ * 3. Medical term starts with query (score: 70)
+ * 4. Term contains query (score: 50)
+ * 5. Medical term contains query (score: 40)
+ * 
+ * @param query - The user's input (case-insensitive)
+ * @param limit - Maximum number of suggestions to return (default: 10)
+ * @returns Array of matching suggestions, sorted by relevance score
+ * 
+ * @example
+ * filterMappingsForAutocomplete('esr', 5)
+ * // Returns: [{ term: 'esrd', medical: 'end stage renal disease', score: 80 }]
+ * 
+ * filterMappingsForAutocomplete('heart', 5)
+ * // Returns: [
+ * //   { term: 'heart attack', medical: 'myocardial infarction', score: 80 },
+ * //   { term: 'heart failure', medical: 'heart failure', score: 80 },
+ * //   { term: 'heart palpitations', medical: 'palpitations', score: 80 }
+ * // ]
+ */
+export function filterMappingsForAutocomplete(
+  query: string,
+  limit: number = 10
+): AutocompleteSuggestion[] {
+  const normalizedQuery = query.toLowerCase().trim();
+  
+  // Return empty if query is too short
+  if (normalizedQuery.length < 1) {
+    return [];
+  }
+  
+  const results: AutocompleteSuggestion[] = [];
+  
+  for (const [term, mapping] of TERM_MAPPINGS) {
+    const medicalLower = mapping.medical.toLowerCase();
+    let score = 0;
+    
+    // Scoring logic
+    if (term === normalizedQuery) {
+      // Exact match on common term
+      score = 100;
+    } else if (term.startsWith(normalizedQuery)) {
+      // Common term starts with query (e.g., "esr" matches "esrd")
+      score = 80;
+    } else if (medicalLower.startsWith(normalizedQuery)) {
+      // Medical term starts with query (e.g., "diab" matches "diabetes mellitus")
+      score = 70;
+    } else if (term.includes(normalizedQuery)) {
+      // Common term contains query (e.g., "attack" matches "heart attack")
+      score = 50;
+    } else if (medicalLower.includes(normalizedQuery)) {
+      // Medical term contains query
+      score = 40;
+    }
+    
+    // Also check alternatives
+    if (score === 0 && mapping.alternatives) {
+      for (const alt of mapping.alternatives) {
+        const altLower = alt.toLowerCase();
+        if (altLower.startsWith(normalizedQuery)) {
+          score = 60;
+          break;
+        } else if (altLower.includes(normalizedQuery)) {
+          score = 35;
+          break;
+        }
+      }
+    }
+    
+    if (score > 0) {
+      results.push({
+        term,
+        medical: mapping.medical,
+        icdHint: mapping.icdHint,
+        score,
+      });
+    }
+  }
+  
+  // Sort by score (descending), then alphabetically by term
+  results.sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+    return a.term.localeCompare(b.term);
+  });
+  
+  // Return top results up to limit
+  return results.slice(0, limit);
+}
+
+/**
+ * Checks if a query would result in any autocomplete suggestions.
+ * Useful for determining whether to show the dropdown.
+ * 
+ * @param query - The user's input
+ * @returns True if there are matching suggestions
+ */
+export function hasAutocompleteSuggestions(query: string): boolean {
+  return filterMappingsForAutocomplete(query, 1).length > 0;
 }

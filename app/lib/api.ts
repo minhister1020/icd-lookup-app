@@ -26,6 +26,32 @@ import { translateQuery } from './termMapper';
 import { normalizeQuery } from './queryNormalizer';
 
 // =============================================================================
+// Query Sanitization
+// =============================================================================
+
+/**
+ * Sanitizes a search term before sending to the ClinicalTables API.
+ * 
+ * Handles edge cases from autocomplete selections and user input:
+ * - " - " separators (e.g., "Renal insufficiency - chronic")
+ * - Multiple spaces
+ * - Leading/trailing whitespace
+ * 
+ * @param term - The raw search term
+ * @returns Sanitized term safe for API query
+ * 
+ * @example
+ * sanitizeSearchTerm("Renal insufficiency - chronic")
+ * // → "Renal insufficiency chronic"
+ */
+function sanitizeSearchTerm(term: string): string {
+  return term
+    .replace(/\s+-\s+/g, ' ')  // " - " → " "
+    .replace(/\s+/g, ' ')       // Collapse multiple spaces
+    .trim();
+}
+
+// =============================================================================
 // Configuration
 // =============================================================================
 
@@ -201,9 +227,11 @@ export async function searchICD10(query: string): Promise<SearchResultsWithTrans
  * @returns Raw results and total count
  */
 async function searchSingleTerm(term: string): Promise<{ results: ICD10Result[]; totalCount: number }> {
+  const sanitizedTerm = sanitizeSearchTerm(term);
+  
   const params = new URLSearchParams({
     sf: 'code,name',
-    terms: term,
+    terms: sanitizedTerm,
     maxList: String(FETCH_LIMIT)
   });
   

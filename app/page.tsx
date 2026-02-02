@@ -20,7 +20,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Activity, Star, Clock } from 'lucide-react';
+import { Star, Clock } from 'lucide-react';
+import Image from 'next/image';
 
 // Import our custom components
 import SearchBar from './components/SearchBar';
@@ -456,7 +457,13 @@ export default function Home() {
             {/* Logo & Brand */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1976D2] to-[#0D47A1] flex items-center justify-center shadow-lg shadow-[#1976D2]/25 ring-2 ring-white/50 dark:ring-black/20">
-                <Activity className="w-6 h-6 text-white drop-shadow-sm" />
+                <Image
+                  src="/icon.svg"
+                  alt="MedCodeMap"
+                  width={24}
+                  height={24}
+                  className="w-6 h-6"
+                />
               </div>
               <div>
                 <h1 className="font-bold text-gray-900 dark:text-white text-lg tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>

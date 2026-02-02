@@ -7,18 +7,29 @@
  * - Gradient focus effects
  * - Loading state with spinner
  * - Smooth micro-interactions
+ * - **Intelligent autocomplete** (Phase 4)
  * 
  * DESIGN FEATURES:
  * - Large, prominent input field
  * - Icon integration with lucide-react
  * - Button with shadow and scale effects
  * - Professional placeholder text
+ * - Two-tier autocomplete (Local + NIH API)
+ * 
+ * AUTOCOMPLETE FEATURES:
+ * - 300ms debounced suggestions
+ * - Local medical term mappings (instant)
+ * - NIH Conditions API fallback (cached 24hr)
+ * - Keyboard navigation (↑↓ Enter Esc)
+ * - Source transparency ([Local] vs [NIH])
  */
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Search, Loader2, Clock, Info } from 'lucide-react';
+import { useAutocomplete, type AutocompleteSuggestion } from '../hooks/useAutocomplete';
+import AutocompleteDropdown from './AutocompleteDropdown';
 
 // =============================================================================
 // Props Interface
@@ -28,6 +39,8 @@ interface SearchBarProps {
   onSearch: (query: string) => void;
   isLoading?: boolean;
   recentSearches?: string[];  // Array of recent search terms
+  /** Whether to auto-trigger search when selecting from autocomplete (default: false) */
+  autoSearchOnSelect?: boolean;
 }
 
 // =============================================================================
@@ -37,11 +50,59 @@ interface SearchBarProps {
 export default function SearchBar({ 
   onSearch, 
   isLoading = false,
-  recentSearches = []
+  recentSearches = [],
+  autoSearchOnSelect = false
 }: SearchBarProps) {
-  const [query, setQuery] = useState('');
   const [showTooltip, setShowTooltip] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // ==========================================================================
+  // Autocomplete Hook Integration
+  // ==========================================================================
+  
+  /**
+   * Handle autocomplete selection.
+   * - Always populates the input with the medical term
+   * - Optionally triggers search based on autoSearchOnSelect prop
+   * - For NIH suggestions with ICD codes, searches by code for reliable results
+   */
+  const handleAutocompleteSelect = useCallback((medicalTerm: string, suggestion?: AutocompleteSuggestion) => {
+    if (autoSearchOnSelect) {
+      // For NIH suggestions with ICD codes, search by code for reliable results
+      const searchTerm = suggestion?.source === 'nih' && suggestion?.icdHint 
+        ? suggestion.icdHint 
+        : medicalTerm;
+      onSearch(searchTerm);
+    }
+    // Focus back to input after selection
+    inputRef.current?.focus();
+  }, [autoSearchOnSelect, onSearch]);
+  
+  const {
+    inputValue: query,
+    setInputValue: setQuery,
+    suggestions,
+    isLoading: isAutocompleteLoading,
+    showDropdown,
+    highlightedIndex,
+    setHighlightedIndex,
+    selectSuggestionDirect,
+    clearSuggestions,
+    handleKeyDown: handleAutocompleteKeyDown,
+  } = useAutocomplete({
+    onSelect: handleAutocompleteSelect,
+    debounceMs: 300,
+    minChars: 2,
+    maxLocalResults: 5,
+    maxNihResults: 5,
+    nihTriggerThreshold: 3,
+  });
+  
+  // ==========================================================================
+  // Event Handlers
+  // ==========================================================================
   
   // Close tooltip when clicking outside
   useEffect(() => {
@@ -54,36 +115,105 @@ export default function SearchBar({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
   
+  // Cleanup blur timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (blurTimeoutRef.current) {
+        clearTimeout(blurTimeoutRef.current);
+      }
+    };
+  }, []);
+  
+  /**
+   * Handle form submission (Search button or Enter key).
+   * Clears autocomplete and triggers full search.
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    clearSuggestions();
     const trimmedQuery = query.trim();
     if (trimmedQuery) {
       onSearch(trimmedQuery);
     }
   };
   
+  /**
+   * Handle input change - delegates to autocomplete hook.
+   */
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
+  };
+  
+  /**
+   * Handle keyboard events on the input.
+   * - Autocomplete navigation (↑↓ Enter Esc) is handled first
+   * - If not handled, Enter submits the form normally
+   */
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Let autocomplete handle navigation keys first
+    const handled = handleAutocompleteKeyDown(e);
+    if (handled) {
+      e.preventDefault();
+      return;
+    }
+    
+    // Enter with no highlighted suggestion = submit form
+    // (Form's onSubmit will handle this)
+  };
+  
+  /**
+   * Handle input blur - close autocomplete with delay.
+   * The 150ms delay allows click events on dropdown items to fire first.
+   */
+  const handleInputBlur = () => {
+    blurTimeoutRef.current = setTimeout(() => {
+      clearSuggestions();
+    }, 150);
+  };
+  
+  /**
+   * Handle input focus - cancel any pending blur.
+   * This prevents the dropdown from closing if user quickly re-focuses.
+   */
+  const handleInputFocus = () => {
+    if (blurTimeoutRef.current) {
+      clearTimeout(blurTimeoutRef.current);
+      blurTimeoutRef.current = null;
+    }
   };
   
   return (
     <form onSubmit={handleSubmit} className="w-full">
       {/* Search Input Container */}
       <div className="flex flex-col sm:flex-row gap-3">
-        {/* Input Wrapper with Icon */}
+        {/* Input Wrapper with Icon and Autocomplete Dropdown */}
         <div className="relative flex-1">
           {/* Search Icon */}
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10">
             <Search className="w-5 h-5 text-gray-400" />
           </div>
           
           {/* Input Field - Enhanced with Clinical Clarity style */}
           <input
+            ref={inputRef}
             type="text"
             value={query}
             onChange={handleInputChange}
+            onKeyDown={handleInputKeyDown}
+            onBlur={handleInputBlur}
+            onFocus={handleInputFocus}
             placeholder="Search (e.g., heart attack, diabetes, I21.9)"
             disabled={isLoading}
+            autoComplete="off"
+            role="combobox"
+            aria-expanded={showDropdown}
+            aria-haspopup="listbox"
+            aria-controls="autocomplete-listbox"
+            aria-activedescendant={
+              highlightedIndex >= 0 
+                ? `autocomplete-listbox-option-${highlightedIndex}` 
+                : undefined
+            }
             style={{ fontFamily: 'var(--font-body)' }}
             className="
               w-full
@@ -120,6 +250,18 @@ export default function SearchBar({
               dark:hover:border-gray-500
             "
           />
+          
+          {/* Autocomplete Dropdown */}
+          {showDropdown && (
+            <AutocompleteDropdown
+              suggestions={suggestions}
+              isLoading={isAutocompleteLoading}
+              highlightedIndex={highlightedIndex}
+              onSelect={selectSuggestionDirect}
+              onHighlight={setHighlightedIndex}
+              id="autocomplete-listbox"
+            />
+          )}
           
           {/* Info Tooltip Button (Step 8) */}
           <div className="absolute right-4 top-1/2 -translate-y-1/2" ref={tooltipRef}>
