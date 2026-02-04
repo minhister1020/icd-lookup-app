@@ -1078,7 +1078,45 @@ export const CONDITION_DRUG_MAPPINGS: Record<string, string[]> = {
     'bismuth subsalicylate',
     'rifaximin',
   ],
-  
+
+  /**
+   * Nonalcoholic Steatohepatitis (NASH) / NAFLD
+   * - Rezdiffra (resmetirom) - FDA-approved March 2024
+   *   First drug approved specifically for NASH with liver fibrosis
+   * - ICD-10: K75.81 (NASH), K76.0 (fatty liver)
+   */
+  'nonalcoholic steatohepatitis': [
+    'Rezdiffra',              // resmetirom - thyroid hormone receptor beta agonist
+  ],
+
+  'nash': [
+    'Rezdiffra',
+  ],
+
+  'nafld': [
+    'Rezdiffra',
+  ],
+
+  'fatty liver disease': [
+    'Rezdiffra',
+  ],
+
+  'fatty liver': [
+    'Rezdiffra',
+  ],
+
+  'metabolic dysfunction-associated steatohepatitis': [
+    'Rezdiffra',
+  ],
+
+  'mash': [
+    'Rezdiffra',
+  ],
+
+  'liver fibrosis': [
+    'Rezdiffra',
+  ],
+
   // =========================================================================
   // Pain & Inflammation
   // =========================================================================
