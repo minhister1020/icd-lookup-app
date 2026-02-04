@@ -183,9 +183,9 @@ type ViewMode = 'flat' | 'grouped';
 // Component
 // =============================================================================
 
-export default function SearchResults({ 
-  results, 
-  isLoading, 
+export default function SearchResults({
+  results,
+  isLoading,
   error,
   hasSearched,
   drugsMap = new Map(),
@@ -213,7 +213,7 @@ export default function SearchResults({
   showRelatedSection = false,
   searchedCode = '',
 }: SearchResultsProps) {
-  
+
   // =========================================================================
   // Animation Control - Prevent animation replay on re-renders
   // =========================================================================

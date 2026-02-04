@@ -1,5 +1,11 @@
 # 🏥 MedCodeMap
 
+<div align="center">
+
+![MedCodeMap Logo](public/medcodemap-logo.svg)
+
+### Medical Code Lookup Tool for Healthcare Professionals
+
 > **Find ICD-10 medical diagnosis codes, related drugs, and clinical trials — organized by body system**
 
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
@@ -8,13 +14,15 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
 [![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?logo=vercel)](https://medcodemap.com)
 
+</div>
+
 ## 🌐 Live Demo
 
 **👉 [https://medcodemap.com](https://medcodemap.com)**
 
 Try it now — no installation required!
 
-![ICD Lookup Screenshot](./public/screenshot.png)
+![MedCodeMap Screenshot](./public/screenshot.png)
 *Search results organized by body system with collapsible category sections*
 
 ---
@@ -169,37 +177,10 @@ ANTHROPIC_API_KEY=sk-ant-...  # Required for Claude AI validation
 - AI validation: Claude Sonnet 4 via Anthropic API
 
 For detailed technical documentation, see [DRUG_VALIDATION.md](./DRUG_VALIDATION.md)
-```
 
 ---
 
-### 📄 FILE 3: Create NEW file `DRUG_VALIDATION.md`
-
-**Create a new file in your project root called `DRUG_VALIDATION.md` and paste this entire content:**
-
-[The complete DRUG_VALIDATION.md content I provided above - it's very long, so I'll provide it separately if you want it, or you can copy it from my previous message]
-
----
-
-## ⚡ QUICK METHOD: Use Cursor to Create These
-
-**Or paste this into Cursor to do it automatically:**
-```
-Create comprehensive documentation for the drug validation system
-
-Create/update these 3 documentation files:
-
-1. CHANGELOG.md - Add new version entry at the top
-2. README.md - Add AI-Powered Drug Validation section
-3. DRUG_VALIDATION.md - Create new technical documentation file
-
-Use the exact content I'll provide in the next message.
-
-After creating/updating files:
-- Verify formatting is correct
-- Check all links work
-- Commit with: "docs: Add comprehensive drug validation system documentation"
-## 🗣️ Common Terms Translation (Phase 5 + 6)
+## 🗣️ Common Terms Translation
 
 Search using **everyday language** and get professional medical results! The app uses the **NIH Medical Conditions API** (2,400+ conditions with built-in synonyms) plus 85+ curated term mappings for comprehensive coverage.
 
@@ -270,7 +251,7 @@ Click the ℹ️ icon in the search bar to see tips:
 
 ---
 
-## 📊 Category Grouping (Phase 7A)
+## 📊 Category Grouping
 
 Organize search results by ICD-10 chapter for easier navigation!
 
@@ -343,7 +324,7 @@ Results grouped into categories:
 
 ---
 
-## ⭐ Favorites & History (Phase 6)
+## ⭐ Favorites & History
 
 Save frequently used ICD codes and track your search history with timestamps!
 
@@ -410,7 +391,7 @@ Track what you've searched with rich metadata:
 
 ---
 
-## 🎯 Intelligent Search Ranking (Phase 4)
+## 🎯 Intelligent Search Ranking
 
 Unlike traditional medical code databases that return results alphabetically, MedCodeMap uses a **multi-factor relevance algorithm** to show the most clinically useful codes first.
 
@@ -504,7 +485,7 @@ Popularity scores are based on:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/icd-lookup-app.git
+   git clone https://github.com/minhister1020/icd-lookup-app.git
    cd icd-lookup-app
    ```
 
@@ -581,35 +562,38 @@ Example searches:
 ## 📁 Project Structure
 
 ```
-icd-lookup-app/
+medcodemap/
 ├── app/
 │   ├── components/
 │   │   ├── SearchBar.tsx        # Search input with recent searches
 │   │   ├── SearchResults.tsx    # Results container with view toggle (Flat/Grouped)
 │   │   ├── ResultCard.tsx       # ICD result card with star & drug/trial expansion
-│   │   ├── CategorySection.tsx  # Collapsible category section (Phase 7A)
+│   │   ├── CategorySection.tsx  # Collapsible category section
 │   │   ├── DrugCard.tsx         # Individual drug display (blue theme)
 │   │   ├── TrialCard.tsx        # Individual trial display (purple theme)
-│   │   ├── FavoritesPanel.tsx   # Favorites slide-in panel (Phase 6)
-│   │   └── HistoryPanel.tsx     # History slide-in panel (Phase 6)
+│   │   ├── FavoritesPanel.tsx   # Favorites slide-in panel
+│   │   ├── HistoryPanel.tsx     # History slide-in panel
+│   │   └── ThemeToggle.tsx      # Dark/light mode toggle
 │   ├── lib/
 │   │   ├── api.ts               # ClinicalTables API helper (with translation)
-│   │   ├── conditionsApi.ts     # NIH Conditions API client with caching (Phase 6)
-│   │   ├── chapterMapping.ts    # ICD-10 chapter lookup (21 chapters) (Phase 7A)
-│   │   ├── grouping.ts          # Grouping algorithm & helpers (Phase 7A)
+│   │   ├── conditionsApi.ts     # NIH Conditions API client with caching
+│   │   ├── chapterMapping.ts    # ICD-10 chapter lookup (21 chapters)
+│   │   ├── grouping.ts          # Grouping algorithm & helpers
 │   │   ├── openFdaApi.ts        # OpenFDA API helper
 │   │   ├── clinicalTrialsApi.ts # ClinicalTrials.gov API helper
-│   │   ├── scoring.ts           # Relevance scoring algorithm (Phase 4)
+│   │   ├── scoring.ts           # Relevance scoring algorithm
 │   │   ├── commonCodes.ts       # ICD-10 frequency data (100+ codes)
-│   │   ├── termMappings.ts      # Common → Medical term mappings (Phase 5)
-│   │   ├── termMapper.ts        # Translation logic (Phase 5)
-│   │   └── favoritesStorage.ts  # Favorites & History localStorage utils (Phase 6)
+│   │   ├── termMappings.ts      # Common → Medical term mappings
+│   │   ├── termMapper.ts        # Translation logic
+│   │   └── favoritesStorage.ts  # Favorites & History localStorage utils
 │   ├── types/
 │   │   └── icd.ts               # TypeScript interfaces & helpers
 │   ├── globals.css              # Global styles & animations
+│   ├── icon.svg                 # Favicon (MedCodeMap nodes)
 │   ├── layout.tsx               # Root layout
 │   └── page.tsx                 # Main page with state management
 ├── public/
+│   ├── medcodemap-logo.svg      # MedCodeMap logo
 │   └── screenshot.png           # README screenshot
 ├── PLAN.md                      # Development plan & progress
 ├── AGENTS.md                    # AI assistant guidelines
@@ -743,9 +727,7 @@ copies or substantial portions of the Software.
 **Bobby (minhister1020)**
 
 - 🏢 HealthVerity AI Solutions Specialist
-- 🔗 [LinkedIn](https://www.linkedin.com/in/yourprofile)
-- 🐙 [GitHub](https://github.com/yourusername)
-- 📧 minhister1020@example.com
+- 🐙 [GitHub](https://github.com/minhister1020)
 
 ---
 

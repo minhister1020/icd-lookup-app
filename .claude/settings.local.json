@@ -4,7 +4,20 @@
       "Bash(wc:*)",
       "Bash(npm run dev:*)",
       "Bash(cd:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(ls:*)",
+      "Bash(git symbolic-ref:*)",
+      "Bash(git pull:*)",
+      "Bash(git checkout:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run lint)",
+      "Bash(gh pr create --title \"fix\\(perf\\): prevent result card flashing during scroll on large lists\" --body \"$\\(cat <<''EOF''\n## Summary\n- Wrap card components \\(ResultCard, DrugCard, TrialCard, CategorySection\\) with `React.memo\\(\\)` to prevent unnecessary re-renders\n- Add `hasMounted` ref pattern to prevent CSS animations from replaying on re-renders\n- Track already-animated results in SearchResults to allow new results \\(Load More\\) to animate while preventing re-animation of existing results\n- Replace `transition-all` with specific properties \\(`transform`, `box-shadow`, `border-color`\\) for better CSS performance\n- Fix TrialCard location key from array index to composite key for stable React reconciliation\n\n## Problem\nICD-10 result cards flash white and disappear/reappear when scrolling through large result sets \\(87+ cards, e.g., Musculoskeletal chapter\\). This was caused by:\n1. Missing `React.memo` on card components leading to full re-renders\n2. CSS animations replaying on every render\n3. Heavy components \\(ResultCard is ~1000 lines with internal state\\)\n\n## Testing\n- [ ] Search \"musculoskeletal\" to get 87+ results\n- [ ] Scroll rapidly up and down - verify no white flashing\n- [ ] Expand drugs on a card, scroll away, scroll back - verify expansion state preserved\n- [ ] Click \"Load More\" - verify new cards animate, existing cards don''t\n- [ ] Toggle favorites - verify only the affected card re-renders\n\n## Technical Details\n- Build passes successfully\n- All existing functionality preserved \\(drug expansion, trial expansion, favorites, Load More\\)\n\n---\n\n[![Compound Engineered]\\(https://img.shields.io/badge/Compound-Engineered-6366f1\\)]\\(https://github.com/EveryInc/compound-engineering-plugin\\) 🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\nEOF\n\\)\")",
+      "Bash(timeout:*)",
+      "Bash(git show:*)",
+      "Bash(grep:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

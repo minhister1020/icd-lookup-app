@@ -69,7 +69,7 @@ interface ResultCardProps {
 // Component
 // =============================================================================
 
-const ResultCard = memo(function ResultCard({
+function ResultCard({
   code,
   name,
   onDrugsLoaded,
@@ -306,9 +306,8 @@ const ResultCard = memo(function ResultCard({
       className="
         group
         relative
-        bg-white/90
-        dark:bg-gray-800/90
-        backdrop-blur-sm
+        bg-white
+        dark:bg-gray-800
         rounded-2xl
         border
         border-gray-200/60
@@ -324,6 +323,7 @@ const ResultCard = memo(function ResultCard({
         duration-300
         ease-out
         overflow-hidden
+        will-change-transform
       "
     >
       {/* Main Card Content */}
@@ -992,6 +992,6 @@ const ResultCard = memo(function ResultCard({
       />
     </div>
   );
-});
+}
 
-export default ResultCard;
+export default memo(ResultCard);
