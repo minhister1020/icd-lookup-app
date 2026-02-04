@@ -24,7 +24,7 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import { 
   ChevronDown,
   Bug,
@@ -283,7 +283,7 @@ interface CategorySectionProps {
 // Component
 // =============================================================================
 
-export default function CategorySection({
+const CategorySection = memo(function CategorySection({
   category,
   onToggle,
   isFirstCategory = false,
@@ -537,4 +537,6 @@ export default function CategorySection({
       )}
     </div>
   );
-}
+});
+
+export default CategorySection;

@@ -16,7 +16,7 @@
 
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { 
   AlertCircle, 
   SearchX, 
@@ -215,12 +215,53 @@ export default function SearchResults({
 }: SearchResultsProps) {
   
   // =========================================================================
+  // Animation Control - Prevent animation replay on re-renders
+  // =========================================================================
+
+  /**
+   * Track if this component has completed its initial render.
+   * Used to prevent animations from replaying when results update.
+   */
+  const hasMounted = useRef(false);
+
+  /**
+   * Track result codes that have already been animated.
+   * New results (e.g., from Load More) will animate, existing ones won't.
+   */
+  const animatedResultsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    hasMounted.current = true;
+  }, []);
+
+  /**
+   * Update the set of animated results when results change.
+   * Only mark new results as "to be animated" if this isn't the first render.
+   */
+  useEffect(() => {
+    if (hasMounted.current) {
+      // Mark all current results as animated so they don't re-animate
+      results.forEach(r => animatedResultsRef.current.add(r.code));
+    } else {
+      // First render - all results should animate initially
+      animatedResultsRef.current = new Set(results.map(r => r.code));
+    }
+  }, [results]);
+
+  /**
+   * Determines if a result should animate (only if it hasn't been seen before).
+   */
+  const shouldAnimate = useCallback((code: string): boolean => {
+    return !animatedResultsRef.current.has(code);
+  }, []);
+
+  // =========================================================================
   // Phase 7: Category Grouping State
   // =========================================================================
-  
+
   /** View mode: 'flat' for card grid, 'grouped' for category sections */
   const [viewMode, setViewMode] = useState<ViewMode>('grouped');
-  
+
   /** Grouped results - computed from results array */
   const [groupedResults, setGroupedResults] = useState<GroupedSearchResults | null>(null);
   
@@ -823,26 +864,29 @@ export default function SearchResults({
           ) : (
             /* Flat View - Card Grid */
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {results.map((result, index) => (
-                <div 
-                  key={result.code}
-                  className="animate-in fade-in slide-in-from-bottom-2"
-                  style={{ animationDelay: `${Math.min(index, 10) * 50}ms`, animationFillMode: 'backwards' }}
-                >
-                  <ResultCard
-                    code={result.code}
-                    name={result.name}
-                    onDrugsLoaded={onDrugsLoaded}
-                    onTrialsLoaded={onTrialsLoaded}
-                    // Phase 4C: Pass relevance data for badges
-                    score={result.score}
-                    rank={index + 1}
-                    // Phase 6: Favorites props
-                    isFavorite={isFavorited ? isFavorited(result.code) : favoritesMap.has(result.code)}
-                    onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(result) : undefined}
-                  />
-                </div>
-              ))}
+              {results.map((result, index) => {
+                const animate = shouldAnimate(result.code);
+                return (
+                  <div
+                    key={result.code}
+                    className={animate ? "animate-in fade-in slide-in-from-bottom-2" : ""}
+                    style={animate ? { animationDelay: `${Math.min(index, 10) * 50}ms`, animationFillMode: 'backwards' } : undefined}
+                  >
+                    <ResultCard
+                      code={result.code}
+                      name={result.name}
+                      onDrugsLoaded={onDrugsLoaded}
+                      onTrialsLoaded={onTrialsLoaded}
+                      // Phase 4C: Pass relevance data for badges
+                      score={result.score}
+                      rank={index + 1}
+                      // Phase 6: Favorites props
+                      isFavorite={isFavorited ? isFavorited(result.code) : favoritesMap.has(result.code)}
+                      onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(result) : undefined}
+                    />
+                  </div>
+                );
+              })}
             </div>
           )}
         </>

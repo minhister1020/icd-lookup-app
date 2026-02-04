@@ -23,7 +23,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Pill, Building2, ChevronDown, ChevronUp, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
 import { DrugResult } from '../types/icd';
 
@@ -45,7 +45,7 @@ interface DrugCardProps {
 // Component
 // =============================================================================
 
-export default function DrugCard({ drug, badgeType }: DrugCardProps) {
+const DrugCard = memo(function DrugCard({ drug, badgeType }: DrugCardProps) {
   // Track whether the full indication is expanded
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -227,4 +227,6 @@ export default function DrugCard({ drug, badgeType }: DrugCardProps) {
       )}
     </div>
   );
-}
+});
+
+export default DrugCard;

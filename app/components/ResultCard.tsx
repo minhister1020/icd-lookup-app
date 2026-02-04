@@ -17,7 +17,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, memo } from 'react';
 import { 
   ChevronRight, 
   Pill, 
@@ -69,16 +69,26 @@ interface ResultCardProps {
 // Component
 // =============================================================================
 
-export default function ResultCard({ 
-  code, 
-  name, 
-  onDrugsLoaded, 
-  onTrialsLoaded, 
-  score, 
+const ResultCard = memo(function ResultCard({
+  code,
+  name,
+  onDrugsLoaded,
+  onTrialsLoaded,
+  score,
   rank,
   isFavorite = false,
   onToggleFavorite,
 }: ResultCardProps) {
+  // =========================================================================
+  // Animation Control - Prevent animation replay on re-renders
+  // =========================================================================
+  const hasMounted = useRef(false);
+
+  useEffect(() => {
+    // Set mounted flag after initial render to prevent animation replay
+    hasMounted.current = true;
+  }, []);
+
   // =========================================================================
   // Drug State (Phase 3A) - Updated for AI Validation Pipeline
   // =========================================================================
@@ -310,7 +320,7 @@ export default function ResultCard({
         hover:border-[#1976D2]/40
         dark:hover:border-[#1976D2]/50
         hover:-translate-y-1
-        transition-all
+        transition-[transform,box-shadow,border-color]
         duration-300
         ease-out
         overflow-hidden
@@ -982,4 +992,6 @@ export default function ResultCard({
       />
     </div>
   );
-}
+});
+
+export default ResultCard;

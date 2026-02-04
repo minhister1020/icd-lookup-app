@@ -21,7 +21,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { 
   FlaskConical, 
   Building2, 
@@ -48,7 +48,7 @@ interface TrialCardProps {
 // Component
 // =============================================================================
 
-export default function TrialCard({ trial }: TrialCardProps) {
+const TrialCard = memo(function TrialCard({ trial }: TrialCardProps) {
   // Track whether details are expanded
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -271,9 +271,9 @@ export default function TrialCard({ trial }: TrialCardProps) {
                 </span>
               </div>
               <ul className="space-y-1">
-                {trial.locations.map((loc, index) => (
-                  <li 
-                    key={index}
+                {trial.locations.map((loc) => (
+                  <li
+                    key={`${loc.facility}-${loc.city}-${loc.state}`}
                     className="text-xs text-gray-500 dark:text-gray-400"
                   >
                     <span className="font-medium">{loc.facility}</span>
@@ -319,4 +319,6 @@ export default function TrialCard({ trial }: TrialCardProps) {
       )}
     </div>
   );
-}
+});
+
+export default TrialCard;
