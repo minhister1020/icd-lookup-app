@@ -122,18 +122,79 @@ export interface SearchState {
 export interface DrugResult {
   /** Brand name of the drug (e.g., "Tylenol", "Metformin") */
   brandName: string;
-  
+
   /** Generic/chemical name (e.g., "Acetaminophen", "Metformin Hydrochloride") */
   genericName: string;
-  
+
   /** Company that manufactures the drug */
   manufacturer: string;
-  
+
   /** What conditions/diseases this drug treats (truncated for display) */
   indication: string;
-  
+
   /** Optional safety warnings (truncated for display) */
   warnings?: string;
+
+  // =========================================================================
+  // UMLS/RxNorm Enrichment Fields (optional - populated when available)
+  // =========================================================================
+
+  /** RxNorm Concept Unique Identifier - used for UMLS lookups */
+  rxcui?: string;
+
+  /** Drug classifications from RxClass API (e.g., "GLP-1 Agonist", "SSRI") */
+  drugClasses?: DrugClass[];
+
+  /** Active ingredients - useful for combination drugs (e.g., Qsymia) */
+  ingredients?: string[];
+
+  /** Related drugs with different strengths/forms */
+  relatedDrugs?: RelatedDrug[];
+
+  /** Dosage form (e.g., "Tablet", "Injection", "Pen Injector") */
+  dosageForm?: string;
+
+  /** Drug strength (e.g., "10 MG", "0.25 MG/0.5 ML") */
+  strength?: string;
+}
+
+/**
+ * Drug classification information from UMLS RxClass API.
+ *
+ * Classification systems:
+ * - EPC: Established Pharmacologic Class (most clinically useful)
+ * - MOA: Mechanism of Action
+ * - ATC: Anatomical Therapeutic Chemical
+ * - PE: Physiologic Effect
+ * - DISEASE: Disease-based classification
+ */
+export interface DrugClass {
+  /** Unique identifier for the class */
+  classId: string;
+
+  /** Human-readable class name (e.g., "GLP-1 Agonist", "Biguanide") */
+  className: string;
+
+  /** Classification system type */
+  classType: 'ATC' | 'EPC' | 'MOA' | 'PE' | 'DISEASE' | 'VA' | 'MESH' | string;
+}
+
+/**
+ * Related drug information for showing alternative strengths/forms.
+ * Used to display "Related" section in DrugCard.
+ */
+export interface RelatedDrug {
+  /** RxNorm Concept Unique Identifier */
+  rxcui: string;
+
+  /** Full drug name */
+  name: string;
+
+  /** Dosage form (e.g., "Tablet", "Injection") */
+  dosageForm: string;
+
+  /** Drug strength (e.g., "10 MG", "0.5 MG/ML") */
+  strength: string;
 }
 
 /**
