@@ -17,7 +17,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect, useRef, memo } from 'react';
+import { useState, useMemo, useEffect, useRef, memo, useCallback } from 'react';
 import { 
   ChevronRight, 
   Pill, 
@@ -32,6 +32,7 @@ import { DrugResult, ClinicalTrialResult, TrialStatus } from '../types/icd';
 import { ValidatedDrugResult, DRUG_SCORE_THRESHOLDS } from '../lib/drugValidationPipeline';
 import { searchTrialsByCondition } from '../lib/clinicalTrialsApi';
 import DrugCard from './DrugCard';
+import DrugFilterChips from './DrugFilterChips';
 import { CheckCircle2, Info } from 'lucide-react';
 import TrialCard from './TrialCard';
 
@@ -165,30 +166,100 @@ function ResultCard({
       setStatusFilters(new Set(DEFAULT_STATUS_FILTERS));
     }
   }, [trialsExpanded]);
-  
+
+  // =========================================================================
+  // Drug Form Filter State (Phase 10: Dosage Form Filtering)
+  // =========================================================================
+
+  /**
+   * Selected dosage forms for filtering drugs.
+   * When empty, all drugs are shown (no filtering).
+   * When populated, drugs matching ANY selected form are shown (OR logic).
+   */
+  const [selectedDrugForms, setSelectedDrugForms] = useState<string[]>([]);
+
+  /**
+   * Available dosage forms extracted from loaded drugs.
+   * Memoized to avoid recalculating on every render.
+   */
+  const availableDrugForms = useMemo(() => {
+    const forms = new Set<string>();
+    for (const drug of drugs) {
+      if (drug.dosageForm) {
+        forms.add(drug.dosageForm);
+      }
+    }
+    return Array.from(forms).sort();
+  }, [drugs]);
+
+  /**
+   * Toggle a dosage form filter on/off.
+   */
+  const toggleDrugForm = useCallback((form: string) => {
+    setSelectedDrugForms(prev => {
+      if (prev.includes(form)) {
+        return prev.filter(f => f !== form);
+      }
+      return [...prev, form];
+    });
+  }, []);
+
+  /**
+   * Clear all dosage form filters.
+   */
+  const clearDrugFormFilters = useCallback(() => {
+    setSelectedDrugForms([]);
+  }, []);
+
+  /**
+   * Filter drugs by selected dosage forms (OR logic).
+   * When no filters selected, returns all drugs.
+   */
+  const filterDrugsByForm = useCallback((drugList: ValidatedDrugResult[]) => {
+    if (selectedDrugForms.length === 0) {
+      return drugList; // No filter, show all
+    }
+    return drugList.filter(drug =>
+      drug.dosageForm && selectedDrugForms.includes(drug.dosageForm)
+    );
+  }, [selectedDrugForms]);
+
+  /**
+   * Reset drug form filters when drug section is collapsed.
+   */
+  useEffect(() => {
+    if (!drugsExpanded) {
+      setSelectedDrugForms([]);
+    }
+  }, [drugsExpanded]);
+
   // =========================================================================
   // Memoized Drug Filters (calculate once, not multiple times in render)
   // =========================================================================
-  
+
   /**
-   * FDA-approved drugs (score >= 7).
+   * FDA-approved drugs (score >= 7), filtered by dosage form.
    * These are drugs specifically approved for this indication.
    */
   const fdaApprovedDrugs = useMemo(
-    () => drugs.filter(d => d.relevanceScore >= DRUG_SCORE_THRESHOLDS.FDA_APPROVED),
-    [drugs]
+    () => filterDrugsByForm(
+      drugs.filter(d => d.relevanceScore >= DRUG_SCORE_THRESHOLDS.FDA_APPROVED)
+    ),
+    [drugs, filterDrugsByForm]
   );
-  
+
   /**
-   * Off-label drugs (score 4-6).
+   * Off-label drugs (score 4-6), filtered by dosage form.
    * Commonly prescribed for this condition but not FDA-approved for it.
    */
   const offLabelDrugs = useMemo(
-    () => drugs.filter(
-      d => d.relevanceScore >= DRUG_SCORE_THRESHOLDS.OFF_LABEL && 
-           d.relevanceScore < DRUG_SCORE_THRESHOLDS.FDA_APPROVED
+    () => filterDrugsByForm(
+      drugs.filter(
+        d => d.relevanceScore >= DRUG_SCORE_THRESHOLDS.OFF_LABEL &&
+             d.relevanceScore < DRUG_SCORE_THRESHOLDS.FDA_APPROVED
+      )
     ),
-    [drugs]
+    [drugs, filterDrugsByForm]
   );
   
   // =========================================================================
@@ -722,6 +793,30 @@ function ResultCard({
                   </div>
                 )}
 
+                {/* Dosage Form Filter Chips */}
+                <DrugFilterChips
+                  availableForms={availableDrugForms}
+                  selectedForms={selectedDrugForms}
+                  onToggleForm={toggleDrugForm}
+                  onClearFilters={clearDrugFormFilters}
+                />
+
+                {/* Empty State when filter matches nothing */}
+                {selectedDrugForms.length > 0 && fdaApprovedDrugs.length === 0 && offLabelDrugs.length === 0 && (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      No drugs match the selected dosage form(s)
+                    </p>
+                    <button
+                      type="button"
+                      onClick={clearDrugFormFilters}
+                      className="mt-2 text-xs text-blue-500 hover:text-blue-600 font-medium"
+                    >
+                      Clear filters to see all drugs
+                    </button>
+                  </div>
+                )}
+
                 {/* FDA-Approved Treatments Section */}
                 {fdaApprovedDrugs.length > 0 && (
                   <div>
@@ -781,10 +876,10 @@ function ResultCard({
                   <div>
                     <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-1.5 mb-3">
                       <Pill className="w-3 h-3" />
-                      Related Drugs ({drugs.length})
+                      Related Drugs ({filterDrugsByForm(drugs).length})
                     </p>
                     <div className="grid gap-2 sm:grid-cols-1">
-                      {drugs.map((drug, index) => (
+                      {filterDrugsByForm(drugs).map((drug, index) => (
                         <DrugCard key={`unscored-${drug.brandName}-${index}`} drug={drug} />
                       ))}
                     </div>
