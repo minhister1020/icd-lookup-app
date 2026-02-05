@@ -24,6 +24,7 @@ import { getDrugsForCondition } from './conditionDrugMappings';
 import { searchMultipleRxNormDrugs, RxNormDrug } from './rxNormApi';
 import { scoreDrugRelevance, DrugScore } from './drugRelevanceAgent';
 import { DrugResult } from '../types/icd';
+import { getFullDrugEnrichment } from './umlsRxClassApi';
 
 // =============================================================================
 // Configuration
@@ -357,20 +358,28 @@ export async function validateDrugs(
     }
     
     console.log(`${logPrefix} Fetched ${rxNormDrugs.length} drugs from RxNorm`);
-    
-    // Convert RxNorm drugs to DrugResult format
+
+    // Convert RxNorm drugs to DrugResult format (with rxcui for UMLS enrichment)
     const rawDrugs: DrugResult[] = rxNormDrugs.map(rxDrug => ({
       brandName: rxDrug.brandName,
       genericName: rxDrug.genericName,
       manufacturer: 'Various', // RxNorm doesn't provide manufacturer
       indication: rxDrug.dosageForm ? `${rxDrug.dosageForm}${rxDrug.strength ? ` - ${rxDrug.strength}` : ''}` : 'Prescription medication',
       warnings: undefined,
+      rxcui: rxDrug.rxcui, // Store rxcui for UMLS enrichment
+      dosageForm: rxDrug.dosageForm,
+      strength: rxDrug.strength,
     }));
 
     // =========================================================================
-    // Step 3: Prepare drugs for AI scoring
+    // Step 3.5: Enrich drugs with UMLS data (classes, ingredients, related)
     // =========================================================================
-    const drugInputs = rawDrugs.map(drug => ({
+    const enrichedDrugs = await enrichDrugsWithUMLS(rawDrugs, logPrefix);
+
+    // =========================================================================
+    // Step 4: Prepare drugs for AI scoring
+    // =========================================================================
+    const drugInputs = enrichedDrugs.map(drug => ({
       brandName: drug.brandName,
       genericName: drug.genericName,
     }));
@@ -384,7 +393,7 @@ export async function validateDrugs(
     } catch (scoreError) {
       // Graceful degradation: If AI fails, return unfiltered results
       console.warn(`${logPrefix} AI scoring failed, returning unfiltered results:`, scoreError);
-      const unfilteredDrugs = rawDrugs.map(drug => ({
+      const unfilteredDrugs = enrichedDrugs.map(drug => ({
         ...drug,
         relevanceScore: -1, // Indicate score not available
       }));
@@ -395,7 +404,7 @@ export async function validateDrugs(
     if (scores.length === 0) {
       // AI returned no scores - use unfiltered results
       console.warn(`${logPrefix} AI returned no scores, returning unfiltered results`);
-      const unfilteredDrugs = rawDrugs.map(drug => ({
+      const unfilteredDrugs = enrichedDrugs.map(drug => ({
         ...drug,
         relevanceScore: -1,
       }));
@@ -406,11 +415,11 @@ export async function validateDrugs(
     console.log(`${logPrefix} Received ${scores.length} scores from AI`);
 
     // =========================================================================
-    // Step 5: Match scores back to original drugs
+    // Step 6: Match scores back to enriched drugs
     // =========================================================================
     const scoreMap = buildScoreMap(scores);
-    
-    const scoredDrugs: ValidatedDrugResult[] = rawDrugs.map(drug => {
+
+    const scoredDrugs: ValidatedDrugResult[] = enrichedDrugs.map(drug => {
       const matchedScore = findMatchingScore(drug, scoreMap);
       return {
         ...drug,
@@ -613,6 +622,78 @@ function findMatchingScore(
   // No match found
   console.warn(`[DrugPipeline] No score match for: ${drug.brandName} (${drug.genericName})`);
   return undefined;
+}
+
+// =============================================================================
+// UMLS Enrichment
+// =============================================================================
+
+/**
+ * Enriches drugs with UMLS data (classes, ingredients, related drugs).
+ *
+ * This function:
+ * - Fetches drug class badges (e.g., "GLP-1 Agonist", "SSRI")
+ * - Gets ingredient breakdown for combination drugs
+ * - Finds related drugs with different strengths/forms
+ *
+ * Graceful degradation: If enrichment fails, returns original drugs unchanged.
+ *
+ * @param drugs - Array of DrugResult objects with rxcui
+ * @param logPrefix - Logging prefix for debugging
+ * @returns Promise resolving to enriched drugs
+ */
+async function enrichDrugsWithUMLS(
+  drugs: DrugResult[],
+  logPrefix: string
+): Promise<DrugResult[]> {
+  // Skip enrichment if no drugs have rxcui
+  const drugsWithRxcui = drugs.filter(d => d.rxcui);
+  if (drugsWithRxcui.length === 0) {
+    console.log(`${logPrefix} No rxcui values for UMLS enrichment, skipping`);
+    return drugs;
+  }
+
+  console.log(`${logPrefix} Enriching ${drugsWithRxcui.length} drugs with UMLS data`);
+
+  try {
+    // Fetch enrichment data for all drugs in parallel
+    const enrichmentPromises = drugs.map(async (drug) => {
+      if (!drug.rxcui) {
+        return drug; // No rxcui, return unchanged
+      }
+
+      try {
+        const enrichment = await getFullDrugEnrichment(drug.rxcui);
+
+        return {
+          ...drug,
+          drugClasses: enrichment.classes.length > 0 ? enrichment.classes : undefined,
+          ingredients: enrichment.ingredients.length > 1 ? enrichment.ingredients : undefined, // Only show for combo drugs
+          relatedDrugs: enrichment.relatedDrugs.length > 0 ? enrichment.relatedDrugs : undefined,
+        };
+      } catch (enrichError) {
+        // Individual drug enrichment failure - return original
+        console.warn(`${logPrefix} Enrichment failed for ${drug.brandName}:`, enrichError);
+        return drug;
+      }
+    });
+
+    const enrichedDrugs = await Promise.all(enrichmentPromises);
+
+    // Count how many were actually enriched
+    const enrichedCount = enrichedDrugs.filter(
+      d => d.drugClasses || d.ingredients || d.relatedDrugs
+    ).length;
+
+    console.log(`${logPrefix} Successfully enriched ${enrichedCount}/${drugs.length} drugs`);
+
+    return enrichedDrugs;
+
+  } catch (error) {
+    // Batch enrichment failure - return original drugs
+    console.warn(`${logPrefix} UMLS enrichment failed, returning original drugs:`, error);
+    return drugs;
+  }
 }
 
 // =============================================================================

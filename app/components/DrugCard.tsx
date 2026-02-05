@@ -24,8 +24,8 @@
 'use client';
 
 import { useState, memo } from 'react';
-import { Pill, Building2, ChevronDown, ChevronUp, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
-import { DrugResult } from '../types/icd';
+import { Pill, Building2, ChevronDown, ChevronUp, AlertTriangle, CheckCircle2, Info, FlaskConical, Layers } from 'lucide-react';
+import { DrugResult, DrugClass, RelatedDrug } from '../types/icd';
 
 // =============================================================================
 // Props Interface
@@ -142,9 +142,29 @@ const DrugCard = memo(function DrugCard({ drug, badgeType }: DrugCardProps) {
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
             {drug.genericName}
           </p>
+
+          {/* Drug Class Badges */}
+          {drug.drugClasses && drug.drugClasses.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {drug.drugClasses.slice(0, 3).map((cls) => (
+                <span
+                  key={cls.classId}
+                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                  title={`${cls.classType}: ${cls.className}`}
+                >
+                  {cls.className}
+                </span>
+              ))}
+              {drug.drugClasses.length > 3 && (
+                <span className="text-[10px] text-gray-400 dark:text-gray-500 self-center">
+                  +{drug.drugClasses.length - 3} more
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
-      
+
       {/* Manufacturer */}
       <div className="flex items-center gap-1.5 mb-3">
         <Building2 className="w-3 h-3 text-gray-400" />
@@ -170,8 +190,8 @@ const DrugCard = memo(function DrugCard({ drug, badgeType }: DrugCardProps) {
           {drug.indication}
         </p>
         
-        {/* Expand/Collapse button (if indication is long) */}
-        {drug.indication.length > 100 && (
+        {/* Expand/Collapse button (if indication is long or has extra data) */}
+        {(drug.indication.length > 100 || drug.ingredients || drug.relatedDrugs) && (
           <button
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
@@ -196,13 +216,79 @@ const DrugCard = memo(function DrugCard({ drug, badgeType }: DrugCardProps) {
             ) : (
               <>
                 <ChevronDown className="w-3 h-3" />
-                Read more
+                {drug.ingredients || drug.relatedDrugs ? 'More details' : 'Read more'}
               </>
             )}
           </button>
         )}
       </div>
-      
+
+      {/* Ingredients Section (for combination drugs) - Only shown when expanded */}
+      {drug.ingredients && drug.ingredients.length > 1 && isExpanded && (
+        <div
+          className="
+            mt-3
+            pt-3
+            border-t
+            border-gray-100
+            dark:border-gray-700
+          "
+        >
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <FlaskConical className="w-3 h-3 text-purple-500" />
+            <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
+              Active Ingredients
+            </span>
+          </div>
+          <ul className="ml-4 space-y-0.5">
+            {drug.ingredients.map((ingredient) => (
+              <li
+                key={ingredient}
+                className="text-xs text-gray-600 dark:text-gray-400 list-disc"
+              >
+                {ingredient}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Related Drugs Section - Only shown when expanded */}
+      {drug.relatedDrugs && drug.relatedDrugs.length > 0 && isExpanded && (
+        <div
+          className="
+            mt-3
+            pt-3
+            border-t
+            border-gray-100
+            dark:border-gray-700
+          "
+        >
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Layers className="w-3 h-3 text-blue-500" />
+            <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+              Related Strengths/Forms
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {drug.relatedDrugs.slice(0, 5).map((related) => (
+              <span
+                key={related.rxcui}
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+                title={related.name}
+              >
+                {related.strength || related.dosageForm}
+              </span>
+            ))}
+            {drug.relatedDrugs.length > 5 && (
+              <span className="text-[10px] text-gray-400 dark:text-gray-500 self-center">
+                +{drug.relatedDrugs.length - 5} more
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Warnings (if present) */}
       {drug.warnings && isExpanded && (
         <div 
