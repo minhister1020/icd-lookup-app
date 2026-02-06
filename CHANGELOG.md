@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2026-02-04] - Enhanced Drug Lookup with UMLS
+
+### Added
+- Drug class badges showing therapeutic categories (Beta Blocker, NSAID, Biguanide, GLP-1 Agonist, etc.)
+- Ingredient breakdown for combination drugs (Qsymia, Contrave, etc.)
+- Related drug suggestions with alternative strengths and dosage forms
+- Dosage form filtering with filter chips (Pills, Liquids, Injections, Topical)
+- UMLS RxClass API integration with graceful degradation
+- 24hr caching for drug classes and ingredients, 7-day caching for stable data
+
+### Fixed
+- NASH/NAFLD now correctly returns Rezdiffra (resmetirom) - FDA-approved March 2024
+- Stale drug mappings for metabolic dysfunction-associated steatohepatitis (MASH)
+- Missing entries for fatty liver disease and liver fibrosis
+
+### Technical
+- New umlsRxClassApi.ts module for RxClass API integration
+- Extended DrugResult interface with rxcui, drugClasses, ingredients, relatedDrugs
+- New DrugFilterChips component for dosage form filtering
+- Enhanced drugValidationPipeline.ts with UMLS enrichment layer
+
+---
+
 ## [Unreleased]
 
 ### Changed
