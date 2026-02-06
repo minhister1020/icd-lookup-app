@@ -247,40 +247,80 @@ async function findCuiForIcd10(icd10Code: string): Promise<string | null> {
 }
 
 /**
- * Find SNOMED CT atoms (concepts) linked to a CUI.
+ * Find SNOMED CT concepts for an ICD-10 code using the UMLS Crosswalk API.
  *
- * This is Step 2: CUI → SNOMED CT concept
- * A CUI can map to multiple SNOMED concepts. We want the
- * "clinical finding" type, which represents the diagnosis in SNOMED terms.
+ * This replaces the old CUI → atoms approach which failed because narrow
+ * ICD-10 CUIs often have no SNOMED CT atoms.
  *
- * @param cui - UMLS CUI (e.g., "C0011860" for Type 2 Diabetes)
- * @returns Array of SNOMED concept IDs
+ * The crosswalk API directly maps between coding systems:
+ * GET /crosswalk/current/source/ICD10CM/{code}?targetSource=SNOMEDCT_US
+ *
+ * @param icd10Code - ICD-10-CM code (e.g., "E11.9")
+ * @returns Array of SNOMED concept IDs (may include obsolete ones)
  */
-async function findSnomedConceptsForCui(cui: string): Promise<string[]> {
-  const data = await umlsFetch(`content/current/CUI/${cui}/atoms`, {
-    sabs: 'SNOMEDCT_US',
-    ttys: 'PT,FN', // Preferred Term, Fully Specified Name
+async function findSnomedConceptsViaXwalk(icd10Code: string): Promise<string[]> {
+  const data = await umlsFetch(`crosswalk/current/source/ICD10CM/${encodeURIComponent(icd10Code)}`, {
+    targetSource: 'SNOMEDCT_US',
     pageSize: '10',
-  }) as { result?: Array<{ sourceConcept?: string; ui?: string; name?: string }> } | null;
+  }) as { result?: Array<{ ui?: string; name?: string; obsolete?: boolean | string }> } | null;
 
   if (!data?.result?.length) {
+    console.warn(`[SNOMED] No crosswalk results for ICD-10: ${icd10Code}`);
     return [];
   }
 
-  // Extract unique SNOMED concept IDs from the source concept URLs
-  const snomedIds = new Set<string>();
-  for (const atom of data.result) {
-    if (atom.sourceConcept) {
-      // sourceConcept is a URL like "/rest/content/current/source/SNOMEDCT_US/73211009"
-      const parts = atom.sourceConcept.split('/');
-      const snomedId = parts[parts.length - 1];
-      if (snomedId) {
-        snomedIds.add(snomedId);
+  // Separate active and obsolete concepts
+  const activeSnomedIds: string[] = [];
+  const obsoleteSnomedIds: string[] = [];
+
+  for (const entry of data.result) {
+    if (entry.ui && entry.ui !== 'NONE') {
+      // The API returns obsolete as boolean or string "true"/"false"
+      const isObsolete = entry.obsolete === true || entry.obsolete === 'true';
+      if (isObsolete) {
+        obsoleteSnomedIds.push(entry.ui);
+      } else {
+        activeSnomedIds.push(entry.ui);
       }
     }
   }
 
-  return Array.from(snomedIds);
+  // If we have active concepts, use those directly
+  if (activeSnomedIds.length > 0) {
+    return activeSnomedIds;
+  }
+
+  // If all concepts are obsolete, follow replaced_by to find active ones
+  const resolvedIds = new Set<string>();
+  for (const obsId of obsoleteSnomedIds.slice(0, 3)) {
+    const relData = await umlsFetch(`content/current/source/SNOMEDCT_US/${obsId}/relations`, {
+      pageSize: '10',
+    }) as { result?: Array<{
+      additionalRelationLabel?: string;
+      relationLabel?: string;
+      relatedId?: string
+    }> } | null;
+
+    if (relData?.result) {
+      for (const rel of relData.result) {
+        const label = (rel.additionalRelationLabel || rel.relationLabel || '').toLowerCase();
+        if (label.includes('replaced_by') && rel.relatedId) {
+          const parts = rel.relatedId.split('/');
+          const activeId = parts[parts.length - 1];
+          if (activeId) {
+            resolvedIds.add(activeId);
+          }
+        }
+      }
+    }
+  }
+
+  if (resolvedIds.size > 0) {
+    return Array.from(resolvedIds);
+  }
+
+  // Last resort: return the obsolete IDs (some still have useful relations)
+  return obsoleteSnomedIds;
 }
 
 /**
@@ -319,13 +359,21 @@ async function findProceduresForSnomedConcept(snomedId: string): Promise<Procedu
       const relLabel = (rel.additionalRelationLabel || rel.relationLabel || '').toLowerCase();
       const name = rel.relatedIdName || '';
 
-      // Filter for procedure-indicating relationships
+      // Broadened filter based on live testing - includes relationships
+      // like focus_of (educational procedures), cause_of (complications
+      // that need procedures), and has_realization
       const isProcedureRel =
         relLabel.includes('associated_procedure') ||
         relLabel.includes('method') ||
         relLabel.includes('procedure_site') ||
         relLabel.includes('finding_site') ||
-        relLabel.includes('interprets');
+        relLabel.includes('interprets') ||
+        relLabel.includes('focus_of') ||
+        relLabel.includes('has_realization') ||
+        relLabel.includes('treated_by') ||
+        relLabel.includes('may_be_treated_by') ||
+        relLabel.includes('may_be_prevented_by') ||
+        relLabel.includes('has_procedure_context');
 
       if (isProcedureRel && rel.relatedId && !seenCodes.has(rel.relatedId)) {
         // Extract SNOMED ID from the relatedId URL
@@ -346,50 +394,62 @@ async function findProceduresForSnomedConcept(snomedId: string): Promise<Procedu
     }
   }
 
-  // Strategy 2: Search UMLS for procedures mentioning this condition
-  // This catches procedures not directly linked via relationships
+  // Strategy 2: Search UMLS for procedure concepts related to this condition
+  // Searching for the exact condition name only returns diagnosis variations.
+  // Instead, we extract the core condition keyword and search with procedure
+  // suffixes like "screening", "management", "therapy", etc.
   if (procedures.length < 5) {
-    const searchData = await umlsFetch('search/current', {
-      string: snomedId,
-      sabs: 'SNOMEDCT_US',
-      returnIdType: 'sourceUi',
-      pageSize: '25',
-    }) as { result?: { results?: Array<{ ui?: string; name?: string; rootSource?: string }> } } | null;
+    // First get the concept name
+    const conceptData = await umlsFetch(`content/current/source/SNOMEDCT_US/${snomedId}`, {
+    }) as { result?: { name?: string } } | null;
 
-    if (searchData?.result?.results) {
-      for (const result of searchData.result.results) {
-        const name = result.name || '';
-        const code = result.ui || '';
+    const conceptName = conceptData?.result?.name;
+    if (conceptName) {
+      // Extract the core keyword(s) — e.g., "Type 2 diabetes mellitus" → "diabetes"
+      const coreKeyword = extractCoreKeyword(conceptName);
 
-        // Filter for procedure-like results by checking the name
-        const nameLower = name.toLowerCase();
-        const isProcedureName =
-          nameLower.includes('procedure') ||
-          nameLower.includes('therapy') ||
-          nameLower.includes('surgery') ||
-          nameLower.includes('operation') ||
-          nameLower.includes('examination') ||
-          nameLower.includes('assessment') ||
-          nameLower.includes('measurement') ||
-          nameLower.includes('monitoring') ||
-          nameLower.includes('test') ||
-          nameLower.includes('screening') ||
-          nameLower.includes('injection') ||
-          nameLower.includes('infusion') ||
-          nameLower.includes('transplant') ||
-          nameLower.includes('implant');
+      // Search with procedure-oriented suffixes
+      const procedureSuffixes = ['screening', 'management', 'therapy', 'monitoring', 'education', 'test'];
 
-        if (isProcedureName && code && !seenCodes.has(code)) {
-          seenCodes.add(code);
-          procedures.push({
-            code,
-            codeSystem: 'SNOMED',
-            description: name,
-            category: categorizeSnomedProcedure(name, ''),
-            relevanceScore: -1,
-            source: 'umls_api',
-            setting: 'both',
-          });
+      for (const suffix of procedureSuffixes) {
+        if (procedures.length >= MAX_PROCEDURE_RESULTS) break;
+
+        const searchData = await umlsFetch('search/current', {
+          string: `${coreKeyword} ${suffix}`,
+          pageSize: '15',
+        }) as { result?: { results?: Array<{ ui?: string; name?: string; rootSource?: string }> } } | null;
+
+        if (searchData?.result?.results) {
+          for (const result of searchData.result.results) {
+            const name = result.name || '';
+            const code = result.ui || '';
+            const source = result.rootSource || '';
+
+            // Only keep SNOMED CT results
+            if (!source.includes('SNOMEDCT')) continue;
+
+            // Skip if it's clearly a diagnosis, not a procedure
+            const nameLower = name.toLowerCase();
+            const isDiagnosis =
+              nameLower.includes('disorder') ||
+              nameLower.includes('disease') ||
+              (nameLower.includes('mellitus') && !nameLower.includes('management') && !nameLower.includes('education') && !nameLower.includes('screening'));
+
+            if (isDiagnosis) continue;
+
+            if (code && !seenCodes.has(code)) {
+              seenCodes.add(code);
+              procedures.push({
+                code,
+                codeSystem: 'SNOMED',
+                description: name,
+                category: categorizeSnomedProcedure(name, ''),
+                relevanceScore: -1,
+                source: 'umls_api',
+                setting: 'both',
+              });
+            }
+          }
         }
       }
     }
@@ -425,16 +485,33 @@ export async function getSnomedProceduresForDiagnosis(
   }
 
   try {
-    // Step 1: ICD-10 → CUI
-    const cui = await findCuiForIcd10(normalizedCode);
-    if (!cui) {
-      // Negative cache
-      procedureCache.set(cacheKey, { data: [], timestamp: Date.now() });
-      return [];
+    // Step 1+2 combined: ICD-10 → SNOMED CT concepts via crosswalk
+    // (Replaces old CUI → atoms path that returned 404 for narrow ICD-10 concepts)
+    let snomedIds = await findSnomedConceptsViaXwalk(normalizedCode);
+
+    // If crosswalk returned nothing, try the CUI path as fallback
+    if (snomedIds.length === 0) {
+      const cui = await findCuiForIcd10(normalizedCode);
+      if (cui) {
+        // Try to get SNOMED concepts from CUI atoms (works for broader concepts)
+        const atomData = await umlsFetch(`content/current/CUI/${cui}/atoms`, {
+          sabs: 'SNOMEDCT_US',
+          ttys: 'PT,FN',
+          pageSize: '10',
+        }) as { result?: Array<{ sourceConcept?: string }> } | null;
+
+        if (atomData?.result) {
+          for (const atom of atomData.result) {
+            if (atom.sourceConcept) {
+              const parts = atom.sourceConcept.split('/');
+              const id = parts[parts.length - 1];
+              if (id) snomedIds.push(id);
+            }
+          }
+        }
+      }
     }
 
-    // Step 2: CUI → SNOMED CT concepts
-    const snomedIds = await findSnomedConceptsForCui(cui);
     if (snomedIds.length === 0) {
       procedureCache.set(cacheKey, { data: [], timestamp: Date.now() });
       return [];
@@ -468,6 +545,40 @@ export async function getSnomedProceduresForDiagnosis(
 }
 
 // ============================================================
+// Helper: Extract Core Keyword
+// ============================================================
+
+/**
+ * Extract the clinically meaningful keyword from a SNOMED concept name.
+ * Strips qualifiers like "Type 2", "mellitus", "essential", etc.
+ *
+ * Examples:
+ * - "Type 2 diabetes mellitus" → "diabetes"
+ * - "Essential hypertension" → "hypertension"
+ * - "Chronic obstructive lung disease" → "obstructive lung disease"
+ */
+function extractCoreKeyword(conceptName: string): string {
+  const stopWords = [
+    'type', '1', '2', 'ii', 'i', 'mellitus', 'essential', 'primary',
+    'secondary', 'chronic', 'acute', 'unspecified', 'without',
+    'complication', 'complications', 'with', 'the', 'of', 'and', 'or',
+    'non', 'insulin', 'dependent',
+  ];
+
+  const words = conceptName
+    .toLowerCase()
+    .replace(/[(),]/g, '')
+    .split(/\s+/)
+    .filter(w => w.length > 1 && !stopWords.includes(w));
+
+  // Return the first 2 meaningful words, or fallback to first word of original
+  if (words.length === 0) {
+    return conceptName.split(' ')[0];
+  }
+  return words.slice(0, 2).join(' ');
+}
+
+// ============================================================
 // SNOMED Procedure Categorization
 // ============================================================
 
@@ -498,7 +609,7 @@ function categorizeSnomedProcedure(
     return 'diagnostic';
   }
 
-  // Monitoring
+  // Monitoring (includes education/counseling — they support ongoing management)
   if (
     lower.includes('monitor') ||
     lower.includes('measurement') ||
@@ -506,7 +617,10 @@ function categorizeSnomedProcedure(
     lower.includes('surveillance') ||
     lower.includes('follow-up') ||
     lower.includes('tracking') ||
-    lower.includes('evaluation')
+    lower.includes('evaluation') ||
+    lower.includes('education') ||
+    lower.includes('counseling') ||
+    lower.includes('management program')
   ) {
     return 'monitoring';
   }
