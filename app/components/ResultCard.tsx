@@ -26,7 +26,8 @@ import {
   ChevronDown, 
   ChevronUp, 
   AlertCircle,
-  Star
+  Star,
+  Scissors
 } from 'lucide-react';
 import { DrugResult, ClinicalTrialResult, TrialStatus } from '../types/icd';
 import { ValidatedDrugResult, DRUG_SCORE_THRESHOLDS } from '../lib/drugValidationPipeline';
@@ -35,6 +36,10 @@ import DrugCard from './DrugCard';
 import DrugFilterChips from './DrugFilterChips';
 import { CheckCircle2, Info } from 'lucide-react';
 import TrialCard from './TrialCard';
+import { ProcedureResult } from '../types/icd';
+import { getCuratedProcedures, hasCuratedMapping } from '../lib/conditionProcedureMappings';
+import ProcedureCard from './ProcedureCard';
+import ProcedureFilterChips, { FilterOption } from './ProcedureFilterChips';
 
 // =============================================================================
 // Props Interface
@@ -107,6 +112,17 @@ function ResultCard({
   const [trialsError, setTrialsError] = useState<string | null>(null);
   const [trialsExpanded, setTrialsExpanded] = useState(false);
   const [hasFetchedTrials, setHasFetchedTrials] = useState(false);
+
+  // =========================================================================
+  // Procedure State
+  // =========================================================================
+  const proceduresSectionRef = useRef<HTMLDivElement>(null);
+  const [proceduresExpanded, setProceduresExpanded] = useState(false);
+  const [procedures, setProcedures] = useState<ProcedureResult[]>([]);
+  const [proceduresLoading, setProceduresLoading] = useState(false);
+  const [proceduresError, setProceduresError] = useState<string | null>(null);
+  const [hasFetchedProcedures, setHasFetchedProcedures] = useState(false);
+  const [procedureCategoryFilter, setProcedureCategoryFilter] = useState<FilterOption>('all');
   
   // =========================================================================
   // Trial Filter State (Phase 9: Enhanced Trial Filtering)
@@ -261,6 +277,32 @@ function ResultCard({
     ),
     [drugs, filterDrugsByForm]
   );
+
+  // =========================================================================
+  // Procedure Filter Logic
+  // =========================================================================
+
+  const filteredProcedures = useMemo(() => {
+    if (procedureCategoryFilter === 'all') return procedures;
+    return procedures.filter(p => p.category === procedureCategoryFilter);
+  }, [procedures, procedureCategoryFilter]);
+
+  const procedureCategoryCounts = useMemo(() => {
+    const counts: Record<FilterOption, number> = {
+      all: procedures.length,
+      diagnostic: 0,
+      therapeutic: 0,
+      monitoring: 0,
+      equipment: 0,
+      other: 0,
+    };
+    for (const p of procedures) {
+      if (p.category in counts) {
+        counts[p.category as FilterOption]++;
+      }
+    }
+    return counts;
+  }, [procedures]);
   
   // =========================================================================
   // Drug Handlers
@@ -367,6 +409,73 @@ function ResultCard({
       setTrialsLoading(false);
     }
   };
+
+  // =========================================================================
+  // Procedure Handlers
+  // =========================================================================
+
+  const handleToggleProcedures = useCallback(async () => {
+    const newExpanded = !proceduresExpanded;
+    setProceduresExpanded(newExpanded);
+
+    if (newExpanded && !hasFetchedProcedures) {
+      setProceduresLoading(true);
+      setProceduresError(null);
+      setHasFetchedProcedures(true);
+
+      try {
+        // Tier 1: Curated mappings (instant, local)
+        const curated = getCuratedProcedures(code);
+
+        if (curated.length > 0) {
+          setProcedures(curated);
+          setProceduresLoading(false);
+          setTimeout(() => {
+            proceduresSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }, 100);
+
+          // Still try SNOMED API in background to supplement curated results
+          try {
+            const response = await fetch(`/api/snomed-procedures?icd10=${encodeURIComponent(code)}`);
+            if (response.ok) {
+              const data = await response.json();
+              if (data.procedures && data.procedures.length > 0) {
+                // Merge: curated first, then API results that aren't duplicates
+                setProcedures(prev => {
+                  const existingCodes = new Set(prev.map((p: ProcedureResult) => p.code));
+                  const newProcs = data.procedures.filter((p: ProcedureResult) => !existingCodes.has(p.code));
+                  return [...prev, ...newProcs];
+                });
+              }
+            }
+          } catch {
+            // Silent fail — curated results already showing
+          }
+        } else {
+          // Tier 2: No curated data — call SNOMED API as primary source
+          try {
+            const response = await fetch(`/api/snomed-procedures?icd10=${encodeURIComponent(code)}`);
+            if (response.ok) {
+              const data = await response.json();
+              setProcedures(data.procedures || []);
+            } else {
+              setProcedures([]);
+            }
+          } catch {
+            setProcedures([]);
+          }
+          setProceduresLoading(false);
+          setTimeout(() => {
+            proceduresSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }, 100);
+        }
+      } catch (err) {
+        console.error('Error fetching procedures:', err);
+        setProceduresError('Unable to load procedures. Please try again.');
+        setProceduresLoading(false);
+      }
+    }
+  }, [proceduresExpanded, hasFetchedProcedures, code, name]);
   
   // =========================================================================
   // Render
@@ -393,7 +502,7 @@ function ResultCard({
         transition-[transform,box-shadow,border-color]
         duration-300
         ease-out
-        overflow-hidden
+        overflow-visible
         will-change-transform
       "
     >
@@ -720,6 +829,38 @@ function ResultCard({
               : <ChevronDown className="w-3 h-3 ml-0.5" />
           )}
         </button>
+
+        {/* ── View Procedures Button (Teal) ── */}
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); handleToggleProcedures(); }}
+          className={`
+            w-full
+            flex
+            items-center
+            justify-center
+            gap-2
+            px-4
+            py-2.5
+            rounded-lg
+            text-sm
+            font-medium
+            transition-all
+            duration-200
+            ${proceduresExpanded
+              ? 'bg-teal-600 text-white shadow-md hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600'
+              : 'bg-teal-50 text-teal-700 hover:bg-teal-100 dark:bg-teal-950/40 dark:text-teal-300 dark:hover:bg-teal-900/50'
+            }
+          `}
+        >
+          <Scissors className="h-4 w-4" />
+          {proceduresLoading ? 'Loading...' : proceduresExpanded ? 'Hide Procedures' : 'View Procedures'}
+          {!proceduresExpanded && procedures.length > 0 && (
+            <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-200/60 dark:bg-teal-800/60">
+              {procedures.length}
+            </span>
+          )}
+        </button>
       </div>
       
       {/* Expandable Drugs Section (Blue Theme) */}
@@ -885,6 +1026,71 @@ function ResultCard({
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════
+          PROCEDURES EXPANDABLE SECTION (teal theme)
+          ════════════════════════════════════════════════════════════════ */}
+      {proceduresExpanded && (
+        <div ref={proceduresSectionRef} className="px-4 pb-4">
+          <div className="rounded-xl border border-teal-200 dark:border-teal-800 bg-gradient-to-b from-teal-50/50 to-white dark:from-teal-950/20 dark:to-gray-900 p-4">
+            
+            {/* Loading State */}
+            {proceduresLoading && (
+              <div className="flex items-center justify-center gap-2 py-8 text-teal-600 dark:text-teal-400">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-sm">Loading procedures...</span>
+              </div>
+            )}
+
+            {/* Error State */}
+            {proceduresError && !proceduresLoading && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-sm">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                {proceduresError}
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!proceduresLoading && !proceduresError && procedures.length === 0 && hasFetchedProcedures && (
+              <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                <Scissors className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">No procedures found for this condition.</p>
+                <p className="text-xs mt-1 opacity-70">Curated procedure data covers the top 30 conditions.</p>
+              </div>
+            )}
+
+            {/* Results */}
+            {!proceduresLoading && !proceduresError && procedures.length > 0 && (
+              <div className="space-y-3">
+                {/* Header + Filter Chips */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <h4 className="text-sm font-semibold text-teal-800 dark:text-teal-200 flex items-center gap-1.5">
+                    <Scissors className="h-4 w-4" />
+                    Related Procedures ({filteredProcedures.length})
+                  </h4>
+                  <ProcedureFilterChips
+                    activeFilter={procedureCategoryFilter}
+                    onFilterChange={setProcedureCategoryFilter}
+                    counts={procedureCategoryCounts}
+                  />
+                </div>
+
+                {/* Procedure Cards */}
+                <div className="space-y-2">
+                  {filteredProcedures.map((proc, idx) => (
+                    <ProcedureCard key={`${proc.code}-${idx}`} procedure={proc} />
+                  ))}
+                </div>
+
+                {/* Source Attribution */}
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 pt-2 border-t border-teal-100 dark:border-teal-900">
+                  Sources: Curated clinical guidelines, SNOMED CT, ICD-10-PCS, HCPCS Level II. Procedure codes are for reference only — verify with institutional coding guidelines.
+                </p>
               </div>
             )}
           </div>

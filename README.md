@@ -6,7 +6,7 @@
 
 ### Medical Code Lookup Tool for Healthcare Professionals
 
-> **Find ICD-10 medical diagnosis codes, related drugs, and clinical trials — organized by body system**
+> **Find ICD-10 medical diagnosis codes, related drugs, procedures, and clinical trials — organized by body system**
 
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
@@ -29,7 +29,7 @@ Try it now — no installation required!
 
 ## 📋 Overview
 
-**MedCodeMap** is a modern web application that transforms medical code lookup into an intuitive, organized experience. Search for any medical condition and instantly discover related ICD-10 codes, FDA-approved drugs, and clinical trials across all stages — all organized by body system/disease chapter for easy navigation.
+**MedCodeMap** is a modern web application that transforms medical code lookup into an intuitive, organized experience. Search for any medical condition and instantly discover related ICD-10 codes, FDA-approved drugs, procedure codes, and clinical trials across all stages — all organized by body system/disease chapter for easy navigation.
 
 ### ✨ What Makes It Unique
 
@@ -68,7 +68,16 @@ Try it now — no installation required!
 - Eligibility criteria and study summaries
 - Up to 15 trials per ICD code with smart defaults
 
-### 📊 Category Grouping (NEW!)
+### 🔧 Procedure Codes (NEW!)
+- View related procedures, tests, equipment, and services for any ICD-10 diagnosis
+- **Curated mappings** for 30 common conditions (224 ICD-10 codes) — instant, local results
+- **3 code systems**: SNOMED CT (clinical concepts), ICD-10-PCS (inpatient procedures), HCPCS Level II (outpatient/DME)
+- **5 clinical categories**: Diagnostic, Therapeutic, Monitoring, Equipment, Other
+- Filter by category with interactive filter chips
+- Each procedure includes clinical rationale and care setting (inpatient/outpatient/both)
+- SNOMED CT traversal via UMLS API for conditions beyond curated mappings
+
+### 📊 Category Grouping
 - **21 ICD-10 Chapters** — Results organized by body system/disease type
 - **Collapsible Sections** — Accordion-style expand/collapse for each category
 - **Color-Coded Borders** — Visual distinction per chapter (Endocrine=green, Circulatory=red, etc.)
@@ -458,13 +467,16 @@ Popularity scores are based on:
 | [Lucide React](https://lucide.dev/) | Beautiful icon set |
 | Custom Components | ResultCard, DrugCard, TrialCard, etc. |
 
-### APIs (No Keys Required!)
-| API | Purpose | Rate Limit |
-|-----|---------|------------|
-| [NIH Conditions API](https://clinicaltables.nlm.nih.gov/apidoc/conditions/v3/doc.html) | Medical term translation & synonyms | Unlimited |
-| [ClinicalTables](https://clinicaltables.nlm.nih.gov/) | ICD-10 code lookup | Unlimited |
-| [OpenFDA](https://open.fda.gov/) | Drug label data | 240/min, 120K/day |
-| [ClinicalTrials.gov](https://clinicaltrials.gov/) | Clinical trial data | Reasonable use |
+### APIs
+| API | Purpose | Auth | Rate Limit |
+|-----|---------|------|------------|
+| [NIH Conditions API](https://clinicaltables.nlm.nih.gov/apidoc/conditions/v3/doc.html) | Medical term translation & synonyms | None | Unlimited |
+| [ClinicalTables ICD-10-CM](https://clinicaltables.nlm.nih.gov/) | ICD-10 diagnosis code lookup | None | Unlimited |
+| [ClinicalTables ICD-10-PCS](https://clinicaltables.nlm.nih.gov/apidoc/icd10pcs/v3/doc.html) | Inpatient procedure code lookup | None | Unlimited |
+| [ClinicalTables HCPCS](https://clinicaltables.nlm.nih.gov/apidoc/hcpcs/v3/doc.html) | Outpatient/DME procedure code lookup | None | Unlimited |
+| [UMLS REST API](https://documentation.uts.nlm.nih.gov/rest/home.html) | SNOMED CT procedure traversal | API Key | Reasonable use |
+| [OpenFDA](https://open.fda.gov/) | Drug label data | None | 240/min, 120K/day |
+| [ClinicalTrials.gov](https://clinicaltrials.gov/) | Clinical trial data | None | Reasonable use |
 
 ### State Management
 - React `useState` and `useEffect` hooks
@@ -513,7 +525,17 @@ npm run start
 
 ### Environment Variables
 
-No environment variables required! All APIs are publicly accessible.
+Most APIs are publicly accessible with no keys. Optional keys unlock additional features:
+
+```env
+# Optional — enables AI-powered drug validation (Claude)
+ANTHROPIC_API_KEY=sk-ant-...
+
+# Optional — enables SNOMED CT procedure lookup via UMLS API
+UMLS_API_KEY=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+```
+
+Get a free UMLS API key at [https://uts.nlm.nih.gov/uts/signup-login](https://uts.nlm.nih.gov/uts/signup-login). Without it, procedure results come from curated mappings and ClinicalTables APIs only (SNOMED traversal is skipped).
 
 ---
 
@@ -532,12 +554,14 @@ Example searches:
 • "heart failure" → Returns cardiac-related codes
 ```
 
-### Viewing Drugs & Trials
+### Viewing Drugs, Procedures & Trials
 
 1. Click **View Drugs** (blue button) on any result card
 2. Expand the drug section to see FDA-approved medications
-3. Click **View Trials** (purple button) to see clinical trials
-4. Click any NCT ID to open the full trial on ClinicalTrials.gov
+3. Click **View Procedures** (teal button) to see related tests, surgeries, equipment
+4. Filter procedures by category (Diagnostic, Therapeutic, Monitoring, Equipment)
+5. Click **View Trials** (purple button) to see clinical trials
+6. Click any NCT ID to open the full trial on ClinicalTrials.gov
 
 ### Using Category Grouping
 
@@ -571,6 +595,8 @@ medcodemap/
 │   │   ├── CategorySection.tsx  # Collapsible category section
 │   │   ├── DrugCard.tsx         # Individual drug display (blue theme)
 │   │   ├── TrialCard.tsx        # Individual trial display (purple theme)
+│   │   ├── ProcedureCard.tsx    # Individual procedure display (teal theme)
+│   │   ├── ProcedureFilterChips.tsx # Category filter chips for procedures
 │   │   ├── FavoritesPanel.tsx   # Favorites slide-in panel
 │   │   ├── HistoryPanel.tsx     # History slide-in panel
 │   │   └── ThemeToggle.tsx      # Dark/light mode toggle
@@ -585,7 +611,11 @@ medcodemap/
 │   │   ├── commonCodes.ts       # ICD-10 frequency data (100+ codes)
 │   │   ├── termMappings.ts      # Common → Medical term mappings
 │   │   ├── termMapper.ts        # Translation logic
-│   │   └── favoritesStorage.ts  # Favorites & History localStorage utils
+│   │   ├── favoritesStorage.ts  # Favorites & History localStorage utils
+│   │   ├── hcpcsApi.ts          # HCPCS Level II procedure lookup
+│   │   ├── icd10pcsApi.ts       # ICD-10-PCS inpatient procedure lookup
+│   │   ├── snomedProcedureApi.ts # SNOMED CT procedure traversal (UMLS)
+│   │   └── conditionProcedureMappings.ts # Curated procedure mappings (30 conditions)
 │   ├── types/
 │   │   └── icd.ts               # TypeScript interfaces & helpers
 │   ├── globals.css              # Global styles & animations
@@ -652,6 +682,7 @@ GET https://clinicaltrials.gov/api/v2/studies
 
 ### Completed Features
 
+- [x] **Procedure Codes** — Curated mappings for 30 conditions across SNOMED CT, ICD-10-PCS, and HCPCS code systems
 - [x] **NIH Smart Search** — Integrated NIH Medical Conditions API for intelligent term translation (2,400+ conditions)
 - [x] **Clinical Trials Filtering** — Filter trials by status with interactive pills (Phase 9)
 - [x] **Category Grouping** — Results organized by ICD-10 chapter with collapsible sections (Phase 7A)
@@ -734,7 +765,8 @@ copies or substantial portions of the Software.
 ## 🙏 Acknowledgments
 
 ### APIs & Data Sources
-- [National Library of Medicine](https://www.nlm.nih.gov/) — ClinicalTables ICD-10 data
+- [National Library of Medicine](https://www.nlm.nih.gov/) — ClinicalTables ICD-10, ICD-10-PCS, and HCPCS data
+- [UMLS / SNOMED CT](https://uts.nlm.nih.gov/) — Procedure code traversal via Metathesaurus
 - [U.S. Food & Drug Administration](https://open.fda.gov/) — OpenFDA drug information
 - [ClinicalTrials.gov](https://clinicaltrials.gov/) — Clinical trial registry
 

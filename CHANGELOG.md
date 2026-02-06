@@ -32,6 +32,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Procedure Code Mapping (feat/procedure-codes)
+
+Surfaces the procedures, tests, equipment, and services relevant to any ICD-10 diagnosis — the clinical "what do we do about it?" complement to the existing drug lookup.
+
+#### 3 Code Systems
+
+| System | Scope | Example |
+|--------|-------|---------|
+| **SNOMED CT** | Clinical concepts (most descriptive) | `43396009` — Hemoglobin A1c measurement |
+| **ICD-10-PCS** | Inpatient hospital procedures (7-char) | `4A1DXQZ` — Monitoring glucose, percutaneous |
+| **HCPCS Level II** | Outpatient, DME, supplies (letter + 4 digits) | `E0607` — Home blood glucose monitor |
+
+#### 5 Clinical Categories
+- **Diagnostic** — Tests, imaging, labs (e.g., blood glucose test, chest X-ray, colonoscopy)
+- **Therapeutic** — Treatments, surgeries (e.g., insulin therapy, PCI, mastectomy)
+- **Monitoring** — Ongoing tracking, education (e.g., diabetic foot exam, cardiac rehab)
+- **Equipment** — DME and supplies (e.g., CPAP device, insulin pump, nebulizer)
+- **Other** — Catch-all for unclassified procedures
+
+#### Curated Data (Tier 1 — Instant, Local)
+- 30 hand-curated conditions covering the most common ICD-10 diagnoses
+- 224 ICD-10 codes mapped (exact match + parent code fallback)
+- Conditions include: Type 1 & 2 Diabetes, Hypertension, Hyperlipidemia, Major Depression, GAD, COPD, Asthma, Heart Failure, Atrial Fibrillation, CAD, CKD, Low Back Pain, Osteoarthritis, Hypothyroidism, GERD, Obesity, UTI, Pneumonia, Iron Deficiency Anemia, Vitamin D Deficiency, Sleep Apnea, Acute MI, Stroke, Breast/Lung/Colorectal Cancer, BPH, Rheumatoid Arthritis, Epilepsy
+- Each procedure includes: code, code system, description, clinical category, relevance score, clinical rationale, and care setting (inpatient/outpatient/both)
+- O(1) lookup via Map index; parent code fallback (E11.312 → E11.31 → E11.3 → E11)
+
+#### UMLS/SNOMED CT API Integration (Tier 2 — Server-Side)
+- First real usage of `UMLS_API_KEY` in the project
+- 3-step UMLS authentication: API Key → Ticket Granting Ticket (8hr) → Service Ticket (single-use)
+- ICD-10 → SNOMED CT crosswalk traversal with obsolete concept resolution (follows `replaced_by` relations)
+- Fallback: CUI → atoms path for broader concepts when crosswalk returns nothing
+- Keyword extraction + procedure suffix search (screening, management, therapy, monitoring, education, test)
+- Server-side API route: `GET /api/snomed-procedures?icd10=E11.9` (keeps API key secure)
+- 7-day cache for procedure lookups, 8s request timeout, max 30 results per code
+
+#### HCPCS + ICD-10-PCS API Clients
+- NLM ClinicalTables API integration for both systems (free, no auth required)
+- `hcpcsApi.ts`: Outpatient codes categorized by prefix letter (A=supplies, E=DME, J=drugs, P=path/lab, R=radiology, etc.)
+- `icd10pcsApi.ts`: Inpatient codes categorized by section character (0=medical/surgical, B=imaging, 4=measurement, etc.)
+- Both: 24hr in-memory cache, 5s timeout, negative caching for empty results, exact code lookup support
+
+#### UI Components
+- **ProcedureCard** — Category-themed expandable cards (sky=diagnostic, emerald=therapeutic, amber=monitoring, violet=equipment) showing description, code system badge, curated badge, setting badge; expands to reveal procedure code, clinical rationale, and data source
+- **ProcedureFilterChips** — Filter by category (All / Diagnostic / Therapeutic / Monitoring / Equipment) with color-coded active states and count badges; hides zero-count categories automatically
+- **ResultCard integration** — New "View Procedures" button (teal theme, full-width) below existing Drugs and Trials buttons; expandable section with loading/error/empty states, filter chips, procedure cards, and source attribution footer
+- **Auto-scroll** — Smooth `scrollIntoView` when procedures load on cards lower in the viewport
+
+#### Overflow Fixes
+- `ResultCard.tsx` outer container: `overflow-hidden` → `overflow-visible` (prevents clipping of expandable child sections)
+- `CategorySection.tsx` outer wrapper: `overflow-hidden` → `overflow-visible`; inner collapse div: dynamic `overflow-visible`/`overflow-hidden` based on expanded state (visible when open, hidden during collapse animation)
+- `RelatedCodesSection.tsx`: same dynamic overflow fix as CategorySection
+
+#### New Files
+- `app/types/icd.ts` — `ProcedureResult`, `ProcedureCodeSystem`, `ProcedureCategory`, `ProcedureSource`, `ProcedureValidationResponse`, `CachedProcedures` types
+- `app/lib/hcpcsApi.ts` — HCPCS Level II search and lookup (249 lines)
+- `app/lib/icd10pcsApi.ts` — ICD-10-PCS search and lookup (242 lines)
+- `app/lib/snomedProcedureApi.ts` — UMLS-authenticated SNOMED CT procedure traversal (688 lines)
+- `app/lib/conditionProcedureMappings.ts` — Curated mappings for 30 conditions / 224 ICD codes (655 lines)
+- `app/api/snomed-procedures/route.ts` — Server-side SNOMED procedure endpoint (87 lines)
+- `app/components/ProcedureCard.tsx` — Procedure display card (199 lines)
+- `app/components/ProcedureFilterChips.tsx` — Category filter chips (115 lines)
+
+#### Modified Files
+- `app/components/ResultCard.tsx` — View Procedures button, expandable section, filter integration, auto-scroll, overflow fix
+- `app/components/CategorySection.tsx` — Dynamic overflow for expand/collapse animation
+- `app/components/RelatedCodesSection.tsx` — Dynamic overflow for expand/collapse animation
+
+---
+
 ### Changed
 - **Rebranding to MedCodeMap** - Complete brand refresh with new identity
   - Renamed application from "ICD Mind Map" to "MedCodeMap"
