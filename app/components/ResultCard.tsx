@@ -37,7 +37,7 @@ import DrugFilterChips from './DrugFilterChips';
 import { CheckCircle2, Info } from 'lucide-react';
 import TrialCard from './TrialCard';
 import { ProcedureResult } from '../types/icd';
-import { getCuratedProcedures, hasCuratedMapping } from '../lib/conditionProcedureMappings';
+import { getCuratedProcedures } from '../lib/conditionProcedureMappings';
 import ProcedureCard from './ProcedureCard';
 import ProcedureFilterChips, { FilterOption } from './ProcedureFilterChips';
 
@@ -460,9 +460,11 @@ function ResultCard({
               setProcedures(data.procedures || []);
             } else {
               setProcedures([]);
+              setProceduresError('Unable to fetch procedures from SNOMED API. Please try again.');
             }
           } catch {
             setProcedures([]);
+            setProceduresError('Network error fetching procedures. Please try again.');
           }
           setProceduresLoading(false);
           setTimeout(() => {

@@ -5,7 +5,7 @@
  * ICD-10 diagnosis codes. These provide instant results with high
  * confidence, bypassing API calls entirely.
  *
- * Coverage: Top 50 conditions by search frequency
+ * Coverage: Top 30 conditions by search frequency
  * Sources: Clinical guidelines, CMS billing data, standard of care
  * Last updated: 2025-02-06
  *
@@ -527,8 +527,8 @@ const CURATED_MAPPINGS: CuratedMapping[] = [
     icd10Codes: ['N40', 'N40.0', 'N40.1'],
     conditionName: 'Benign Prostatic Hyperplasia',
     procedures: [
-      p('167217005', 'SNOMED', 'PSA measurement', 'diagnostic', 'outpatient', 'Prostate-specific antigen screening'),
-      p('167217005', 'SNOMED', 'Urinalysis', 'diagnostic', 'outpatient', 'UA to rule out UTI'),
+      p('63476009', 'SNOMED', 'PSA measurement', 'diagnostic', 'outpatient', 'Prostate-specific antigen screening'),
+      p('27171005', 'SNOMED', 'Urinalysis', 'diagnostic', 'outpatient', 'UA to rule out UTI'),
       p('252275004', 'SNOMED', 'Renal function test', 'monitoring', 'outpatient', 'BMP for urinary retention impact'),
       p('386736004', 'SNOMED', 'Uroflowmetry', 'diagnostic', 'outpatient', 'Measure urinary flow rate'),
       p('252160004', 'SNOMED', 'Post-void residual measurement', 'diagnostic', 'outpatient', 'Bladder ultrasound for PVR'),
