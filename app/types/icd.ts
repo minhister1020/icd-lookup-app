@@ -1001,3 +1001,62 @@ export function getCategoryColor(code: string): { text: string; bg: string; bord
       };
   }
 }
+
+// ============================================================
+// PROCEDURE CODE TYPES (Path 2: Procedure Code Mapping)
+// ============================================================
+
+/** Which coding system a procedure belongs to */
+export type ProcedureCodeSystem = 'SNOMED' | 'ICD10PCS' | 'HCPCS';
+
+/** Clinical category for grouping procedures in the UI */
+export type ProcedureCategory =
+  | 'diagnostic'    // Tests, imaging, labs (e.g., blood glucose test)
+  | 'therapeutic'   // Treatments, surgeries (e.g., insulin pump insertion)
+  | 'monitoring'    // Ongoing tracking (e.g., A1c measurement)
+  | 'equipment'     // DME and supplies (e.g., glucose monitor, test strips)
+  | 'other';        // Catch-all for unclassified procedures
+
+/** Where the procedure data originated */
+export type ProcedureSource = 'curated' | 'umls_api' | 'clinicaltables' | 'ai_generated';
+
+/** A single procedure result displayed in the UI */
+export interface ProcedureResult {
+  /** The procedure code (e.g., "A1C" for HCPCS, "0BJ08ZZ" for ICD-10-PCS) */
+  code: string;
+  /** Which coding system this code belongs to */
+  codeSystem: ProcedureCodeSystem;
+  /** Human-readable name/description of the procedure */
+  description: string;
+  /** Clinical category for UI grouping */
+  category: ProcedureCategory;
+  /** Relevance score 0-10 (10 = most relevant to the diagnosis) */
+  relevanceScore: number;
+  /** Where this data came from — for transparency */
+  source: ProcedureSource;
+  /** Why this procedure relates to the diagnosis (shown on hover/expand) */
+  clinicalRationale?: string;
+  /** Whether this is typically inpatient, outpatient, or both */
+  setting?: 'inpatient' | 'outpatient' | 'both';
+  /** HCPCS-specific: whether the code is currently active */
+  isActive?: boolean;
+}
+
+/** Response shape from the procedure validation API endpoint */
+export interface ProcedureValidationResponse {
+  procedures: ProcedureResult[];
+  /** Which sources actually returned data */
+  sourcesQueried: ProcedureSource[];
+  /** Total time in ms for the full pipeline */
+  processingTimeMs: number;
+  /** Whether any API calls failed (graceful degradation) */
+  hadErrors: boolean;
+  /** Human-readable error messages if hadErrors is true */
+  errorMessages?: string[];
+}
+
+/** Cache entry shape for procedure lookups — matches drug caching pattern */
+export interface CachedProcedures {
+  data: ProcedureResult[];
+  timestamp: number;
+}
