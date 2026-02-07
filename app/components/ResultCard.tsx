@@ -27,7 +27,8 @@ import {
   ChevronUp, 
   AlertCircle,
   Star,
-  Scissors
+  Scissors,
+  Shield
 } from 'lucide-react';
 import { DrugResult, ClinicalTrialResult, TrialStatus } from '../types/icd';
 import { ValidatedDrugResult, DRUG_SCORE_THRESHOLDS } from '../lib/drugValidationPipeline';
@@ -123,6 +124,15 @@ function ResultCard({
   const [proceduresError, setProceduresError] = useState<string | null>(null);
   const [hasFetchedProcedures, setHasFetchedProcedures] = useState(false);
   const [procedureCategoryFilter, setProcedureCategoryFilter] = useState<FilterOption>('all');
+
+  // =========================================================================
+  // Coverage State (CMS Medicare Coverage)
+  // =========================================================================
+  const [coverageExpanded, setCoverageExpanded] = useState(false);
+  const [coverageLoading, setCoverageLoading] = useState(false);
+  const [coverageError, setCoverageError] = useState<string | null>(null);
+  const [coverageData, setCoverageData] = useState<{ ncds: any[]; lcds: any[]; totalResults: number } | null>(null);
+  const [hasFetchedCoverage, setHasFetchedCoverage] = useState(false);
   
   // =========================================================================
   // Trial Filter State (Phase 9: Enhanced Trial Filtering)
@@ -478,6 +488,38 @@ function ResultCard({
       }
     }
   }, [proceduresExpanded, hasFetchedProcedures, code, name]);
+
+  // =========================================================================
+  // Coverage Handlers
+  // =========================================================================
+
+  /**
+   * Handles loading Medicare coverage data for this condition.
+   * - First click: Fetches from CMS API and expands
+   * - Subsequent clicks: Just toggles expand/collapse (uses cache)
+   */
+  const handleToggleCoverage = useCallback(async () => {
+    if (hasFetchedCoverage) {
+      setCoverageExpanded(prev => !prev);
+      return;
+    }
+
+    setCoverageLoading(true);
+    setCoverageError(null);
+    setCoverageExpanded(true);
+
+    try {
+      const response = await fetch(`/api/cms-coverage?condition=${encodeURIComponent(name)}`);
+      if (!response.ok) throw new Error('Failed to fetch coverage data');
+      const data = await response.json();
+      setCoverageData(data);
+      setHasFetchedCoverage(true);
+    } catch (err) {
+      setCoverageError(err instanceof Error ? err.message : 'Failed to load coverage data');
+    } finally {
+      setCoverageLoading(false);
+    }
+  }, [name, hasFetchedCoverage]);
   
   // =========================================================================
   // Render
@@ -832,38 +874,251 @@ function ResultCard({
           )}
         </button>
 
-        {/* ── View Procedures Button (Teal) ── */}
+        {/* View Procedures Button (Teal) */}
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); handleToggleProcedures(); }}
+          onClick={handleToggleProcedures}
+          disabled={proceduresLoading}
           className={`
-            w-full
             flex
             items-center
-            justify-center
-            gap-2
-            px-4
-            py-2.5
+            gap-1.5
+            px-3
+            py-1.5
             rounded-lg
-            text-sm
+            text-xs
             font-medium
             transition-all
             duration-200
             ${proceduresExpanded
-              ? 'bg-teal-600 text-white shadow-md hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600'
-              : 'bg-teal-50 text-teal-700 hover:bg-teal-100 dark:bg-teal-950/40 dark:text-teal-300 dark:hover:bg-teal-900/50'
+              ? 'bg-teal-500 text-white hover:bg-teal-600'
+              : 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/50'
             }
+            disabled:opacity-50
+            disabled:cursor-not-allowed
           `}
         >
-          <Scissors className="h-4 w-4" />
-          {proceduresLoading ? 'Loading...' : proceduresExpanded ? 'Hide Procedures' : 'View Procedures'}
-          {!proceduresExpanded && procedures.length > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-200/60 dark:bg-teal-800/60">
+          {proceduresLoading ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Scissors className="w-3.5 h-3.5" />
+          )}
+          <span>
+            {proceduresLoading
+              ? 'Loading...'
+              : proceduresExpanded
+                ? 'Hide Procedures'
+                : 'View Procedures'
+            }
+          </span>
+          {!proceduresLoading && hasFetchedProcedures && procedures.length > 0 && (
+            <span
+              className={`
+                ml-1
+                px-1.5
+                py-0.5
+                rounded-full
+                text-[10px]
+                font-bold
+                ${proceduresExpanded
+                  ? 'bg-white/20 text-white'
+                  : 'bg-teal-500/20 text-teal-700 dark:text-teal-400'
+                }
+              `}
+            >
               {procedures.length}
             </span>
           )}
+          {!proceduresLoading && (
+            proceduresExpanded
+              ? <ChevronUp className="w-3 h-3 ml-0.5" />
+              : <ChevronDown className="w-3 h-3 ml-0.5" />
+          )}
+        </button>
+
+        {/* Medicare Coverage Button (Amber) */}
+        <button
+          type="button"
+          onClick={handleToggleCoverage}
+          disabled={coverageLoading}
+          className={`
+            flex
+            items-center
+            gap-1.5
+            px-3
+            py-1.5
+            rounded-lg
+            text-xs
+            font-medium
+            transition-all
+            duration-200
+            ${coverageExpanded
+              ? 'bg-amber-500 text-white hover:bg-amber-600'
+              : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50'
+            }
+            disabled:opacity-50
+            disabled:cursor-not-allowed
+          `}
+        >
+          {coverageLoading ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Shield className="w-3.5 h-3.5" />
+          )}
+          <span>
+            {coverageLoading
+              ? 'Loading...'
+              : coverageExpanded
+                ? 'Hide Coverage'
+                : 'Medicare Coverage'
+            }
+          </span>
+          {!coverageLoading && hasFetchedCoverage && coverageData && coverageData.totalResults > 0 && (
+            <span
+              className={`
+                ml-1
+                px-1.5
+                py-0.5
+                rounded-full
+                text-[10px]
+                font-bold
+                ${coverageExpanded
+                  ? 'bg-white/20 text-white'
+                  : 'bg-amber-500/20 text-amber-700 dark:text-amber-400'
+                }
+              `}
+            >
+              {coverageData.totalResults}
+            </span>
+          )}
+          {!coverageLoading && (
+            coverageExpanded
+              ? <ChevronUp className="w-3 h-3 ml-0.5" />
+              : <ChevronDown className="w-3 h-3 ml-0.5" />
+          )}
         </button>
       </div>
+
+      {/* Expandable Coverage Section (Amber Theme) */}
+      {coverageExpanded && (
+        <div
+          className="
+            border-t
+            border-amber-100
+            dark:border-amber-900/30
+            bg-amber-50/50
+            dark:bg-amber-900/10
+            animate-in
+            slide-in-from-top-2
+            duration-200
+          "
+        >
+          <div className="p-4 space-y-3">
+            {/* Loading State */}
+            {coverageLoading && (
+              <div className="flex justify-center py-6">
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="w-6 h-6 text-amber-500 animate-spin" />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Searching Medicare coverage...
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Error State */}
+            {coverageError && (
+              <div className="text-center py-4">
+                <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+                <p className="text-sm text-red-500">{coverageError}</p>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!coverageLoading && !coverageError && hasFetchedCoverage && coverageData?.totalResults === 0 && (
+              <div className="text-center py-4">
+                <Shield className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  No Medicare coverage policies found
+                </p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  This condition may not have specific NCD/LCD coverage determinations
+                </p>
+              </div>
+            )}
+
+            {/* Results */}
+            {!coverageLoading && !coverageError && coverageData && coverageData.totalResults > 0 && (
+              <div className="space-y-3">
+                {/* NCDs Section */}
+                {coverageData.ncds.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-1.5 mb-2">
+                      <Shield className="w-3 h-3" />
+                      National Coverage Determinations ({coverageData.ncds.length})
+                    </p>
+                    <div className="space-y-2">
+                      {coverageData.ncds.map((ncd: any) => (
+                        <a
+                          key={ncd.documentId}
+                          href={ncd.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block p-3 rounded-lg bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-800/50 hover:border-amber-400 dark:hover:border-amber-600 transition-colors"
+                        >
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {ncd.title}
+                          </p>
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className="text-xs text-amber-600 dark:text-amber-400 font-mono">
+                              NCD {ncd.displayId}
+                            </span>
+                            {ncd.lastUpdated && (
+                              <span className="text-xs text-gray-400">
+                                Updated: {ncd.lastUpdated}
+                              </span>
+                            )}
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* LCDs Section */}
+                {coverageData.lcds.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-1.5 mb-2">
+                      <Shield className="w-3 h-3" />
+                      Local Coverage Determinations ({coverageData.lcds.length})
+                    </p>
+                    <div className="space-y-2">
+                      {coverageData.lcds.map((lcd: any) => (
+                        <a
+                          key={lcd.documentId}
+                          href={lcd.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block p-3 rounded-lg bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-800/50 hover:border-amber-400 dark:hover:border-amber-600 transition-colors"
+                        >
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {lcd.title}
+                          </p>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* CMS Disclaimer */}
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center pt-2 border-t border-amber-100 dark:border-amber-900/30">
+                  Source: CMS Medicare Coverage Database • Coverage policies subject to change
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       
       {/* Expandable Drugs Section (Blue Theme) */}
       {drugsExpanded && (
