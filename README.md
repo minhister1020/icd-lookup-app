@@ -6,7 +6,7 @@
 
 ### Medical Code Lookup Tool for Healthcare Professionals
 
-> **Find ICD-10 medical diagnosis codes, related drugs, procedures, and clinical trials — organized by body system**
+> **Find ICD-10 medical diagnosis codes, related drugs, procedures, clinical trials, and Medicare coverage — organized by body system**
 
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
@@ -68,8 +68,8 @@ Try it now — no installation required!
 - Eligibility criteria and study summaries
 - Up to 15 trials per ICD code with smart defaults
 
-### 🔧 Procedure Codes (NEW!)
-- View related procedures, tests, equipment, and services for any ICD-10 diagnosis
+### 🔬 Procedure Codes
+- Curated procedures for top 30 conditions with live SNOMED CT fallback for all other conditions
 - **Curated mappings** for 30 common conditions (224 ICD-10 codes) — instant, local results
 - **3 code systems**: SNOMED CT (clinical concepts), ICD-10-PCS (inpatient procedures), HCPCS Level II (outpatient/DME)
 - **5 clinical categories**: Diagnostic, Therapeutic, Monitoring, Equipment, Other
@@ -531,11 +531,11 @@ Most APIs are publicly accessible with no keys. Optional keys unlock additional 
 # Optional — enables AI-powered drug validation (Claude)
 ANTHROPIC_API_KEY=sk-ant-...
 
-# Optional — enables SNOMED CT procedure lookup via UMLS API
+# Required for SNOMED CT procedure lookup. Get free access at https://uts.nlm.nih.gov/uts/
 UMLS_API_KEY=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
 
-Get a free UMLS API key at [https://uts.nlm.nih.gov/uts/signup-login](https://uts.nlm.nih.gov/uts/signup-login). Without it, procedure results come from curated mappings and ClinicalTables APIs only (SNOMED traversal is skipped).
+Without `UMLS_API_KEY`, procedure results come from curated mappings and ClinicalTables APIs only (SNOMED CT traversal is skipped).
 
 ---
 
