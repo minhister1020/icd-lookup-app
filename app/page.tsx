@@ -455,16 +455,14 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo & Brand */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1976D2] to-[#0D47A1] flex items-center justify-center shadow-lg shadow-[#1976D2]/25 ring-2 ring-white/50 dark:ring-black/20">
-                <Image
-                  src="/icon.svg"
-                  alt="MedCodeMap"
-                  width={24}
-                  height={24}
-                  className="w-6 h-6"
-                />
-              </div>
+            <div className="flex items-center -space-x-3">
+             <Image
+              src="/medcodemap-logo-new.png"
+              alt="MedCodeMap"
+              width={96}
+              height={96}
+              className="w-24 h-24 object-contain"
+            />
               <div>
                 <h1 className="font-bold text-gray-900 dark:text-white text-lg tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>
                   MedCodeMap
