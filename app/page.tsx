@@ -575,22 +575,23 @@ export default function Home() {
         </div>
 
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8">
-          {/* Title - Enhanced Typography */}
-          <div className="text-center mb-12">
-            <h2
-              className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white mb-5 tracking-tight leading-[1.1]"
+       {/* Title - Enhanced Typography */}
+       <div className="text-center mb-12">
+       <h2
+              className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 dark:text-white mb-5 tracking-tight leading-[1.1]"
               style={{ fontFamily: 'var(--font-display)' }}
             >
-              Search{' '}
+              Every diagnosis, drug, trial, and coverage —{' '}
               <span className="text-gradient-primary relative">
-                ICD-10 Codes
+                connected
                 <svg className="absolute -bottom-2 left-0 w-full h-3 text-[#1976D2]/30" viewBox="0 0 200 12" preserveAspectRatio="none">
                   <path d="M0,8 Q50,0 100,8 T200,8" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
                 </svg>
               </span>
+              .
             </h2>
-            <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed">
-              Find medical diagnosis codes, related drugs, and clinical trials.
+            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed">
+              The all-in-one medical reference that maps ICD-10 codes to related drugs, procedures, clinical trials, and Medicare coverage.
             </p>
           </div>
 

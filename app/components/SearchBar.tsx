@@ -449,43 +449,40 @@ export default function SearchBar({
           {/* Common terms (will be translated) */}
           <button 
             type="button"
-            onClick={() => { setQuery('heart attack'); onSearch('heart attack'); }}
-            className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
-            title="Translates to: myocardial infarction"
-          >
-            heart attack
-          </button>
-          <button 
-            type="button"
-            onClick={() => { setQuery('broken bone'); onSearch('broken bone'); }}
-            className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
-            title="Translates to: fracture"
-          >
-            broken bone
-          </button>
-          {/* Medical terms (no translation needed) */}
-          <button 
-            type="button"
             onClick={() => { setQuery('diabetes'); onSearch('diabetes'); }}
-            className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-[#1976D2]/10 hover:text-[#0D47A1] dark:hover:text-[#42A5F5] transition-colors"
+            className="px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
           >
             diabetes
           </button>
           <button 
             type="button"
-            onClick={() => { setQuery('I21.9'); onSearch('I21.9'); }}
-            className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-[#1976D2]/10 hover:text-[#0D47A1] dark:hover:text-[#42A5F5] transition-colors font-mono"
-            title="ICD-10 code for acute myocardial infarction"
+            onClick={() => { setQuery('heart failure'); onSearch('heart failure'); }}
+            className="px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
+            title="Translates to: congestive heart failure"
           >
-            I21.9
+            heart failure
           </button>
           <button 
             type="button"
-            onClick={() => { setQuery('high blood pressure'); onSearch('high blood pressure'); }}
-            className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
-            title="Translates to: hypertension"
+            onClick={() => { setQuery('COPD'); onSearch('COPD'); }}
+            className="px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
           >
-            high blood pressure
+            COPD
+          </button>
+          <button 
+            type="button"
+            onClick={() => { setQuery('breast cancer'); onSearch('breast cancer'); }}
+            className="px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+          >
+            breast cancer
+          </button>
+          <button 
+            type="button"
+            onClick={() => { setQuery('chronic kidney disease'); onSearch('chronic kidney disease'); }}
+            className="px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
+            title="Translates to: chronic renal failure"
+          >
+            chronic kidney disease
           </button>
         </div>
       </div>
