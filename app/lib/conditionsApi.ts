@@ -25,7 +25,7 @@
  * ```
  */
 
-import { ConditionsAPIResult } from '../types/icd';
+import { ConditionsAPIResult, CodeType } from '../types/icd';
 
 // =============================================================================
 // Configuration
@@ -465,6 +465,65 @@ export function isICD10Code(query: string): boolean {
   // Pattern: Letter + digit(s) + optional dot + more digits/letters
   const icdPattern = /^[A-Za-z]\d{1,2}(\.[\dA-Za-z]+)?$/;
   return icdPattern.test(query.trim());
+}
+
+/**
+ * Checks if a query looks like a HCPCS Level II code.
+ * 
+ * HCPCS Level II codes follow the pattern: one letter (A-V) + exactly 4 digits.
+ * This is distinct from ICD-10 codes which have 1-2 digits after the letter.
+ * 
+ * @param query - The search query
+ * @returns True if query looks like a HCPCS Level II code
+ * 
+ * @example
+ * isHCPCSCode("E0607")   // true  — DME glucose monitor
+ * isHCPCSCode("J0120")   // true  — Injectable drug
+ * isHCPCSCode("A4253")   // true  — Blood glucose test strips
+ * isHCPCSCode("E11.9")   // false — ICD-10 code (has dot, only 2 digits before dot)
+ * isHCPCSCode("diabetes") // false — Condition name
+ * isHCPCSCode("I10")     // false — ICD-10 code (only 2 digits)
+ */
+export function isHCPCSCode(query: string): boolean {
+  // HCPCS Level II: Letter (A-V) followed by exactly 4 digits
+  // Letters W, X, Y, Z are not used in HCPCS Level II
+  const hcpcsPattern = /^[A-Va-v]\d{4}$/;
+  return hcpcsPattern.test(query.trim());
+}
+
+/**
+ * Detects whether user input is an ICD-10 code, HCPCS code, or condition name.
+ * 
+ * Detection priority:
+ * 1. HCPCS Level II — checked first because its pattern (letter + 4 digits)
+ *    is more specific and would NOT match the ICD-10 regex anyway
+ * 2. ICD-10-CM — letter + 1-2 digits + optional dot + more characters
+ * 3. Condition name — anything else (free text)
+ * 
+ * @param query - The search query
+ * @returns CodeType: 'hcpcs' | 'icd10' | 'condition'
+ * 
+ * @example
+ * detectCodeType("E0607")     // 'hcpcs'     — DME code
+ * detectCodeType("J0120")     // 'hcpcs'     — Drug injection code
+ * detectCodeType("E11.9")     // 'icd10'     — Diabetes code
+ * detectCodeType("I21")       // 'icd10'     — Heart attack code
+ * detectCodeType("diabetes")  // 'condition' — Free text
+ * detectCodeType("heart attack") // 'condition'
+ */
+export function detectCodeType(query: string): CodeType {
+  const trimmed = query.trim();
+  
+  if (!trimmed) return 'condition';
+  
+  // Check HCPCS first (more specific pattern: letter + exactly 4 digits)
+  if (isHCPCSCode(trimmed)) return 'hcpcs';
+  
+  // Check ICD-10 (letter + 1-2 digits + optional dot extension)
+  if (isICD10Code(trimmed)) return 'icd10';
+  
+  // Default: treat as condition name / free text search
+  return 'condition';
 }
 
 /**

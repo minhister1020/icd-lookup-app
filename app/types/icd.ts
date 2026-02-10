@@ -222,6 +222,98 @@ export interface DrugLoadingState {
 // Helper Functions for API Search
 // =============================================================================
 
+// --- HCPCS Level II ---
+
+/** Coverage determination type from CMS */
+export type HCPCSCoverageCode =
+  | 'C'  // Carrier judgment
+  | 'B'  // Bundled (not separately payable)
+  | 'D'  // Special coverage instructions
+  | 'E'  // Excluded from coverage
+  | 'I'  // Not valid for Medicare
+  | 'N'  // Non-covered
+  | 'S'  // Non-covered, but billable to beneficiary
+  | string; // Catch-all for unknown values
+
+/** HCPCS pricing methodology indicator */
+export type HCPCSPricingIndicator =
+  | '00' // Service not separately priced
+  | '11' // Price by jurisdiction
+  | '12' // Price by jurisdiction, subject to limitation
+  | '21' // Price by carrier
+  | '31' // Frequently serviced DME
+  | '32' // Infrequently serviced DME
+  | '33' // Oxygen/oxygen equipment
+  | '34' // DME supplies
+  | '35' // Surgical dressings
+  | '36' // Capped rental DME
+  | '37' // Osteoporosis DME
+  | '38' // Orthotics/prosthetics
+  | '39' // Parenteral/enteral nutrition
+  | '45' // Customized DME
+  | '46' // Carrier judgment on DME
+  | '51' // Drugs
+  | '52' // Reasonable charge drugs
+  | '53' // Blood products
+  | '54' // DMEPOS vaccines
+  | '55' // Excluded from DMEPOS fee schedule
+  | '56' // Furnished under CBA
+  | '57' // Subject to DMEPOS CBP
+  | string; // Catch-all
+
+/** Category prefix for HCPCS codes (A through V) */
+export type HCPCSCategoryPrefix =
+  | 'A' | 'B' | 'C' | 'D' | 'E' | 'G' | 'H' | 'J' | 'K'
+  | 'L' | 'M' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V';
+
+/** Describes a single HCPCS category (e.g., "J-codes: Drugs") */
+export interface HCPCSCategory {
+  prefix: HCPCSCategoryPrefix;
+  name: string;
+  description: string;
+}
+
+/** Full HCPCS code detail (richer than ProcedureResult) */
+export interface HCPCSResult {
+  code: string;
+  shortDescription: string;
+  longDescription: string;
+  coverageCode: HCPCSCoverageCode;
+  coverageDescription: string;
+  pricingIndicator: HCPCSPricingIndicator;
+  pricingDescription: string;
+  typeOfService: string;
+  addDate: string | null;
+  termDate: string | null;
+  isActive: boolean;
+  category: HCPCSCategory;
+}
+
+/** State for HCPCS detail view in the UI */
+export interface HCPCSDetailState {
+  isLoading: boolean;
+  error: string | null;
+  result: HCPCSResult | null;
+  medicareCoverage: {
+    isLoading: boolean;
+    hasFetched: boolean;
+    ncds: Array<{ title: string; documentId: number; url?: string }>;
+    lcds: Array<{ title: string; documentId: number; contractorName?: string; url?: string }>;
+  };
+  relatedICD10Codes: {
+    isLoading: boolean;
+    hasFetched: boolean;
+    codes: Array<{ code: string; name: string; source: string }>;
+  };
+}
+
+/** What type of code the user entered */
+export type CodeType = 'icd10' | 'hcpcs' | 'condition';
+
+// =============================================================================
+// Helper Functions for API Search
+// =============================================================================
+
 /**
  * Extracts clean search terms from a medical condition name.
  * 

@@ -34,6 +34,10 @@ import { searchICD10, searchICD10More, getRelatedCodes, isSpecificCode } from '.
 
 // Import code detection from conditionsApi
 import { isICD10Code } from './lib/conditionsApi';
+import { detectCodeType } from './lib/conditionsApi';
+import { searchLocalHcpcs } from './lib/hcpcsLocalData';
+import { HCPCSResult } from './types/icd';
+import HcpcsResultCard from './components/HcpcsResultCard';
 
 // Import favorites storage utilities
 import { 
@@ -68,6 +72,11 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  
+  // HCPCS search state
+  const [hcpcsResults, setHcpcsResults] = useState<HCPCSResult[]>([]);
+  const [isHcpcsSearch, setIsHcpcsSearch] = useState(false);
+  const [hcpcsHintCount, setHcpcsHintCount] = useState(0);
   
   // Phase 4: Search metadata for pagination and total count display
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -364,44 +373,76 @@ export default function Home() {
     setIsLoading(true);
     setError(null);
     setHasSearched(true);
-    setCurrentQuery(query);  // Save for Load More
-    
+    setCurrentQuery(query);
+
     // Clear previous drugs/trials when new search starts
     setDrugsMap(new Map());
     setTrialsMap(new Map());
-    
+
     // Phase 10: Clear related codes on new search
     setRelatedCodes([]);
     setShowRelatedSection(false);
-    
+
     addToRecentSearches(query);
-    
+
+    // Detect code type: HCPCS vs ICD-10 vs condition name
+    const codeType = detectCodeType(query);
+
+    // For plain-text queries, check if HCPCS matches exist (for hint banner)
+    let hcpcsHintCount = 0;
+    if (codeType === 'condition') {
+      const hcpcsPreCheck = await searchLocalHcpcs(query, 1);
+      if (hcpcsPreCheck.length > 0) {
+        // Get actual count for the banner
+        const fullCheck = await searchLocalHcpcs(query, 50);
+        hcpcsHintCount = fullCheck.length;
+      }
+    }
+    setHcpcsHintCount(hcpcsHintCount);
+
     try {
-      // Phase 5: searchICD10 now returns translation metadata
-      const { 
-        results: scoredResults, 
-        totalCount: total, 
-        hasMore: more,
-        translation: translationResult  // New in Phase 5
-      } = await searchICD10(query);
-      
-      setResults(scoredResults);
-      setTotalCount(total);
-      setHasMore(more);
-      setTranslation(translationResult);  // Save translation for UI display
-      
-      // Phase 6C: Add to enhanced history with metadata
-      addToEnhancedHistory(query, total, scoredResults[0]);
-      
-      // Phase 10: Fetch related codes if this is a specific ICD code search
-      // This runs in parallel/after main search completes
-      fetchRelatedCodes(query);
+      if (codeType === 'hcpcs') {
+        // ── HCPCS Search Path ──
+        setIsHcpcsSearch(true);
+        setResults([]); // Clear ICD-10 results
+        setTranslation(undefined);
+        setTotalCount(0);
+        setHasMore(false);
+
+        const hcpcsData = await searchLocalHcpcs(query, 20);
+        setHcpcsResults(hcpcsData);
+
+        // Phase 6C: Add to enhanced history
+        addToEnhancedHistory(query, hcpcsData.length);
+      } else {
+        // ── ICD-10 / Condition Search Path (existing logic) ──
+        setIsHcpcsSearch(false);
+        setHcpcsResults([]); // Clear HCPCS results
+
+        const {
+          results: scoredResults,
+          totalCount: total,
+          hasMore: more,
+          translation: translationResult
+        } = await searchICD10(query);
+
+        setResults(scoredResults);
+        setTotalCount(total);
+        setHasMore(more);
+        setTranslation(translationResult);
+
+        // Phase 6C: Add to enhanced history with metadata
+        addToEnhancedHistory(query, total, scoredResults[0]);
+
+        // Phase 10: Fetch related codes if this is a specific ICD code search
+        fetchRelatedCodes(query);
+      }
     } catch (err) {
       setResults([]);
+      setHcpcsResults([]);
       setTotalCount(0);
       setHasMore(false);
       setTranslation(undefined);
-      // Phase 10: Clear related codes on error
       setRelatedCodes([]);
       setShowRelatedSection(false);
       if (err instanceof Error) {
@@ -616,36 +657,118 @@ export default function Home() {
       {/* Results Section */}
       {/* ================================================================= */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        <SearchResults
-          results={results}
-          isLoading={isLoading}
-          error={error}
-          hasSearched={hasSearched}
-          drugsMap={drugsMap}
-          trialsMap={trialsMap}
-          onDrugsLoaded={handleDrugsLoaded}
-          onTrialsLoaded={handleTrialsLoaded}
-          totalCount={totalCount}
-          hasMore={hasMore}
-          onLoadMore={handleLoadMore}
-          isLoadingMore={isLoadingMore}
-          translation={translation}
-          // Phase 6: Favorites props
-          favorites={favorites}
-          favoritesMap={favoritesMap}
-          onToggleFavorite={toggleFavorite}
-          onRemoveFavorite={removeFavorite}
-          onClearAllFavorites={clearAllFavorites}
-          isFavorited={isFavorited}
-          showFavoritesPanel={showFavoritesPanel}
-          onToggleFavoritesPanel={() => setShowFavoritesPanel(!showFavoritesPanel)}
-          onSearchFromFavorite={handleSearch}
-          // Phase 10: Related codes props
-          relatedCodes={relatedCodes}
-          isLoadingRelated={isLoadingRelated}
-          showRelatedSection={showRelatedSection}
-          searchedCode={currentQuery}
-        />
+        {isHcpcsSearch ? (
+          // ── HCPCS Results ──
+          <div>
+            {isLoading && (
+              <div className="flex flex-col items-center justify-center py-16 text-emerald-600">
+                <div className="w-10 h-10 border-3 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mb-4" />
+                <span className="text-sm font-medium">Searching HCPCS codes...</span>
+              </div>
+            )}
+
+            {error && (
+              <div className="max-w-md mx-auto bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+                <p className="text-red-600 text-sm">{error}</p>
+              </div>
+            )}
+
+            {!isLoading && !error && hasSearched && hcpcsResults.length === 0 && (
+              <div className="max-w-md mx-auto bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl p-8 text-center">
+                <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  No HCPCS Codes Found
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                  No HCPCS Level II codes match &quot;{currentQuery}&quot;. Try a different code or search term.
+                </p>
+              </div>
+            )}
+
+            {!isLoading && !error && hcpcsResults.length > 0 && (
+              <div>
+                {/* Results count header */}
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Found <span className="font-semibold text-emerald-600">{hcpcsResults.length}</span> HCPCS Level II {hcpcsResults.length === 1 ? 'code' : 'codes'}
+                  </p>
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 font-medium">
+                    HCPCS Search
+                  </span>
+                </div>
+
+                {/* Results grid */}
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {hcpcsResults.map((result, index) => (
+                    <div
+                      key={result.code}
+                      className="animate-in fade-in slide-in-from-bottom-2"
+                      style={{ animationDelay: `${Math.min(index, 10) * 50}ms`, animationFillMode: 'backwards' }}
+                    >
+                      <HcpcsResultCard
+                        result={result}
+                        rank={index + 1}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          // ── ICD-10 Results (existing) ──
+          <>
+            {/* HCPCS hint banner — shows when word search also has HCPCS matches */}
+            {hcpcsHintCount > 0 && !isLoading && (
+              <div className="mb-4 flex items-center justify-between px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50">
+                <p className="text-sm text-emerald-700 dark:text-emerald-400">
+                  Also found <span className="font-semibold">{hcpcsHintCount}</span> HCPCS Level II {hcpcsHintCount === 1 ? 'code' : 'codes'} for &quot;{currentQuery}&quot;
+                </p>
+                <button
+                  onClick={() => {
+                    setIsHcpcsSearch(true);
+                    setResults([]);
+                    setTranslation(undefined);
+                    setTotalCount(0);
+                    setHasMore(false);
+                    searchLocalHcpcs(currentQuery, 20).then(setHcpcsResults);
+                  }}
+                  className="ml-3 flex-shrink-0 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 transition-colors"
+                >
+                  View HCPCS Results
+                </button>
+              </div>
+            )}
+
+            <SearchResults
+            results={results}
+            isLoading={isLoading}
+            error={error}
+            hasSearched={hasSearched}
+            drugsMap={drugsMap}
+            trialsMap={trialsMap}
+            onDrugsLoaded={handleDrugsLoaded}
+            onTrialsLoaded={handleTrialsLoaded}
+            totalCount={totalCount}
+            hasMore={hasMore}
+            onLoadMore={handleLoadMore}
+            isLoadingMore={isLoadingMore}
+            translation={translation}
+            favorites={favorites}
+            favoritesMap={favoritesMap}
+            onToggleFavorite={toggleFavorite}
+            onRemoveFavorite={removeFavorite}
+            onClearAllFavorites={clearAllFavorites}
+            isFavorited={isFavorited}
+            showFavoritesPanel={showFavoritesPanel}
+            onToggleFavoritesPanel={() => setShowFavoritesPanel(!showFavoritesPanel)}
+            onSearchFromFavorite={handleSearch}
+            relatedCodes={relatedCodes}
+            isLoadingRelated={isLoadingRelated}
+            showRelatedSection={showRelatedSection}
+            searchedCode={currentQuery}
+            />
+          </>
+        )}
       </main>
 
       {/* ================================================================= */}
