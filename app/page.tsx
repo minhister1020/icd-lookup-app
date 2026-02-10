@@ -20,8 +20,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Star, Clock } from 'lucide-react';
+import { Star, Clock, Grid3X3 } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 // Import our custom components
 import SearchBar from './components/SearchBar';
@@ -514,6 +515,15 @@ export default function Home() {
               </div>
             </div>
             
+            {/* HCPCS Browse Link */}
+            <Link
+              href="/hcpcs"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 border border-emerald-200/60 dark:border-emerald-800/40 transition-colors"
+            >
+              <Grid3X3 className="w-3.5 h-3.5" />
+              HCPCS Browse
+            </Link>
+
             {/* Phase 6: Favorites Button - Enhanced styling */}
             <button
               onClick={() => setShowFavoritesPanel(!showFavoritesPanel)}
